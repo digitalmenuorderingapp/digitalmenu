@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+  NOTE: If you see "Unknown at rule @apply" in your IDE (VS Code):
+  1. Open Command Palette (Ctrl+Shift+P)
+  2. Search "Change Language Mode"
+  3. Select "Tailwind CSS"
+  OR: Disable CSS Validate in settings for Tailwind projects.
+*/
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@layer base {
+  :root {
+    --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-heading: var(--font-bricolage), var(--font-sans);
+  }
+
+  body {
+    @apply antialiased text-gray-900 bg-gray-50 font-sans;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+@layer utilities {
+  .font-hindi {
+    font-family: var(--font-hind), sans-serif;
+  }
+  
+  .font-bengali {
+    font-family: var(--font-hind-siliguri), sans-serif;
+  }
+  
+  /* Indic Script Vertical Rhythm Correction */
+  .indic-spacing {
+    line-height: 1.8 !important;
+  }
+  
+  .indic-heading-spacing {
+    line-height: 1.4 !important;
+    padding-bottom: 0.1em;
+  }
+}
+
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg 
+           hover:bg-indigo-700 transition-colors duration-200 
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg 
+           border border-gray-300 hover:bg-gray-50 transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-danger {
+    @apply px-6 py-3 bg-red-600 text-white font-semibold rounded-lg 
+           hover:bg-red-700 transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg 
+           focus:ring-2 focus:ring-indigo-500 focus:border-transparent 
+           outline-none transition-all duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 
+           hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .page-container {
+    @apply min-h-screen bg-gray-50;
+  }
+  
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8 xl:px-12;
+  }
+  
+  /* Hide scrollbar for category selector */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    background: white;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  @page {
+    margin: 10mm;
+    size: A4;
+  }
+}
