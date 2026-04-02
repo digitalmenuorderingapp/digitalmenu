@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '@/components/customer/BottomNav';
@@ -22,7 +22,7 @@ import { Order, MenuItem, CartItem } from '@/types/order';
 const ENCRYPTION_KEY = 'dm-2026';
 
 
-export default function CustomerPage() {
+function CustomerPageContent() {
   const searchParams = useSearchParams();
   const { session, updateSession } = useCustomerSession();
   const [activeTab, setActiveTab] = useState('menu');
@@ -533,5 +533,17 @@ export default function CustomerPage() {
         activeTab={activeTab}
       />
     </div>
+  );
+}
+
+export default function CustomerPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <FaSpinner className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    }>
+      <CustomerPageContent />
+    </Suspense>
   );
 }
