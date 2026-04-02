@@ -6,15 +6,15 @@ export const metadata: Metadata = {
   description: 'Transform your restaurant with DigitalMenu. Let customers scan, order, and pay instantly. Reduce errors, increase speed, and boost profits with our contactless QR menu system.',
   keywords: ['QR menu', 'digital restaurant ordering', 'contactless dining', 'restaurant POS', 'smart menu system', 'SaaS for restaurants'],
   alternates: {
-    canonical: 'https://digitalmenu.vercel.app/home',
+    canonical: 'https://digitalmenuorder.vercel.app/home',
   },
   openGraph: {
     title: 'DigitalMenu | The Future of Dining',
     description: 'The fastest QR-based ordering system for modern restaurants.',
-    url: 'https://digitalmenu.vercel.app/home',
+    url: 'https://digitalmenuorder.vercel.app/home',
     siteName: 'DigitalMenu',
     images: [{ 
-      url: 'https://digitalmenu.vercel.app/og-image.png',
+      url: 'https://digitalmenuorder.vercel.app/og-image.png',
       width: 1200,
       height: 630,
       alt: 'DigitalMenu QR System',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'DigitalMenu | The Future of Dining',
     description: 'The fastest QR-based ordering system for modern restaurants.',
-    images: ['https://digitalmenu.vercel.app/og-image.png'],
+    images: ['https://digitalmenuorder.vercel.app/og-image.png'],
   },
   robots: {
     index: true,

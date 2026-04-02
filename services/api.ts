@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE_URL = 'https://digitalmenu-server.onrender.com/api';
 
 // Create axios instance
 const api = axios.create({

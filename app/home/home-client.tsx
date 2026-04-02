@@ -216,7 +216,7 @@ export default function MarketingHomeClient() {
                         <div className="w-4 h-4 bg-yellow-400 rounded-full" />
                         <div className="w-4 h-4 bg-green-400 rounded-full" />
                       </div>
-                      <div className="text-xs text-gray-400 font-bold uppercase tracking-widest bg-gray-100/50 px-4 py-1.5 rounded-full">digitalmenu.vercel.app</div>
+                      <div className="text-xs text-gray-400 font-bold uppercase tracking-widest bg-gray-100/50 px-4 py-1.5 rounded-full">digitalmenuorder.vercel.app</div>
                     </div>
                     <div className="space-y-8">
                       <div className="h-6 bg-gray-200/50 rounded-full w-3/4" />
@@ -560,7 +560,7 @@ export default function MarketingHomeClient() {
               <FaQrcode className="w-8 h-8 text-white" aria-hidden="true" />
             </div>
             <span className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
-              digitalmenu.vercel.app
+              digitalmenuorder.vercel.app
             </span>
           </div>
           <nav className={`flex justify-center space-x-12 text-sm font-black text-gray-400 mb-12 uppercase ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal font-medium'}`} aria-label="Footer navigation">
