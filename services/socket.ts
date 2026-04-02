@@ -9,6 +9,7 @@ const SOCKET_URL = getSocketUrl();
 
 class SocketService {
     private socket: Socket | null = null;
+    private currentRoom: string | null = null;
 
     connect() {
         if (!this.socket) {
@@ -17,12 +18,17 @@ class SocketService {
                 transports: ['polling', 'websocket'],
                 path: '/socket.io/',
                 reconnection: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000
+                reconnectionAttempts: 10,
+                reconnectionDelay: 2000,
+                reconnectionDelayMax: 10000,
             });
 
             this.socket.on('connect', () => {
                 console.log('Connected to socket server, id:', this.socket?.id);
+                // Re-join the room automatically after a reconnect
+                if (this.currentRoom) {
+                    this.socket?.emit('join', this.currentRoom);
+                }
             });
 
             this.socket.on('connect_error', (error) => {
@@ -37,6 +43,8 @@ class SocketService {
     }
 
     join(room: string) {
+        this.currentRoom = room; // Track current room for auto-rejoin on reconnect
+
         if (!this.socket) {
             console.warn('[SocketService] Attempted to join room before connection');
             return;
@@ -66,6 +74,7 @@ class SocketService {
 
     disconnect() {
         if (this.socket) {
+            this.currentRoom = null;
             this.socket.disconnect();
             this.socket = null;
         }

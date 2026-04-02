@@ -62,6 +62,7 @@ function CustomerPageContent() {
         try {
           const qrData = decryptQrData(qrParam);
           if (qrData) {
+            const tableStr = qrData.table.toString();
             try {
               const response = await api.get(`/public/restaurant/${qrData.restaurantId}`);
               const restaurantData = response.data.data;
@@ -70,8 +71,8 @@ function CustomerPageContent() {
               updateSession({
                 restaurantName: restaurantName,
                 restaurantId: qrData.restaurantId,
-                tableNumber: qrData.table.toString(),
-                logo: restaurantData.logo // Store logo in session for other tabs
+                tableNumber: tableStr,
+                logo: restaurantData.logo
               });
 
               setRestaurantInfo({
@@ -85,10 +86,15 @@ function CustomerPageContent() {
               updateSession({
                 restaurantName: 'Restaurant',
                 restaurantId: qrData.restaurantId,
-                tableNumber: qrData.table.toString(),
+                tableNumber: tableStr,
               });
               toast.success('Welcome!');
             }
+
+            // ✅ Directly fetch menu with the restaurantId from QR — avoids stale state race condition
+            setIsLoading(false);
+            fetchMenuItems(qrData.restaurantId, qrData.table.toString());
+            return; // Skip the generic setIsLoading(false) below
           }
         } catch (error) {
           console.error('QR decryption error:', error);
@@ -102,11 +108,33 @@ function CustomerPageContent() {
     initializeSession();
   }, []);
 
-  // Fetch menu items when restaurant info is available
-  useEffect(() => {
-    if (session.restaurantId && !isLoading) {
-      fetchMenuItems();
+  // Fetch menu items — accepts explicit restaurantId to avoid stale state race condition
+  const fetchMenuItems = async (restaurantId?: string, tableNumber?: string) => {
+    const rId = restaurantId || session.restaurantId;
+    const tNum = tableNumber !== undefined ? tableNumber : (session.tableNumber || '');
+    if (!rId) return;
+
+    try {
+      const response = await api.get(`/public/menu?restaurantId=${rId}&table=${tNum}`);
+      const data = response.data.data;
+      setMenuItems(data.menuItems);
+
+      // Update table capacity in session
+      if (data.tableCapacity) {
+        updateSession({ tableCapacity: data.tableCapacity });
+      }
+    } catch (error) {
+      toast.error('Failed to load menu');
     }
+  };
+
+  // Returning users: if we already have a restaurantId in session (loaded from localStorage),
+  // fetch the menu once loading is complete and session is ready.
+  useEffect(() => {
+    if (session.restaurantId && !isLoading && !qrParam) {
+      fetchMenuItems(session.restaurantId, session.tableNumber || '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.restaurantId, isLoading]);
 
   const decryptQrData = (encryptedData: string) => {
@@ -141,22 +169,6 @@ function CustomerPageContent() {
     }
   };
 
-  const fetchMenuItems = async () => {
-    if (!session.restaurantId) return;
-
-    try {
-      const response = await api.get(`/public/menu?restaurantId=${session.restaurantId}&table=${session.tableNumber || ''}`);
-      const data = response.data.data;
-      setMenuItems(data.menuItems);
-      
-      // Update table capacity in session
-      if (data.tableCapacity) {
-        updateSession({ tableCapacity: data.tableCapacity });
-      }
-    } catch (error) {
-      toast.error('Failed to load menu');
-    }
-  };
 
   const fetchOrders = async () => {
     try {
