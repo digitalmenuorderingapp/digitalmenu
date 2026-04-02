@@ -113,25 +113,32 @@ export default function OrdersPage() {
       socketService.on('newOrder', (order: Order) => {
         toast.success(`New order from Table #${order.tableNumber}!`);
         playNotificationSound();
-        fetchOrders();
+        // Removed fetchOrders() as newOrder is now followed by orderUpdate for state injection
       });
 
       socketService.on('orderCancelled', (order: Order) => {
         toast.error(`Order from Table #${order.tableNumber} was cancelled`);
         playNotificationSound();
-        fetchOrders();
+        // State update handled by orderUpdate
       });
 
       socketService.on('orderUpdate', (updatedOrder: Order) => {
         setOrders(prevOrders => {
           const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
           if (index !== -1) {
+            // Update existing order
             const newOrders = [...prevOrders];
             newOrders[index] = updatedOrder;
             return newOrders;
           }
+          // Insert new order at beginning
           return [updatedOrder, ...prevOrders];
         });
+        
+        // Also update selected order if it's the one being viewed
+        if (selectedOrder?._id === updatedOrder._id) {
+          setSelectedOrder(updatedOrder);
+        }
       });
 
       return () => {

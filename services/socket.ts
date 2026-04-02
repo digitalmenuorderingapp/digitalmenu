@@ -37,8 +37,18 @@ class SocketService {
     }
 
     join(room: string) {
-        if (this.socket) {
+        if (!this.socket) {
+            console.warn('[SocketService] Attempted to join room before connection');
+            return;
+        }
+
+        if (this.socket.connected) {
             this.socket.emit('join', room);
+        } else {
+            // Wait for connect event then join
+            this.socket.once('connect', () => {
+                this.socket?.emit('join', room);
+            });
         }
     }
 
