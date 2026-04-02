@@ -7,6 +7,7 @@ const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-bricolage',
+  adjustFontFallback: false,
 });
 
 const inter = Inter({

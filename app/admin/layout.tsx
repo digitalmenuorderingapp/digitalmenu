@@ -571,7 +571,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="text-center mb-10">
                   <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">Access Restricted</h2>
                   <p className="text-gray-500 text-lg leading-relaxed max-w-sm mx-auto">
-                    {user?.isActive === false 
+                    {user?.subscription?.status === "inactive" 
                       ? "Your account has been deactivated by the system administrator. Please contact superadmin for reactivation."
                       : "Your subscription has expired. Please subscribe to continue the convenience of digital menu. Contact superadmin."
                     }

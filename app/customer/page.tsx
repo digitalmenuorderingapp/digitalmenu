@@ -19,7 +19,7 @@ import { playNotificationSound } from '@/utils/notifications';
 import { Order, MenuItem, CartItem } from '@/types/order';
 
 // Encryption key - must match the one used in tables page
-const ENCRYPTION_KEY = 'digital-menu-2024-secure-key';
+const ENCRYPTION_KEY = 'dm-2026';
 
 
 export default function CustomerPage() {
@@ -30,9 +30,9 @@ export default function CustomerPage() {
   const [menuItems, setMenuItems] = useState<Record<string, MenuItem[]>>({});
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; id: string } | null>(null);
+  const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; id: string; logo?: string } | null>(null);
 
-  const qrParam = searchParams.get('qr');
+  const qrParam = searchParams.get('q') || searchParams.get('qr'); // Support both new and old param
   const tableNumber = searchParams.get('table');
   const tabParam = searchParams.get('tab');
 
@@ -71,11 +71,13 @@ export default function CustomerPage() {
                 restaurantName: restaurantName,
                 restaurantId: qrData.restaurantId,
                 tableNumber: qrData.table.toString(),
+                logo: restaurantData.logo // Store logo in session for other tabs
               });
 
               setRestaurantInfo({
                 name: restaurantName,
-                id: qrData.restaurantId
+                id: qrData.restaurantId,
+                logo: restaurantData.logo
               });
               toast.success(`Welcome to ${restaurantName}!`);
             } catch (error) {
@@ -109,28 +111,30 @@ export default function CustomerPage() {
 
   const decryptQrData = (encryptedData: string) => {
     try {
-      const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+      // Fix URL-safe base64 characters
+      const base64 = encryptedData
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      
+      const bytes = CryptoJS.AES.decrypt(base64, ENCRYPTION_KEY);
       const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
 
       if (!decryptedData) {
         throw new Error('Failed to decrypt QR data');
       }
 
+      // Handle new format (restaurantId:tableNumber) or old JSON format
+      if (decryptedData.includes(':') && !decryptedData.startsWith('{')) {
+        const [restaurantId, table] = decryptedData.split(':');
+        return { restaurantId, table };
+      }
+      
+      // Fallback for old JSON format
       const qrData = JSON.parse(decryptedData);
-
-      if (!qrData.table || !qrData.restaurantId) {
-        throw new Error('Invalid QR data structure');
-      }
-
-      const qrTimestamp = qrData.timestamp;
-      const now = Date.now();
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
-      if (now - qrTimestamp > maxAge) {
-        throw new Error('QR code has expired');
-      }
-
-      return qrData;
+      return { 
+        restaurantId: qrData.restaurantId, 
+        table: qrData.table 
+      };
     } catch (error) {
       console.error('QR decryption error:', error);
       return null;
@@ -213,10 +217,16 @@ export default function CustomerPage() {
 
         playNotificationSound();
 
-        // Always refresh orders list on any status update
-        if (activeTab === 'orders') {
-          fetchOrders();
-        }
+        // 🔄 SYNC STATE: Update the orders list immediately without a network fetch
+        setOrders(prevOrders => {
+          const index = prevOrders.findIndex(o => o._id === order._id);
+          if (index !== -1) {
+            const newOrders = [...prevOrders];
+            newOrders[index] = order;
+            return newOrders;
+          }
+          return [order, ...prevOrders];
+        });
       });
 
       // Listen for refund updates
@@ -243,18 +253,30 @@ export default function CustomerPage() {
 
         playNotificationSound();
 
-        // Refresh orders list if on orders tab
-        if (activeTab === 'orders') {
-          fetchOrders();
-        }
+        // 🔄 SYNC STATE
+        setOrders(prevOrders => {
+          const index = prevOrders.findIndex(o => o._id === order._id);
+          if (index !== -1) {
+            const newOrders = [...prevOrders];
+            newOrders[index] = order;
+            return newOrders;
+          }
+          return [order, ...prevOrders];
+        });
       });
 
       // Listen for general order updates (for any other changes)
       socketService.on('orderUpdate', (order: Order) => {
-        // Refresh orders list if on orders tab
-        if (activeTab === 'orders') {
-          fetchOrders();
-        }
+        // 🔄 SYNC STATE
+        setOrders(prevOrders => {
+          const index = prevOrders.findIndex(o => o._id === order._id);
+          if (index !== -1) {
+            const newOrders = [...prevOrders];
+            newOrders[index] = order;
+            return newOrders;
+          }
+          return [order, ...prevOrders];
+        });
       });
 
       return () => {
@@ -442,8 +464,16 @@ export default function CustomerPage() {
           <div className="flex items-center justify-between">
             {/* Left: Current Tab Identity */}
             <div className="flex items-center space-x-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${headerConfig.color} flex items-center justify-center text-white shadow-lg`}>
-                {headerConfig.icon}
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${headerConfig.color} flex items-center justify-center text-white shadow-lg overflow-hidden`}>
+                {restaurantInfo?.logo ? (
+                  <img 
+                    src={restaurantInfo.logo} 
+                    alt="Logo" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  headerConfig.icon
+                )}
               </div>
               <div>
                 <h1 className="text-lg font-black text-gray-900 leading-tight">
@@ -459,8 +489,15 @@ export default function CustomerPage() {
             <div className="flex items-center space-x-2">
               <div className="bg-gray-50 border border-gray-100 rounded-2xl px-3 py-1.5 flex items-center space-x-3 shadow-inner">
                 {restaurantInfo && (
-                  <div className="flex items-center space-x-1.5 pr-3 border-r border-gray-200">
+                  <div className="flex items-center space-x-2 pr-3 border-r border-gray-200">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
+                    {restaurantInfo.logo && (
+                      <img 
+                        src={restaurantInfo.logo} 
+                        alt="Restaurant Logo" 
+                        className="w-5 h-5 rounded-md object-cover border border-gray-200 shadow-sm"
+                      />
+                    )}
                     <span className="text-[11px] font-bold text-gray-700 max-w-[80px] truncate">{restaurantInfo.name}</span>
                   </div>
                 )}

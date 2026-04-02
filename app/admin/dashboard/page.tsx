@@ -114,9 +114,11 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    fetchStats();
-    fetchLedger(selectedDate);
-    fetchMonthlyLedgers();
+    if (user) {
+      fetchStats();
+      fetchLedger(selectedDate);
+      fetchMonthlyLedgers();
+    }
   }, [user, selectedDate]);
 
   useEffect(() => {
@@ -281,36 +283,33 @@ export default function DashboardPage() {
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <div className="flex-1">
                 {/* Admin Badge */}
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                    <FaUtensils className="w-4 h-4 text-white" />
+                  <div className="flex items-center gap-6 mb-4">
+                    {user?.logo ? (
+                      <div className="relative group p-0.5 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl shadow-2xl">
+                        <img 
+                          src={user.logo} 
+                          alt="Restaurant Logo" 
+                          className="w-20 h-20 lg:w-24 lg:h-24 rounded-[1.25rem] object-cover border-4 border-slate-900 group-hover:scale-[1.02] transition-transform duration-500"
+                        />
+                        <div className="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-slate-900 shadow-lg animate-pulse" title="System Online"></div>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center border-2 border-white/10 shadow-3xl">
+                        <FaUtensils className="w-10 h-10 text-indigo-300 opacity-50" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tighter text-white">
+                           {user?.restaurantName || 'DigitalMenu Admin'}
+                        </h1>
+                        <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-black text-indigo-300 rounded-lg tracking-widest uppercase">Premium</span>
+                      </div>
+                      <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md leading-relaxed">
+                        Manage your digital menu, track orders, and grow your business with our state-of-the-art platform.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">DigitalMenu Admin</h3>
-                    <p className="text-xs text-purple-200">Restaurant Management</p>
-                  </div>
-                  <div className="bg-green-500/20 border border-green-400/30 rounded-full px-2 py-0.5 ml-auto self-start mt-1">
-                    <span className="text-xs font-bold text-green-300">ACTIVE</span>
-                  </div>
-                </div>
-
-                {isLoading ? (
-                  <div className="space-y-4">
-                    <Skeleton width="40%" height={32} className="bg-white/20" />
-                    <Skeleton width="60%" height={16} className="bg-white/10" />
-                  </div>
-                ) : (
-                  <>
-                    <h1 className="text-2xl lg:text-3xl font-bold mb-2">
-                       {user?.restaurantName ? `${user.restaurantName}` : 'Your Restaurant Dashboard'}
-                    </h1>
-                    <p className="text-purple-200 text-sm lg:text-base mb-4">
-                      {user?.restaurantName
-                        ? 'Manage your digital menu, track orders, and grow your business.'
-                        : 'Set up your restaurant details to get started with your digital menu.'}
-                    </p>
-                  </>
-                )}
 
                 {/* Restaurant Info Cards */}
                 {isLoading ? (

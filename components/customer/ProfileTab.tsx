@@ -74,9 +74,17 @@ export default function ProfileTab({ session, onUpdateSession }: ProfileTabProps
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.8 }}
-              className="px-4 py-1.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/10 flex items-center space-x-2"
+              className="px-3 py-1.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/10 flex items-center space-x-2.5 shadow-lg"
             >
-               <FaUtensils className="text-indigo-400 w-3 h-3" />
+               {session.logo ? (
+                 <img 
+                   src={session.logo} 
+                   alt="Logo" 
+                   className="w-4 h-4 rounded-md object-cover border border-white/20 shadow-sm"
+                 />
+               ) : (
+                 <FaUtensils className="text-indigo-400 w-3 h-3" />
+               )}
                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-100">
                  Dine-In • {session.restaurantName || 'Restaurant'}
                </span>

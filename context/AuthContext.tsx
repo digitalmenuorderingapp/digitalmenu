@@ -5,7 +5,7 @@ import api from '@/services/api';
 import { getAdminDeviceInfo } from '@/utils/device';
 import toast from 'react-hot-toast';
 
-export interface User {
+export interface RestaurantAdmin {
   id: string;
   _id?: string; // MongoDB _id field
   email: string;
@@ -24,7 +24,7 @@ export interface User {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: RestaurantAdmin | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ notVerified?: boolean }>;
@@ -40,7 +40,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<RestaurantAdmin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check auth status on mount
@@ -54,8 +54,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
+    // Defensive timeout to ensure UI doesn't hang forever
+    const authTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('[AUTH] Auth check timed out. Forcing loading to end.');
+        setIsLoading(false);
+      }
+    }, 8000);
+
     try {
-      const response = await api.get('/auth/me');
+      const response = await api.get('/auth/me', { timeout: 10000 });
       if (response.data.success && response.data.user) {
         const userData = response.data.user;
         setUser(userData);
@@ -70,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('user');
       }
     } finally {
+      clearTimeout(authTimeout);
       setIsLoading(false);
     }
   };

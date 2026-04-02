@@ -8,6 +8,7 @@ import {
     FaEnvelope, FaLock, FaSpinner, FaArrowRight, FaUser,
     FaKey, FaShieldAlt, FaRedo, FaUtensils, FaTimes
 } from 'react-icons/fa';
+import MathCaptcha from '@/components/auth/MathCaptcha';
 import Link from 'next/link';
 
 type AuthMode = 'login' | 'register';
@@ -24,6 +25,12 @@ export default function AuthPage() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Captcha validation states
+    const [loginCaptchaValid, setLoginCaptchaValid] = useState(false);
+    const [registerCaptchaValid, setRegisterCaptchaValid] = useState(false);
+    const [forgotCaptchaValid, setForgotCaptchaValid] = useState(false);
+    const [captchaKey, setCaptchaKey] = useState(0); // Used to force refresh captcha
 
     // OTP States
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -61,6 +68,10 @@ export default function AuthPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!loginCaptchaValid) {
+            setError('Please solve the math captcha correctly');
+            return;
+        }
         setIsLoading(true);
         setError('');
         try {
@@ -73,6 +84,7 @@ export default function AuthPage() {
             }
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Login failed');
+            setCaptchaKey(prev => prev + 1); // Refresh captcha on error
         } finally {
             setIsLoading(false);
         }
@@ -80,6 +92,10 @@ export default function AuthPage() {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!registerCaptchaValid) {
+            setError('Please solve the math captcha correctly');
+            return;
+        }
         setIsLoading(true);
         setError('');
 
@@ -95,6 +111,7 @@ export default function AuthPage() {
             setShowOtp(true);
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Registration failed');
+            setCaptchaKey(prev => prev + 1); // Refresh captcha on error
         } finally {
             setIsLoading(false);
         }
@@ -102,12 +119,16 @@ export default function AuthPage() {
 
     const handleSendForgotOtp = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!forgotCaptchaValid) {
+            setError('Please solve the math captcha correctly');
+            return;
+        }
         setIsLoading(true);
         try {
             await forgotPassword(forgotEmail);
             setForgotStep(2);
         } catch (err) {
-            // Handled in context
+            setCaptchaKey(prev => prev + 1); // Refresh captcha on error
         } finally {
             setIsLoading(false);
         }
@@ -216,6 +237,7 @@ export default function AuthPage() {
                         >
                             Forgot Password?
                         </button>
+                        <MathCaptcha key={`login-${captchaKey}`} onValidate={setLoginCaptchaValid} />
                         <button
                             type="submit"
                             disabled={isLoading}
@@ -268,6 +290,7 @@ export default function AuthPage() {
                             />
                         </div>
                         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+                        <MathCaptcha key={`register-${captchaKey}`} onValidate={setRegisterCaptchaValid} />
                         <button
                             type="submit"
                             disabled={isLoading}
@@ -371,6 +394,8 @@ export default function AuthPage() {
                                     </button>
                                 )}
 
+                                <MathCaptcha key={`mobile-${captchaKey}`} onValidate={mode === 'login' ? setLoginCaptchaValid : setRegisterCaptchaValid} />
+
                                 {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
                                 <button
@@ -439,6 +464,7 @@ export default function AuthPage() {
                                             className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
                                         />
                                     </div>
+                                    <MathCaptcha key={`forgot-${captchaKey}`} onValidate={setForgotCaptchaValid} />
                                     <button
                                         type="submit"
                                         disabled={isLoading}

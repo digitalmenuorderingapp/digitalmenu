@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import QRCodeStyling from 'qr-code-styling';
 import { useAuth } from '@/context/AuthContext';
-import type { User } from '@/context/AuthContext';
+import type { RestaurantAdmin } from '@/context/AuthContext';
 import CryptoJS from 'crypto-js';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
@@ -85,6 +85,100 @@ const getPrintQROptions = (data: string): any => ({
   },
 });
 
+const QRSticker = ({
+  table,
+  user,
+  isPrint = false,
+  url
+}: {
+  table: Table,
+  user: any,
+  isPrint?: boolean,
+  url: string
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    containerRef.current.innerHTML = '';
+    const options = isPrint ? getPrintQROptions(url) : getQRCodeOptions(url);
+    const qr = new QRCodeStyling(options as any);
+    qr.append(containerRef.current);
+  }, [url, isPrint]);
+
+  // Use actual print dimensions for both dashboard and print modal
+  const stickerStyles = { height: '138mm', width: '101mm' };
+
+  return (
+    <div
+      className="relative p-[4px] bg-gradient-to-tr from-slate-300 via-indigo-100 to-slate-200 rounded-[22px] shadow-xl overflow-hidden flex flex-col shrink-0"
+      style={stickerStyles}
+    >
+      <div className="bg-white rounded-[18px] p-5 h-full flex flex-col justify-between border border-gray-100 shadow-inner overflow-hidden">
+        {/* Header - Corner Balanced */}
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+          <div className="flex items-center gap-3 min-w-0">
+            {user?.logo ? (
+              <img
+                src={user.logo}
+                alt="Logo"
+                className="w-12 h-12 rounded-xl object-cover border border-gray-100 shadow-sm"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
+                <FaUtensils className="w-6 h-6 text-indigo-400" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h2 className="text-base font-black text-slate-900 truncate uppercase tracking-tight leading-tight">
+                {user?.restaurantName || 'Digital Menu'}
+              </h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Premium Experience</p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end shrink-0">
+            <span className="text-[12px] font-black text-white bg-slate-900 px-3 py-1 rounded-lg uppercase tracking-widest shadow-sm">
+              Table {table.tableNumber}
+            </span>
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-1">
+              {table.seats} Seats
+            </span>
+          </div>
+        </div>
+
+        {/* QR Code Section - Main Priority */}
+        <div className="flex-1 flex items-center justify-center py-2">
+          <div className="relative bg-white rounded-2xl shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] p-2 border border-gray-100/50">
+            <div
+              ref={containerRef}
+              className="w-[280px] h-[260px] [&_svg]:w-full [&_svg]:h-full"
+            />
+            {/* Corner Accents */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-indigo-200 rounded-tl-lg"></div>
+            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-indigo-200 rounded-tr-lg"></div>
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-indigo-200 rounded-bl-lg"></div>
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-indigo-200 rounded-br-lg"></div>
+          </div>
+        </div>
+
+        {/* Bottom Section */}
+        <div className="text-center mt-3">
+          <div className="bg-slate-900 rounded-xl px-4 py-3 inline-flex flex-col items-center justify-center w-full text-white shadow-lg relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="flex items-center gap-2 mb-0.5 relative z-10">
+              <FaUtensils className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-[11px] font-black uppercase tracking-[0.15em] text-white">Scan & Order Now</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter relative z-10">
+              Powered by <span className="text-indigo-400 font-black">DigitalMenuExpert</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function TableManagementPage() {
   const { user } = useAuth();
   const [tables, setTables] = useState<Table[]>([]);
@@ -95,63 +189,39 @@ export default function TableManagementPage() {
   const [seats, setSeats] = useState('4');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
-  
-  // QR Code refs
-  const qrRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const qrInstances = useRef<{ [key: string]: QRCodeStyling }>({});
-  const printQrRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const printQrInstances = useRef<{ [key: string]: QRCodeStyling }>({});
 
   // Encryption key - in production, this should be stored securely
-  const ENCRYPTION_KEY = 'digital-menu-2024-secure-key';
+  const ENCRYPTION_KEY = 'dm-2026';
 
   const generateEncryptedUrl = (tableNumber: number) => {
-    // Get user from localStorage
+    // Get user from localStorage or context
     const storedUser = localStorage.getItem('user');
     let userData = null;
-    
-    console.log('Stored user from localStorage:', storedUser); // Debug log
     
     if (storedUser) {
       try {
         userData = JSON.parse(storedUser);
-        console.log('Parsed user data:', userData); // Debug log
       } catch (error) {
-        console.error('Error parsing user from localStorage:', error);
+        console.error('Error parsing user:', error);
       }
     }
     
-    // Ensure we have the restaurant ID - ₹_id for MongoDB objects
-    const restaurantId = userData?._id || userData?.id;
-    console.log('Restaurant ID extracted:', restaurantId); // Debug log
+    const restaurantId = userData?._id || userData?.id || user?._id || user?.id;
     
     if (!restaurantId) {
-      console.error('Restaurant ID not found in user data. User data:', userData);
-      // Try to get user from context if available
-      if (user?._id || user?.id) {
-        const contextId = user?._id || user?.id;
-        console.log('Using user from context:', contextId);
-        userData = { _id: contextId };
-      } else {
-        console.error('No restaurant ID available anywhere');
-        return '#'; // Return invalid URL if no restaurant ID
-      }
+      console.error('No restaurant ID available');
+      return '#';
     }
+
+    // Compact encrypted format for shorter URLs
+    // We only encrypt essential data: restaurantId and tableNumber
+    const payload = `${restaurantId}:${tableNumber}`;
+    const encrypted = CryptoJS.AES.encrypt(payload, ENCRYPTION_KEY).toString()
+      .replace(/\+/g, '-') // URL safe
+      .replace(/\//g, '_') // URL safe
+      .replace(/=+$/, ''); // Remove padding
     
-    const qrData = {
-      table: tableNumber,
-      restaurantId: restaurantId,
-      timestamp: Date.now()
-    };
-    
-    console.log('QR Data being generated:', qrData); // Debug log
-    
-    const encrypted = CryptoJS.AES.encrypt(
-      JSON.stringify(qrData), 
-      ENCRYPTION_KEY
-    ).toString();
-    
-    return `${window.location.origin}/customer?qr=${encodeURIComponent(encrypted)}`;
+    return `${window.location.origin}/customer?q=${encrypted}`;
   };
 
   useEffect(() => {
@@ -175,7 +245,7 @@ export default function TableManagementPage() {
 
     setIsSubmitting(true);
     try {
-      await api.post('/table', { 
+      await api.post('/table', {
         tableNumber: parseInt(tableNumber),
         seats: parseInt(seats) || 4
       });
@@ -208,49 +278,12 @@ export default function TableManagementPage() {
     documentTitle: 'QR Codes - DigitalMenu',
   });
 
-  // Generate QR codes for table cards when tables load
-  useEffect(() => {
-    if (tables.length === 0) return;
-    
-    tables.forEach((table) => {
-      const url = generateEncryptedUrl(table.tableNumber);
-      const container = qrRefs.current[table._id];
-      
-      if (container) {
-        container.innerHTML = '';
-        const qr = new QRCodeStyling(getQRCodeOptions(url) as any);
-        qr.append(container);
-        qrInstances.current[table._id] = qr;
-      }
-    });
-  }, [tables]);
 
-  // Generate QR codes for print modal when it opens
-  useEffect(() => {
-    if (!isPrintModalOpen || tables.length === 0) return;
-    
-    const timer = setTimeout(() => {
-      tables.forEach((table) => {
-        const url = generateEncryptedUrl(table.tableNumber);
-        const container = printQrRefs.current[`print-${table._id}`];
-        
-        if (container) {
-          container.innerHTML = '';
-          const qr = new QRCodeStyling(getPrintQROptions(url) as any);
-          qr.append(container);
-          printQrInstances.current[`print-${table._id}`] = qr;
-        }
-      });
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [isPrintModalOpen, tables]);
-
-  // Prepare tables for print layout (6 per page)
+  // Prepare tables for print layout (4 per page)
   const printTables = [...tables].sort((a, b) => a.tableNumber - b.tableNumber);
   const pages = [];
-  for (let i = 0; i < printTables.length; i += 6) {
-    pages.push(printTables.slice(i, i + 6));
+  for (let i = 0; i < printTables.length; i += 4) {
+    pages.push(printTables.slice(i, i + 4));
   }
 
   // Remove full-page blocking loader
@@ -258,9 +291,18 @@ export default function TableManagementPage() {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Table Management</h1>
-          <p className="text-gray-600 mt-1">Create tables and generate QR codes for customers.</p>
+        <div className="flex items-center space-x-4">
+          {user?.logo && (
+            <img
+              src={user.logo}
+              alt="Restaurant Logo"
+              className="w-12 h-12 rounded-xl object-cover border border-gray-200 shadow-sm"
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{user?.restaurantName || 'Table Management'}</h1>
+            <p className="text-gray-600 mt-1">Manage your tables and generate QR codes for customers.</p>
+          </div>
         </div>
         <div className="flex space-x-3">
           {tables.length > 0 && (
@@ -288,82 +330,30 @@ export default function TableManagementPage() {
           Array(8).fill(0).map((_, i) => <TableCardSkeleton key={i} />)
         ) : (
           tables.map((table) => (
-          <div key={table._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Table {table.tableNumber}
-                </h3>
-                <p className="text-sm text-gray-500">{table.seats} seats</p>
-              </div>
-              <button
-                onClick={() => handleDelete(table._id)}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <FaTrash className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="relative">
-                {/* Premium Card Design */}
-                <div 
-                  className="relative p-[4px] bg-gradient-to-tr from-slate-300 via-indigo-100 to-slate-300 rounded-[22px] shadow-xl w-[340px] overflow-hidden"
-                >
-                  <div className="bg-white rounded-[13px] p-5 h-full flex flex-col justify-between">
-                    {/* Header - Corner Balanced */}
-                    <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {user?.logo ? (
-                          <img 
-                            src={user.logo} 
-                            alt="Logo" 
-                            className="w-10 h-10 rounded-xl object-cover border border-gray-100 shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                            <FaUtensils className="w-5 h-5 text-indigo-300" />
-                          </div>
-                        )}
-                        <h2 className="text-base font-black text-slate-900 truncate uppercase tracking-tight">
-                          {user?.restaurantName || 'Restaurant'}
-                        </h2>
-                      </div>
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-md uppercase tracking-widest shadow-sm">
-                          Table {table.tableNumber}
-                        </span>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5">
-                          {table.seats} Seats
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* QR Code Section - Main Priority */}
-                    <div className="flex-1 flex items-center justify-center py-1">
-                      <div className="relative bg-white rounded-xl shadow-inner p-1 border border-gray-100/30">
-                        <div 
-                          ref={(el) => { qrRefs.current[table._id] = el; }}
-                          className="w-[260px] h-[260px] [&_svg]:w-full [&_svg]:h-full"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Bottom Section */}
-                    <div className="text-center mt-3">
-                      <div className="bg-slate-900 rounded-lg px-4 py-2.5 inline-flex flex-col items-center justify-center w-full text-white shadow-md">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <FaUtensils className="w-3 h-3 text-indigo-400" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-white">Scan & Explore Menu</span>
-                        </div>
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Powered by <span className="text-indigo-300">digitalMenu</span></span>
-                      </div>
-                    </div>
-                  </div>
+            <div key={table._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Table {table.tableNumber}
+                  </h3>
+                  <p className="text-sm text-gray-500">{table.seats} seats</p>
                 </div>
+                <button
+                  onClick={() => handleDelete(table._id)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <FaTrash className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <QRSticker
+                  table={table}
+                  user={user}
+                  url={generateEncryptedUrl(table.tableNumber)}
+                />
               </div>
             </div>
-          </div>
           ))
         )}
       </div>
@@ -494,69 +484,20 @@ export default function TableManagementPage() {
                       }}
                     >
                       {pageTables.map((table) => (
-                        <div
+                        <QRSticker
                           key={table._id}
-                          className="relative p-[3.5px] bg-gradient-to-tr from-slate-300 via-indigo-200 to-slate-200 rounded-[20px] shadow-xl overflow-hidden"
-                          style={{ height: '93mm', width: '101mm' }}
-                        >
-                          <div className="bg-white rounded-[13px] p-4 h-full flex flex-col justify-between">
-                            {/* Header - Corner Balanced */}
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-1.5 mb-1.5">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                {user?.logo ? (
-                                  <img 
-                                    src={user.logo} 
-                                    alt="Logo" 
-                                    className="w-8 h-8 rounded-lg object-cover border border-gray-100 shadow-sm"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
-                                    <FaUtensils className="w-4 h-4 text-indigo-300" />
-                                  </div>
-                                )}
-                                <h2 className="text-sm font-black text-slate-900 truncate uppercase tracking-tight">
-                                  {user?.restaurantName || 'Restaurant'}
-                                </h2>
-                              </div>
-                              <div className="flex flex-col items-end shrink-0">
-                                <span className="text-[10px] font-black text-white bg-slate-900 px-2 py-0.5 rounded uppercase tracking-widest">
-                                  Table {table.tableNumber}
-                                </span>
-                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">
-                                  {table.seats} Seats
-                                </span>
-                              </div>
-                            </div>
-                            
-                            {/* QR Code Section - Main Priority */}
-                            <div className="flex-1 flex items-center justify-center py-0.5">
-                              <div className="relative bg-white rounded-xl shadow-inner p-1 border border-gray-100/30">
-                                <div 
-                                  ref={(el) => { printQrRefs.current[`print-${table._id}`] = el; }}
-                                  className="w-[220px] h-[220px] [&_svg]:w-full [&_svg]:h-full"
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Bottom Section */}
-                            <div className="text-center mt-2">
-                              <div className="bg-slate-900 rounded-lg px-4 py-1.5 inline-flex flex-col items-center justify-center w-full text-white shadow-md">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                  <FaUtensils className="w-2.5 h-2.5 text-indigo-400" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-white">Scan & Explore Menu</span>
-                                </div>
-                                <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Powered by <span className="text-indigo-300">digitalMenu</span></span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                          table={table}
+                          user={user}
+                          url={generateEncryptedUrl(table.tableNumber)}
+                          isPrint
+                        />
                       ))}
                       {/* Fill empty slots for 4-per-page layout */}
-                      {Array.from({ length: 6 - pageTables.length }).map((_, idx) => (
+                      {Array.from({ length: 4 - pageTables.length }).map((_, idx) => (
                         <div
                           key={`empty-${idx}`}
-                          className="border-2 border-dashed border-slate-200 rounded-[20px]"
-                          style={{ height: '93mm', width: '101mm' }}
+                          className="border-2 border-dashed border-slate-200 rounded-[10px]"
+                          style={{ height: '138mm', width: '101mm' }}
                         />
                       ))}
                     </div>

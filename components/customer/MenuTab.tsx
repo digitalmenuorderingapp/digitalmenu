@@ -13,7 +13,7 @@ interface MenuTabProps {
   addToCart: (item: MenuItem) => void;
   removeFromCart: (itemId: string) => void;
   getItemQuantity: (itemId: string) => number;
-  restaurantInfo: { name: string; id: string } | null;
+   restaurantInfo: { name: string; id: string; logo?: string } | null;
   session: any;
 }
 
@@ -29,6 +29,7 @@ export default function MenuTab({
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [activeFoodType, setActiveFoodType] = useState<string>('');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const categories = Object.keys(menuItems).sort();
@@ -69,24 +70,45 @@ export default function MenuTab({
       <main className="max-w-4xl mx-auto px-4 py-4">
         {/* 🏢 1. Ultra-Compact Restaurant Header (Top) */}
         {(restaurantInfo || session.tableNumber) && (
-          <div className="mb-4 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-900 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden group">
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 backdrop-blur-xl rounded-xl flex items-center justify-center border border-white/20">
-                  <FaUtensils className="w-4 h-4 text-indigo-300" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black tracking-tight leading-none mb-0.5">{restaurantInfo?.name || 'Restaurant'}</h2>
-                  <div className="flex items-center space-x-1 opacity-70">
-                    <span className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-indigo-200">Active</span>
+          <div className="mb-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-[2rem] p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">
+             {/* Dynamic Background Glow */}
+             <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] animate-pulse"></div>
+             
+             <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center gap-5">
+                {restaurantInfo?.logo ? (
+                  <div className="p-1 bg-white/5 rounded-2xl border border-white/10 shadow-2xl">
+                    <img 
+                      src={restaurantInfo.logo} 
+                      alt="Logo" 
+                      className="w-14 h-14 rounded-xl object-cover"
+                    />
                   </div>
+                ) : (
+                  <div className="w-14 h-14 bg-white/5 backdrop-blur-3xl rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
+                    <FaUtensils className="w-6 h-6 text-indigo-400 opacity-40" />
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h2 className="text-2xl font-black tracking-tighter text-white leading-none">
+                      {restaurantInfo?.name || 'Restaurant'}
+                    </h2>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" title="System Online"></div>
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
+                    Live Digital Menu Experience
+                  </p>
                 </div>
               </div>
+              
               {session.tableNumber && (
-                <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/20 text-center">
-                  <p className="text-[8px] font-black text-indigo-300 uppercase leading-none mb-0.5">Table</p>
-                  <p className="text-lg font-black text-white">#{session.tableNumber}</p>
+                <div className="bg-white/[0.03] backdrop-blur-3xl rounded-[1.5rem] px-5 py-3 border border-white/10 flex flex-col items-center justify-center min-w-[70px] shadow-2xl">
+                  <p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest leading-none mb-1">Table</p>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-black text-indigo-500">#</span>
+                    <p className="text-2xl font-black text-white leading-none">{session.tableNumber}</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -121,7 +143,7 @@ export default function MenuTab({
         </div>
       </div>
 
-      {/* 🍱 3. COMPACT HD ITEM CARDS */}
+      {/* 🍱 3. MODERN HD ITEM CARDS */}
       <main className="max-w-4xl mx-auto px-4 py-4">
         {Object.entries(menuItems).map(([category, items]) => {
           const filteredItems = activeFoodType
@@ -136,14 +158,14 @@ export default function MenuTab({
             <div
               key={category}
               ref={(el) => { categoryRefs.current[category] = el; }}
-              className="mb-8 scroll-mt-[140px]"
+              className="mb-10 scroll-mt-[140px]"
             >
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="h-6 w-1.5 bg-indigo-600 rounded-full"></div>
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="h-6 w-1.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.4)]"></div>
                 <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase leading-none">{category}</h2>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredItems.map((item) => {
                   const qty = getItemQuantity(item._id);
                   const isVeg = item.foodType?.toLowerCase() === 'veg';
@@ -152,13 +174,14 @@ export default function MenuTab({
                     <motion.div 
                       key={item._id} 
                       layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="group flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="group flex flex-col bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 overflow-hidden hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer"
+                      onClick={() => setSelectedItem(item)}
                     >
-                      {/* Large HD Image (Compact Aspect) */}
-                      <div className="relative aspect-[21/9] w-full overflow-hidden">
-                        <div className="absolute inset-0 bg-gray-50 group-hover:scale-105 transition-transform duration-700">
+                      {/* Premium Image Section */}
+                      <div className="relative aspect-[16/10] w-full overflow-hidden">
+                        <div className="absolute inset-0 bg-gray-50 group-hover:scale-110 transition-transform duration-1000 ease-out">
                           {item.image ? (
                             <Image
                               src={item.image}
@@ -168,90 +191,86 @@ export default function MenuTab({
                             />
                           ) : (
                             <div className="flex items-center justify-center h-full text-gray-200">
-                              <FaUtensils className="w-8 h-8 opacity-40" />
+                              <FaUtensils className="w-12 h-12 opacity-20" />
                             </div>
                           )}
                         </div>
                         
                         {/* Status Badges Overlay */}
-                        <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        <div className="absolute top-4 left-4 flex flex-col gap-2">
                            {item.discountPercentage && item.discountPercentage > 0 && (
-                            <div className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black rounded shadow-lg uppercase">
-                              -{item.discountPercentage}%
+                            <div className="px-3 py-1 bg-red-600 text-white text-[10px] font-black rounded-lg shadow-xl uppercase tracking-tighter">
+                              -{item.discountPercentage}% OFF
                             </div>
                            )}
-                           <div className={`w-4 h-4 rounded border border-white/30 backdrop-blur-md shadow flex items-center justify-center ${isVeg ? 'bg-green-500/80' : 'bg-red-500/80'}`}>
-                             <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                           <div className={`w-6 h-6 rounded-lg border border-white/40 backdrop-blur-md shadow-xl flex items-center justify-center ${isVeg ? 'bg-green-500/90' : 'bg-red-500/90'}`}>
+                             <div className="w-2.5 h-2.5 rounded-full bg-white shadow-inner"></div>
                            </div>
                         </div>
+
+                        {/* Bottom Info Gradient overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       </div>
 
-                      {/* Content Section */}
-                      <div className="p-3 flex flex-col flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="text-base font-black text-gray-900 truncate leading-tight pr-2">{item.name}</h3>
-                          <div className="flex flex-col items-end flex-shrink-0">
-                              {item.offerPrice ? (
-                                <>
-                                  <span className="text-lg font-black text-indigo-600 leading-none">₹{item.offerPrice.toFixed(0)}</span>
-                                  <span className="text-[9px] text-gray-400 line-through mt-0.5 italic">Was {item.price.toFixed(0)}</span>
-                                </>
-                              ) : (
-                                <span className="text-lg font-black text-gray-900 leading-none">₹{item.price.toFixed(0)}</span>
-                              )}
-                          </div>
+                      {/* Premium Content Section */}
+                      <div className="p-5 flex flex-col flex-1">
+                        <div className="flex justify-between items-start mb-2">
+                           <div className="flex-1 min-w-0 pr-4">
+                              <h3 className="text-lg font-black text-gray-900 truncate leading-tight group-hover:text-indigo-600 transition-colors">{item.name}</h3>
+                              <p className="text-[11px] font-bold text-indigo-400/80 uppercase tracking-[0.1em] mt-0.5">{item.category}</p>
+                           </div>
+                           <div className="flex flex-col items-end flex-shrink-0 bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100">
+                                {item.offerPrice ? (
+                                  <>
+                                    <span className="text-lg font-black text-indigo-600 leading-none">₹{item.offerPrice.toFixed(0)}</span>
+                                    <span className="text-[9px] text-gray-400 line-through mt-0.5 italic">₹{item.price.toFixed(0)}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-lg font-black text-gray-900 leading-none">₹{item.price.toFixed(0)}</span>
+                                )}
+                           </div>
                         </div>
 
-                        <p className="text-[11px] text-gray-400 mb-3 line-clamp-1">
-                          {item.description || 'Freshly prepared masterpiece.'}
+                        <p className="text-xs text-gray-500 mb-5 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+                          {item.description || 'A masterpiece of culinary art, prepared fresh for your exquisite palate.'}
                         </p>
 
-                        {/* Additional Info Tags */}
-                        {(item.ingredients || item.preparationMethod) && (
-                          <div className="flex flex-wrap gap-1.5 mb-3">
-                            {item.ingredients && (
-                              <div className="bg-gray-50 rounded-lg px-2 py-1 flex items-center space-x-1.5 min-w-0">
-                                <FaLeaf className="w-2.5 h-2.5 text-green-500 flex-shrink-0" />
-                                <span className="text-[9px] text-gray-500 font-bold truncate">{item.ingredients}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Slim CTA Selector */}
-                        <div className="mt-auto">
-                           <div className="flex items-center bg-gray-900 rounded-xl p-1 shadow">
-                              <AnimatePresence mode="wait">
-                                {qty === 0 ? (
+                        {/* CTA / Quick Selector */}
+                        <div className="mt-auto" onClick={(e) => e.stopPropagation()}>
+                           <AnimatePresence mode="wait">
+                              {qty === 0 ? (
+                                <button
+                                  onClick={() => addToCart(item)}
+                                  className="w-full py-3.5 bg-gray-900 text-white font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-xl hover:bg-slate-800 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 group/btn"
+                                >
+                                  <FaPlus className="w-2.5 h-2.5 text-indigo-400 group-hover/btn:rotate-90 transition-transform" />
+                                  Add to Cart
+                                </button>
+                              ) : (
+                                <motion.div 
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  className="flex items-center w-full bg-indigo-600 rounded-2xl p-1 shadow-lg shadow-indigo-200"
+                                >
+                                  <button
+                                    onClick={() => removeFromCart(item._id)}
+                                    className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded-xl transition-colors"
+                                  >
+                                    <FaMinus className="w-3 h-3" />
+                                  </button>
+                                  <div className="flex-1 flex flex-col items-center">
+                                    <span className="text-xs font-black text-white tabular-nums leading-none">{qty}</span>
+                                    <span className="text-[8px] font-black text-indigo-200 uppercase tracking-tighter">In Cart</span>
+                                  </div>
                                   <button
                                     onClick={() => addToCart(item)}
-                                    className="w-full py-1 text-white font-black uppercase text-[9px] tracking-widest rounded-lg"
+                                    className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 rounded-xl transition-colors"
                                   >
-                                    Add Item
+                                    <FaPlus className="w-3 h-3" />
                                   </button>
-                                ) : (
-                                  <motion.div 
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="flex items-center w-full justify-between"
-                                  >
-                                    <button
-                                      onClick={() => removeFromCart(item._id)}
-                                      className="w-7 h-7 flex items-center justify-center text-white bg-white/10 rounded-lg"
-                                    >
-                                      <FaMinus className="w-2 w-2" />
-                                    </button>
-                                    <span className="text-xs font-black text-white tabular-nums">{qty}</span>
-                                    <button
-                                      onClick={() => addToCart(item)}
-                                      className="w-7 h-7 flex items-center justify-center text-white bg-indigo-600 rounded-lg shadow-lg"
-                                    >
-                                      <FaPlus className="w-2 w-2" />
-                                    </button>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                           </div>
+                                </motion.div>
+                              )}
+                           </AnimatePresence>
                         </div>
                       </div>
                     </motion.div>
@@ -263,7 +282,145 @@ export default function MenuTab({
         })}
       </main>
 
-      {/* 🔘 4. PREMIUM FILTER MODAL (Bottom Sheet) */}
+      {/* 🔎 4. ITEM DETAIL MODAL (Amazon Style Detail) */}
+      <AnimatePresence>
+        {selectedItem && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedItem(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110]"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 max-w-2xl mx-auto bg-white rounded-t-[3rem] z-[120] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+            >
+              {/* Modal Head Handle */}
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-4 shrink-0" />
+              
+              <div className="overflow-y-auto px-6 pb-24 flex-1">
+                {/* Hero Stage */}
+                <div className="relative aspect-video w-full rounded-[2.5rem] overflow-hidden shadow-2xl mb-8">
+                  {selectedItem.image ? (
+                    <Image src={selectedItem.image} alt={selectedItem.name} fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-200">
+                      <FaUtensils className="w-20 h-20 opacity-40" />
+                    </div>
+                  )}
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <div className={`px-4 py-2 rounded-xl border border-white/40 backdrop-blur-md shadow-xl flex items-center gap-2 text-white font-black text-xs uppercase bg-${selectedItem.foodType?.toLowerCase() === 'veg' ? 'green' : 'red'}-500/80`}>
+                      <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]" />
+                      {selectedItem.foodType}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex-1 pr-6">
+                    <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-tight mb-2">
+                      {selectedItem.name}
+                    </h2>
+                    <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-indigo-100">
+                      {selectedItem.category}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end bg-gray-900 text-white p-4 rounded-[2rem] shadow-xl">
+                    {selectedItem.offerPrice ? (
+                      <>
+                        <span className="text-2xl font-black leading-none">₹{selectedItem.offerPrice}</span>
+                        <span className="text-[10px] text-gray-400 line-through mt-1 italic">M.R.P: ₹{selectedItem.price}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-black leading-none">₹{selectedItem.price}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  {/* Full Description */}
+                  <div>
+                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-3">Product Description</h4>
+                    <p className="text-base text-gray-600 leading-relaxed font-medium">
+                      {selectedItem.description || 'Experience culinary perfection with this signature dish. Each component is meticulously selected and prepared to offer an unforgettable experience of textures and flavors.'}
+                    </p>
+                  </div>
+
+                  {/* Facts Grid */}
+                  <div className="grid grid-cols-1 gap-4">
+                    {selectedItem.ingredients && (
+                      <div className="bg-orange-50/50 p-6 rounded-[2rem] border border-orange-100/50">
+                        <div className="flex items-center gap-3 mb-2">
+                           <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                             <FaLeaf className="w-4 h-4" />
+                           </div>
+                           <h4 className="text-xs font-black text-orange-900 uppercase tracking-widest">Ingredients</h4>
+                        </div>
+                        <p className="text-sm text-orange-800/80 font-bold leading-relaxed pr-2">
+                          {selectedItem.ingredients}
+                        </p>
+                      </div>
+                    )}
+                    {selectedItem.preparationMethod && (
+                      <div className="bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/50">
+                        <div className="flex items-center gap-3 mb-2">
+                           <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+                             <FaUtensils className="w-4 h-4" />
+                           </div>
+                           <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest">Preparation</h4>
+                        </div>
+                        <p className="text-sm text-indigo-800/80 font-bold leading-relaxed pr-2">
+                          {selectedItem.preparationMethod}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky Action Footer */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 pt-2 bg-gradient-to-t from-white via-white to-transparent">
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setSelectedItem(null)}
+                      className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition-colors"
+                    >
+                      <FaTimes className="text-gray-900" />
+                    </button>
+                    {getItemQuantity(selectedItem._id) === 0 ? (
+                      <button 
+                        onClick={() => {
+                          addToCart(selectedItem);
+                        }}
+                        className="flex-1 h-14 bg-gray-900 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:bg-black transition-all"
+                      >
+                        <FaPlus className="w-3 h-3 text-indigo-400" />
+                        Add to Order
+                      </button>
+                    ) : (
+                      <div className="flex-1 h-14 bg-indigo-600 rounded-2xl flex items-center p-1 shadow-xl">
+                        <button onClick={() => removeFromCart(selectedItem._id)} className="w-12 h-12 flex items-center justify-center text-white"><FaMinus /></button>
+                        <div className="flex-1 text-center">
+                          <p className="text-sm font-black text-white">{getItemQuantity(selectedItem._id)}</p>
+                          <p className="text-[8px] font-black text-indigo-200 uppercase">In Cart</p>
+                        </div>
+                        <button onClick={() => addToCart(selectedItem)} className="w-12 h-12 flex items-center justify-center text-white"><FaPlus /></button>
+                      </div>
+                    )}
+                  </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 🔘 5. PREMIUM FILTER MODAL (Bottom Sheet) */}
       <AnimatePresence>
         {isFilterModalOpen && (
           <>

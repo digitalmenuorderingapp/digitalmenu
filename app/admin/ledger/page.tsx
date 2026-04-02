@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import {
   FaArrowLeft,
@@ -108,15 +109,19 @@ export default function LedgerPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'transactions'>('today');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
-  useEffect(() => {
-    fetchTodayLedger();
-  }, []);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (activeTab === 'transactions') {
+    if (isAuthenticated) {
+      fetchTodayLedger();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'transactions') {
       fetchAllTransactions();
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated]);
 
   const fetchTodayLedger = async () => {
     try {

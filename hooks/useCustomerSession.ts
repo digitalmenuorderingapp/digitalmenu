@@ -11,6 +11,7 @@ interface CustomerSession {
   numberOfPersons?: number;
   deviceId?: string;
   sessionId?: string;
+  logo?: string;
 }
 
 interface RestaurantDetails {

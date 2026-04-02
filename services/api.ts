@@ -87,19 +87,22 @@ api.interceptors.response.use(
       
       if (isSuperadminRequest) {
         // Superadmin uses POST for refresh
-        await axios.post(`${API_BASE_URL}/superadmin/refresh`, {}, { withCredentials: true });
+        await axios.post(`${API_BASE_URL}/superadmin/refresh`, {}, { withCredentials: true, timeout: 10000 });
       } else {
         // Regular user uses POST for refresh (standardized)
-        await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+        await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true, timeout: 10000 });
       }
 
-      onTokenRefreshed('refreshed');
+      const newToken = 'refreshed';
+      onTokenRefreshed(newToken);
       isRefreshing = false;
 
       // Retry original request
       return api(originalRequest);
     } catch (refreshError) {
       isRefreshing = false;
+      // If refresh fails, reject all queued requests
+      refreshSubscribers.forEach((cb) => cb('failed'));
       refreshSubscribers = [];
       
       // Don't auto-redirect - let components handle auth state

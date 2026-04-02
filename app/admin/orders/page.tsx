@@ -200,8 +200,8 @@ export default function OrdersPage() {
   };
 
   const verifyOnlinePayment = async () => {
-    if (!selectedOrderForVerify || utrInput.length < 6) {
-      toast.error('Please enter last 6 digits of UTR');
+    if (!selectedOrderForVerify) {
+      toast.error('No order selected for verification');
       return;
     }
     setIsVerifying(true);
@@ -661,7 +661,7 @@ export default function OrdersPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last 6 digits of UTR Number
+                      Last 6 digits of UTR Number (Optional)
                     </label>
                     <input
                       type="text"
@@ -688,7 +688,7 @@ export default function OrdersPage() {
                     <button
                       type="button"
                       onClick={verifyOnlinePayment}
-                      disabled={isVerifying || utrInput.length < 6}
+                      disabled={isVerifying}
                       className="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-blue-200"
                     >
                       {isVerifying ? (
