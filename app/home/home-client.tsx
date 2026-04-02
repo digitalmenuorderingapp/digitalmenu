@@ -129,7 +129,7 @@ export default function MarketingHomeClient() {
                   </Link>
                 ) : (
                   <>
-                    <Link href="/auth" className="text-sm font-bold text-gray-600 hover:text-indigo-600">
+                    <Link href="/auth" className="px-5 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
                       {t.nav_login}
                     </Link>
                     <Link href="/auth?mode=register" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block">
@@ -360,13 +360,21 @@ export default function MarketingHomeClient() {
                   </div>
                 </div>
                 {/* Floating tags */}
-                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }} className="absolute -top-10 -right-10 bg-white p-6 rounded-3xl shadow-2xl border border-gray-100">
-                  <FaCheckCircle className="text-green-500 text-3xl mb-2" />
-                  <div className="font-black text-sm">{t.plat_float1}</div>
+                <motion.div 
+                  animate={{ y: [0, -10, 0] }} 
+                  transition={{ duration: 3, repeat: Infinity }} 
+                  className="absolute -top-6 md:-top-10 -right-2 md:-right-10 bg-white p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 z-20 scale-90 md:scale-100"
+                >
+                  <FaCheckCircle className="text-green-500 text-xl md:text-3xl mb-1 md:mb-2" />
+                  <div className="font-black text-[10px] md:text-sm whitespace-nowrap">{t.plat_float1}</div>
                 </motion.div>
-                <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 4, repeat: Infinity, delay: 0.5 }} className="absolute -bottom-5 -left-5 bg-white p-6 rounded-3xl shadow-2xl border border-gray-100">
-                  <FaClock className="text-indigo-500 text-3xl mb-2" />
-                  <div className="font-black text-sm">{t.plat_float2}</div>
+                <motion.div 
+                  animate={{ y: [0, 10, 0] }} 
+                  transition={{ duration: 4, repeat: Infinity, delay: 0.5 }} 
+                  className="absolute -bottom-2 md:-bottom-5 -left-2 md:-left-5 bg-white p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 z-20 scale-90 md:scale-100"
+                >
+                  <FaClock className="text-indigo-500 text-xl md:text-3xl mb-1 md:mb-2" />
+                  <div className="font-black text-[10px] md:text-sm whitespace-nowrap">{t.plat_float2}</div>
                 </motion.div>
               </div>
             </div>
