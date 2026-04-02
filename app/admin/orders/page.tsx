@@ -269,6 +269,10 @@ export default function OrdersPage() {
       toast.error('Order was not paid, no refund needed');
       return;
     }
+    if (order.refund?.status === 'refunded') {
+      toast.error('This order has already been refunded');
+      return;
+    }
     setRefundModalData({
       orderId: order._id,
       orderNumber: order.orderNumber,

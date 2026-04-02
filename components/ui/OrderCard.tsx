@@ -362,7 +362,7 @@ const OrderCard = ({
               Collect Cash
             </Button>
           )}
-          {paid && order.status !== 'served' && (
+          {paid && order.status !== 'served' && order.refund?.status !== 'refunded' && (
              <Button variant="amber" size="sm" onClick={() => onRefund?.(order)} leftIcon={<FaUndo className="w-3 h-3" />}>
               Refund
             </Button>
