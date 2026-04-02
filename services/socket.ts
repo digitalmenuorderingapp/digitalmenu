@@ -1,16 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 
 const getSocketUrl = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    if (apiUrl.startsWith('http')) {
-        // If it's an absolute URL like http://localhost:5000/api, remove /api
-        return apiUrl.split('/api')[0];
-    }
-    if (typeof window !== 'undefined') {
-        // Fallback for local development if relative path is used
-        return `${window.location.protocol}//${window.location.hostname}:5000`;
-    }
-    return 'http://localhost:5000';
+    // Hardcoded production URL as requested to avoid environment variable issues on Vercel/Render
+    return 'https://digitalmenu-server.onrender.com';
 };
 
 const SOCKET_URL = getSocketUrl();
