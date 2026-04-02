@@ -85,6 +85,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
         return <FaClipboardList className="w-5 h-5 text-orange-500" />;
       case 'ready':
         return <FaCheckCircle className="w-5 h-5 text-green-500" />;
+      case 'served':
       case 'completed':
         return <FaCheckCircle className="w-5 h-5 text-green-600" />;
       case 'cancelled':
@@ -106,6 +107,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
         return 'bg-orange-100 text-orange-800';
       case 'ready':
         return 'bg-green-100 text-green-800';
+      case 'served':
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'cancelled':
@@ -146,7 +148,6 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
 
       await api.put(url);
       toast.success('Order cancelled');
-      window.location.reload();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
     }
@@ -156,7 +157,6 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
     try {
       await api.put(`/order/${orderId}/feedback`, { comment, rating });
       toast.success('Feedback submitted');
-      window.location.reload();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to submit feedback');
     }

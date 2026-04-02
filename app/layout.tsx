@@ -8,12 +8,14 @@ const bricolage = Bricolage_Grotesque({
   display: 'swap',
   variable: '--font-bricolage',
   adjustFontFallback: false,
+  preload: false,
 });
 
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
+  preload: false,
 });
 
 const hind = Hind({
@@ -21,6 +23,7 @@ const hind = Hind({
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-hind',
+  preload: false,
 });
 
 const hindSiliguri = Hind_Siliguri({
@@ -28,6 +31,7 @@ const hindSiliguri = Hind_Siliguri({
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-hind-siliguri',
+  preload: false,
 });
 
 export const metadata: Metadata = {

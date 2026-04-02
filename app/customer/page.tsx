@@ -285,7 +285,7 @@ export default function CustomerPage() {
         socketService.off('orderUpdate');
       };
     }
-  }, [session.deviceId, activeTab]);
+  }, [session.deviceId]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);

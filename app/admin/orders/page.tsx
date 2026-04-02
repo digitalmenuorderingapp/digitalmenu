@@ -122,9 +122,16 @@ export default function OrdersPage() {
         fetchOrders();
       });
 
-      socketService.on('orderUpdate', (order: Order) => {
-        // Just refetch data to keep UI in sync
-        fetchOrders();
+      socketService.on('orderUpdate', (updatedOrder: Order) => {
+        setOrders(prevOrders => {
+          const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
+          if (index !== -1) {
+            const newOrders = [...prevOrders];
+            newOrders[index] = updatedOrder;
+            return newOrders;
+          }
+          return [updatedOrder, ...prevOrders];
+        });
       });
 
       return () => {
