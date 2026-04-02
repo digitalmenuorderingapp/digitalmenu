@@ -114,8 +114,8 @@ export default function MarketingHomeClient() {
                 animate={{ opacity: 1, x: 0 }}
                 className="flex items-center space-x-4"
               >
-                {/* Language Toggle */}
-                <div className="flex bg-gray-100 rounded-lg p-1 mr-2">
+                {/* Language Toggle - Desktop Only */}
+                <div className="hidden md:flex bg-gray-100 rounded-lg p-1 mr-2">
                   <button onClick={() => handleLanguageChange('en')} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>EN</button>
                   <button onClick={() => handleLanguageChange('hi')} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>HI</button>
                   <button onClick={() => handleLanguageChange('bn')} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>BN</button>
@@ -138,6 +138,15 @@ export default function MarketingHomeClient() {
                   </>
                 )}
               </motion.div>
+            </div>
+
+            {/* Language Toggle - Mobile Only (Below main nav content) */}
+            <div className="md:hidden flex justify-center pb-4 pt-1 border-t border-gray-50">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button onClick={() => handleLanguageChange('en')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>English</button>
+                <button onClick={() => handleLanguageChange('hi')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>हिन्दी</button>
+                <button onClick={() => handleLanguageChange('bn')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>বাংলা</button>
+              </div>
             </div>
           </div>
         </nav>
@@ -286,20 +295,20 @@ export default function MarketingHomeClient() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <div className="bg-white rounded-[4rem] p-16 shadow-[0_50px_100px_-20px_rgba(79,70,229,0.15)] border-4 border-indigo-600 relative z-10 text-center">
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-8 py-2.5 rounded-full font-black text-sm uppercase tracking-widest shadow-xl">
+              <div className="bg-white rounded-3xl md:rounded-[4rem] p-8 md:p-16 shadow-[0_50px_100px_-20px_rgba(79,70,229,0.15)] border-4 border-indigo-600 relative z-10 text-center">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 md:px-8 py-2 md:py-2.5 rounded-full font-black text-[10px] md:text-sm uppercase tracking-widest shadow-xl whitespace-nowrap">
                   {t.offer_badge}
                 </div>
-                <span className="text-sm font-bold text-gray-900">Digital Menu Expert</span>
-                <div className="text-8xl font-black text-gray-900 mb-6 tracking-tighter uppercase italic">{t.offer_free}</div>
-                <p className="text-xl text-gray-500 font-bold mb-8">{t.offer_desc_p1} <br /> {t.offer_desc_p2}</p>
+                <span className="text-sm font-bold text-gray-900">Digital Menu Order</span>
+                <div className="text-6xl md:text-8xl font-black text-gray-900 mb-4 md:mb-6 tracking-tighter uppercase italic">{t.offer_free}</div>
+                <p className="text-lg md:text-xl text-gray-500 font-bold mb-6 md:mb-8">{t.offer_desc_p1} <br className="hidden md:block" /> {t.offer_desc_p2}</p>
                 
-                <div className={`mb-10 p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50 text-indigo-700 text-sm font-bold inline-block mx-auto max-w-lg ${lang !== 'en' ? 'indic-spacing' : ''}`}>
-                  {t.offer_limit}
+                <div className={`mb-8 md:mb-10 p-4 md:p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50 text-indigo-700 text-xs md:text-sm font-bold inline-block mx-auto max-w-lg ${lang !== 'en' ? 'indic-spacing' : ''}`}>
+                   {t.offer_limit}
                 </div>
 
                 <div className="block">
-                  <Link href="/auth?mode=register" className="inline-block w-full md:w-auto px-16 py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-2xl hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-100 mb-8">
+                  <Link href="/auth?mode=register" className="inline-block w-full md:w-auto px-10 md:px-16 py-5 md:py-6 bg-indigo-600 text-white rounded-2xl md:rounded-[2rem] font-black text-xl md:text-2xl hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-100 mb-6 md:mb-8">
                     {t.offer_cta}
                   </Link>
                 </div>
@@ -405,7 +414,7 @@ export default function MarketingHomeClient() {
             <div className="mt-24 text-center">
               <div className="inline-flex items-center space-x-4 bg-white px-8 py-4 rounded-full border border-indigo-100 shadow-sm">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-lg font-bold text-gray-900">Digital Menu Expert</span>
+                <span className="text-lg font-bold text-gray-900">Digital Menu Order</span>
                 <span className="text-lg font-black text-indigo-900 tracking-tight">No App Downloads Required. Works on every Browser.</span>
               </div>
             </div>
