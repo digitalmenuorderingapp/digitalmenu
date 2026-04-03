@@ -27,7 +27,7 @@ function CustomerPageContent() {
   const { session, updateSession } = useCustomerSession();
   const [activeTab, setActiveTab] = useState('menu');
   const [isLoading, setIsLoading] = useState(true);
-  const [menuItems, setMenuItems] = useState<Record<string, MenuItem[]>>({});
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; id: string; logo?: string } | null>(null);
@@ -163,7 +163,9 @@ function CustomerPageContent() {
     try {
       const response = await api.get(`/public/menu?restaurantId=${rId}&table=${tNum}`);
       const data = response.data.data;
-      setMenuItems(data.menuItems);
+      // Flatten grouped menu items into single array
+      const flatItems = Object.values(data.menuItems).flat() as MenuItem[];
+      setMenuItems(flatItems);
 
       // Update table capacity in session
       if (data.tableCapacity) {

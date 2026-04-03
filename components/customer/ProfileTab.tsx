@@ -213,7 +213,7 @@ export default function ProfileTab({ session, onUpdateSession }: ProfileTabProps
                        </div>
 
                        <div>
-                          <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4 flex items-center justify-between">
+                          <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4  items-center justify-between">
                             <span>Adjust Seats</span>
                             <span className="text-white">Max {tableCapacity} Available</span>
                           </label>

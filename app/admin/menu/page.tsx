@@ -51,7 +51,6 @@ export default function MenuManagementPage() {
     price: '',
     offerPrice: '',
     isActive: true,
-    category: 'Other',
     foodType: 'Main Course',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -81,7 +80,6 @@ export default function MenuManagementPage() {
       price: '',
       offerPrice: '',
       isActive: true,
-      category: 'Other',
       foodType: 'Main Course',
     });
     setImageFile(null);
@@ -100,7 +98,6 @@ export default function MenuManagementPage() {
         price: item.price.toString(),
         offerPrice: item.offerPrice?.toString() || '',
         isActive: item.isActive,
-        category: item.category || 'Other',
         foodType: item.foodType || 'Main Course',
       });
       setImagePreview(item.image || '');
@@ -143,7 +140,6 @@ export default function MenuManagementPage() {
     data.append('price', formData.price);
     if (formData.offerPrice) data.append('offerPrice', formData.offerPrice);
     data.append('isActive', formData.isActive.toString());
-    data.append('category', formData.category);
     data.append('foodType', formData.foodType);
     if (imageFile) data.append('image', imageFile);
 
@@ -269,10 +265,7 @@ export default function MenuManagementPage() {
               )}
             </div>
             <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded">
-                  {item.category || 'Other'}
-                </span>
+              <div className="flex items-center justify-end mb-2">
                 {item.foodType && (
                   <span className="inline-flex items-center px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded">
                     {item.foodType}
@@ -471,22 +464,6 @@ export default function MenuManagementPage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    >
-                      <option value="Appetizers">Appetizers</option>
-                      <option value="Main Course">Main Course</option>
-                      <option value="Desserts">Desserts</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Sides">Sides</option>
-                      <option value="Other">Other</option>
-                    </select>
                   </div>
 
                   <div>
