@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
+import { socketService } from '@/services/socket';
 import {
   FaPlus,
   FaEdit,
@@ -29,6 +30,7 @@ interface MenuItem {
   isActive: boolean;
   category?: string;
   foodType?: string;
+  restaurantId?: string;
 }
 
 export default function MenuManagementPage() {
@@ -37,6 +39,8 @@ export default function MenuManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -149,11 +153,15 @@ export default function MenuManagementPage() {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         toast.success('Menu item updated');
+        // Emit socket event to notify customers
+        socketService.emit('menuUpdated', { restaurantId: editingItem.restaurantId });
       } else {
-        await api.post('/menu', data, {
+        const response = await api.post('/menu', data, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         toast.success('Menu item created');
+        // Emit socket event to notify customers
+        socketService.emit('menuUpdated', { restaurantId: response.data.data?.restaurantId });
       }
       closeModal();
       fetchMenuItems();
@@ -166,23 +174,38 @@ export default function MenuManagementPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
-
+    if (deletingItemId) return;
+    
+    setDeletingItemId(id);
     try {
       await api.delete(`/menu/${id}`);
       toast.success('Menu item deleted');
       fetchMenuItems();
+      
+      // Emit socket event to notify customers of menu change
+      socketService.emit('menuUpdated', { restaurantId: menuItems.find(i => i._id === id)?.restaurantId });
     } catch (error) {
       toast.error('Failed to delete item');
+    } finally {
+      setDeletingItemId(null);
     }
   };
 
   const handleToggle = async (item: MenuItem) => {
+    if (togglingItemId) return; // Prevent multiple clicks
+    setTogglingItemId(item._id);
+    
     try {
       await api.patch(`/menu/toggle/${item._id}`);
       toast.success(`Item ${item.isActive ? 'deactivated' : 'activated'}`);
       fetchMenuItems();
+      
+      // Emit socket event to notify customers of menu change
+      socketService.emit('menuUpdated', { restaurantId: item.restaurantId });
     } catch (error) {
       toast.error('Failed to toggle item');
+    } finally {
+      setTogglingItemId(null);
     }
   };
 
@@ -277,35 +300,49 @@ export default function MenuManagementPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleToggle(item)}
-                    className={`p-2 rounded-lg transition-colors ${
-                      item.isActive
+                    disabled={togglingItemId === item._id}
+                    className={`p-3 rounded-xl transition-all ${
+                      togglingItemId === item._id
+                        ? 'bg-gray-100 cursor-not-allowed'
+                        : item.isActive
                         ? 'text-green-600 hover:bg-green-50'
                         : 'text-gray-400 hover:bg-gray-50'
                     }`}
                     title={item.isActive ? 'Deactivate' : 'Activate'}
                   >
-                    {item.isActive ? (
-                      <FaToggleOn className="w-5 h-5" />
+                    {togglingItemId === item._id ? (
+                      <FaSpinner className="w-6 h-6 animate-spin" />
+                    ) : item.isActive ? (
+                      <FaToggleOn className="w-7 h-7" />
                     ) : (
-                      <FaToggleOff className="w-5 h-5" />
+                      <FaToggleOff className="w-7 h-7" />
                     )}
                   </button>
                   <button
                     onClick={() => openModal(item)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                     title="Edit"
                   >
-                    <FaEdit className="w-4 h-4" />
+                    <FaEdit className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleDelete(item._id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    disabled={deletingItemId === item._id}
+                    className={`p-3 rounded-xl transition-all ${
+                      deletingItemId === item._id
+                        ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                        : 'text-red-600 hover:bg-red-50'
+                    }`}
                     title="Delete"
                   >
-                    <FaTrash className="w-4 h-4" />
+                    {deletingItemId === item._id ? (
+                      <FaSpinner className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <FaTrash className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               </div>

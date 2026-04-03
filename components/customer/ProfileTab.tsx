@@ -205,8 +205,9 @@ export default function ProfileTab({ session, onUpdateSession }: ProfileTabProps
                           <input
                             type="tel"
                             value={mobileNumber}
-                            onChange={(e) => setMobileNumber(e.target.value)}
-                            placeholder="Your contact number"
+                            onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            placeholder="10 digit mobile number"
+                            maxLength={10}
                             className="w-full bg-white/5 border-2 border-white/10 rounded-2xl px-5 py-4 focus:border-indigo-500 focus:ring-0 transition-all font-bold text-white placeholder:text-gray-600"
                           />
                        </div>

@@ -336,6 +336,55 @@ const OrderCard = ({
           </div>
         </div>
 
+        {/* Cancellation Reason */}
+        {order.status === 'cancelled' && order.cancellationReason && (
+          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
+            <div className="flex items-start space-x-2">
+              <FaTimes className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Cancellation Reason</p>
+                <p className="text-sm font-medium text-red-900">{order.cancellationReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rejection Reason */}
+        {order.status === 'rejected' && order.rejectionReason && (
+          <div className="mb-4 p-3 rounded-2xl bg-yellow-50/50 border border-yellow-100">
+            <div className="flex items-start space-x-2">
+              <FaTimes className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Rejection Reason</p>
+                <p className="text-sm font-medium text-yellow-900">{order.rejectionReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Customer Feedback */}
+        {order.feedback?.rating && (
+          <div className="mb-4 p-3 rounded-2xl bg-green-50/50 border border-green-100">
+            <div className="flex items-start space-x-2">
+              <FaStar className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Customer Feedback</p>
+                <div className="flex items-center space-x-1 mb-1">
+                  {[...Array(5)].map((_, i) => (
+                    <FaStar
+                      key={i}
+                      className={`w-4 h-4 ${i < order.feedback!.rating! ? 'text-yellow-400' : 'text-gray-300'}`}
+                    />
+                  ))}
+                </div>
+                {order.feedback?.comment && (
+                  <p className="text-sm font-medium text-green-900 italic">"{order.feedback.comment}"</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Status Info */}
         <div className="mb-4 p-3 rounded-2xl bg-gray-50/50 border border-gray-100">
           <div className="flex items-center justify-between">

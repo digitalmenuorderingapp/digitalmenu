@@ -93,6 +93,12 @@ class SocketService {
         }
     }
 
+    emit(event: string, data?: any) {
+        if (this.socket) {
+            this.socket.emit(event, data);
+        }
+    }
+
     disconnect() {
         if (this.socket) {
             this.currentRoom = null;

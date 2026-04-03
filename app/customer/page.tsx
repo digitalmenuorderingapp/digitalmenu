@@ -121,17 +121,29 @@ function CustomerPageContent() {
     const checkReturningCustomer = async () => {
       if (!session.deviceId) return;
       
+      // If customer already has a name, they're returning - don't show modal
+      if (session.customerName) {
+        console.log('[Welcome Modal] Customer has name, skipping modal:', session.customerName);
+        return;
+      }
+      
       try {
+        console.log('[Welcome Modal] Checking orders for device:', session.deviceId);
         const response = await api.get(`/order/device/${session.deviceId}`);
         const previousOrders = response.data.data || [];
         
+        console.log('[Welcome Modal] Previous orders count:', previousOrders.length);
+        
         // Only show modal if no previous orders (new device)
         if (previousOrders.length === 0) {
+          console.log('[Welcome Modal] No orders found, showing modal');
           setShowCustomerInfoModal(true);
+        } else {
+          console.log('[Welcome Modal] Found existing orders, hiding modal');
         }
-        // If has orders, don't show modal (returning customer)
       } catch (error) {
-        // If API fails, assume new device and show modal
+        console.error('[Welcome Modal] API error:', error);
+        // If API fails, show modal
         setShowCustomerInfoModal(true);
       }
     };
@@ -140,7 +152,7 @@ function CustomerPageContent() {
     if (session.deviceId) {
       checkReturningCustomer();
     }
-  }, [session.deviceId]);
+  }, [session.deviceId, session.customerName]);
 
   // Fetch menu items — accepts explicit restaurantId to avoid stale state race condition
   const fetchMenuItems = async (restaurantId?: string, tableNumber?: string) => {
@@ -350,11 +362,29 @@ function CustomerPageContent() {
         });
       });
 
+      // Listen for menu updates from admin
+      socketService.on('menuUpdated', (data: { restaurantId: string }) => {
+        console.log('[Socket] Menu updated by admin, refetching...');
+        // Refetch menu items for current restaurant
+        if (session.restaurantId && data.restaurantId === session.restaurantId) {
+          fetchMenuItems(session.restaurantId, session.tableNumber || '');
+          toast('Menu updated! 🍽️', {
+            duration: 3000,
+            style: {
+              borderRadius: '12px',
+              background: '#10b981',
+              color: '#fff',
+            },
+          });
+        }
+      });
+
       return () => {
         socketService.off('orderStatusUpdate');
         socketService.off('orderRefundUpdate');
         socketService.off('orderUpdate');
         socketService.off('paymentVerified');
+        socketService.off('menuUpdated');
       };
     }
   }, [session.deviceId]);
