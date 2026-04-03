@@ -31,6 +31,12 @@ function CustomerPageContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; id: string; logo?: string } | null>(null);
+  const [showCustomerInfoModal, setShowCustomerInfoModal] = useState(false);
+  const [customerFormData, setCustomerFormData] = useState({
+    customerName: '',
+    numberOfPersons: 1,
+    customerPhone: ''
+  });
 
   const qrParam = searchParams.get('q') || searchParams.get('qr'); // Support both new and old param
   const tableNumber = searchParams.get('table');
@@ -55,6 +61,11 @@ function CustomerPageContent() {
       if (!session.deviceId) {
         const newDeviceId = uuidv4();
         updateSession({ deviceId: newDeviceId });
+        // Show customer info modal for new device
+        setShowCustomerInfoModal(true);
+      } else if (!session.customerName) {
+        // Existing device but no customer name - show modal
+        setShowCustomerInfoModal(true);
       }
 
       // Handle QR code
@@ -192,6 +203,7 @@ function CustomerPageContent() {
           served: 'Your order has been served! 🍽️',
           rejected: 'Sorry, your order was rejected. ❌',
           cancelled: 'Your order has been cancelled. 🚫',
+          paymentVerified: 'Payment verified successfully! ✅',
         };
 
         const message = statusMessages[order.status] || `Your order status: ${order.status}`;
@@ -241,6 +253,30 @@ function CustomerPageContent() {
         });
       });
 
+      // Listen for payment verified
+      socketService.on('paymentVerified', (order: Order) => {
+        toast.success('Payment verified successfully! ✅', {
+          duration: 6000,
+          style: {
+            borderRadius: '12px',
+            background: '#10b981',
+            color: '#fff',
+          },
+        });
+        playNotificationSound();
+
+        // Update orders list
+        setOrders(prevOrders => {
+          const index = prevOrders.findIndex(o => o._id === order._id);
+          if (index !== -1) {
+            const newOrders = [...prevOrders];
+            newOrders[index] = order;
+            return newOrders;
+          }
+          return prevOrders;
+        });
+      });
+
       // Listen for refund updates
       socketService.on('orderRefundUpdate', (order: Order) => {
         if (order.refund?.status === 'refunded') {
@@ -265,7 +301,7 @@ function CustomerPageContent() {
 
         playNotificationSound();
 
-        // 🔄 SYNC STATE
+        // Update orders list
         setOrders(prevOrders => {
           const index = prevOrders.findIndex(o => o._id === order._id);
           if (index !== -1) {
@@ -295,6 +331,7 @@ function CustomerPageContent() {
         socketService.off('orderStatusUpdate');
         socketService.off('orderRefundUpdate');
         socketService.off('orderUpdate');
+        socketService.off('paymentVerified');
       };
     }
   }, [session.deviceId]);
@@ -544,6 +581,102 @@ function CustomerPageContent() {
         onTabChange={handleTabChange}
         activeTab={activeTab}
       />
+
+      {/* Customer Info Modal for New Devices */}
+      <AnimatePresence>
+        {showCustomerInfoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white">
+                <h2 className="text-xl font-black">Welcome! 👋</h2>
+                <p className="text-sm opacity-90 mt-1">Please tell us about yourself</p>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Your Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customerFormData.customerName}
+                    onChange={(e) => setCustomerFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                    placeholder="Enter your name"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Number of Persons <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => setCustomerFormData(prev => ({ ...prev, numberOfPersons: Math.max(1, prev.numberOfPersons - 1) }))}
+                      className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-700"
+                    >
+                      -
+                    </button>
+                    <span className="text-xl font-black text-indigo-600 w-8 text-center">
+                      {customerFormData.numberOfPersons}
+                    </span>
+                    <button
+                      onClick={() => setCustomerFormData(prev => ({ ...prev, numberOfPersons: prev.numberOfPersons + 1 }))}
+                      className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-700"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Mobile Number <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={customerFormData.customerPhone}
+                    onChange={(e) => setCustomerFormData(prev => ({ ...prev, customerPhone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                    placeholder="10 digit mobile number"
+                    maxLength={10}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!customerFormData.customerName.trim()) {
+                      toast.error('Please enter your name');
+                      return;
+                    }
+                    updateSession({
+                      customerName: customerFormData.customerName.trim(),
+                      numberOfPersons: customerFormData.numberOfPersons,
+                      mobileNumber: customerFormData.customerPhone || undefined
+                    });
+                    setShowCustomerInfoModal(false);
+                    toast.success('Welcome! You can now place your order.');
+                  }}
+                  disabled={!customerFormData.customerName.trim()}
+                  className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-black rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Start Ordering 🍽️
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

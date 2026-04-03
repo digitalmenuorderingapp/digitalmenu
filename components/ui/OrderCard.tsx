@@ -267,6 +267,19 @@ const OrderCard = ({
           </div>
         </div>
 
+        {/* Special Instructions */}
+        {order.specialInstructions && (
+          <div className="mb-4 p-3 rounded-2xl bg-amber-50/50 border border-amber-100">
+            <div className="flex items-start space-x-2">
+              <FaComment className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Special Instructions</p>
+                <p className="text-sm font-medium text-amber-900">{order.specialInstructions}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Financial Info */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className={`p-3 rounded-2xl border transition-all ${

@@ -114,6 +114,24 @@ export default function MenuTab({
             </div>
           </div>
         )}
+
+        {/* 👋 Welcome Card - Short & Full Width */}
+        {session.customerName && (
+          <div className="mb-4 bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-800 rounded-2xl px-5 py-3 text-white shadow-lg flex items-center justify-between border border-white/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                <span className="text-lg">👋</span>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Welcome</p>
+                <p className="text-lg font-black leading-none">{session.customerName}</p>
+              </div>
+            </div>
+            <div className="text-[10px] font-black text-indigo-300 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+              {session.numberOfPersons || 1} {session.numberOfPersons === 1 ? 'Person' : 'Persons'}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* 🟢 2. SLIM FILTER SUMMARY STICKY BAR (Now Ultra Compact) */}

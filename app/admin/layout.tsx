@@ -48,6 +48,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deviceCount, setDeviceCount] = useState(0);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
   
   // Initialize global keyboard shortcuts
   const shortcuts = useGlobalShortcuts(() => setShortcutsModalOpen(true));
@@ -81,6 +82,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         console.log('📦 New order received via socket:', order);
         toast.success(`New order from Table #${order.tableNumber || 'N/A'}!`);
         playNotificationSound();
+        
+        // Increment badge if not on orders page
+        if (!pathname.includes('/admin/orders')) {
+          setNewOrdersCount(prev => prev + 1);
+        }
       };
 
       const handleOrderUpdate = (order: any) => {
@@ -99,7 +105,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [isAuthenticated, user?._id, refreshUser]);
 
-  // Subscription calculation logic (mirrored from page.tsx for global enforcement)
+  // Clear new orders badge when navigating to orders page
+  useEffect(() => {
+    if (pathname.includes('/admin/orders')) {
+      setNewOrdersCount(0);
+    }
+  }, [pathname]);
   const getSubscriptionStatus = () => {
     if (!user?.subscription) {
        return { name: 'Basic', daysLeft: 0, isExpired: false, status: 'Inactive', expiryDate: 'N/A' };
@@ -249,6 +260,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {item.icon}
                         </span>
                         <span className="font-medium text-sm">{item.label}</span>
+                        {item.href === '/admin/orders' && newOrdersCount > 0 && (
+                          <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                            {newOrdersCount}
+                          </span>
+                        )}
                         {isActive && <FaChevronRight className="w-3 h-3 ml-auto opacity-70" />}
                       </Link>
                     );
@@ -409,6 +425,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 {item.icon}
                               </span>
                               <span className="font-medium text-sm">{item.label}</span>
+                              {item.href === '/admin/orders' && newOrdersCount > 0 && (
+                                <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                                  {newOrdersCount}
+                                </span>
+                              )}
                               {isActive && <FaChevronRight className="w-3 h-3 ml-auto opacity-70" />}
                             </Link>
                           </motion.div>
