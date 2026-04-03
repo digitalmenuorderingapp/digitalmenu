@@ -57,15 +57,13 @@ function CustomerPageContent() {
     hasInitialized.current = true;
 
     const initializeSession = async () => {
-      // Initialize device ID
-      if (!session.deviceId) {
-        const newDeviceId = uuidv4();
-        updateSession({ deviceId: newDeviceId });
-        // Show customer info modal only for new device
-        setShowCustomerInfoModal(true);
+      let currentDeviceId = session.deviceId;
+      
+      // Initialize device ID if not exists
+      if (!currentDeviceId) {
+        currentDeviceId = uuidv4();
+        updateSession({ deviceId: currentDeviceId });
       }
-      // Note: For returning devices, we don't show the modal even if customerName is missing
-      // because the server sends previous records
 
       // Handle QR code
       if (qrParam) {
@@ -117,6 +115,32 @@ function CustomerPageContent() {
 
     initializeSession();
   }, []);
+
+  // Check if returning customer and show/hide welcome modal accordingly
+  useEffect(() => {
+    const checkReturningCustomer = async () => {
+      if (!session.deviceId) return;
+      
+      try {
+        const response = await api.get(`/order/device/${session.deviceId}`);
+        const previousOrders = response.data.data || [];
+        
+        // Only show modal if no previous orders (new device)
+        if (previousOrders.length === 0) {
+          setShowCustomerInfoModal(true);
+        }
+        // If has orders, don't show modal (returning customer)
+      } catch (error) {
+        // If API fails, assume new device and show modal
+        setShowCustomerInfoModal(true);
+      }
+    };
+
+    // Only run after session is loaded (deviceId exists)
+    if (session.deviceId) {
+      checkReturningCustomer();
+    }
+  }, [session.deviceId]);
 
   // Fetch menu items — accepts explicit restaurantId to avoid stale state race condition
   const fetchMenuItems = async (restaurantId?: string, tableNumber?: string) => {
