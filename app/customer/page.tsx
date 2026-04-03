@@ -726,7 +726,7 @@ function CustomerPageContent() {
                 </div>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!customerFormData.customerName.trim()) {
                       toast.error('Please enter your name');
                       return;
@@ -736,6 +736,21 @@ function CustomerPageContent() {
                       numberOfPersons: customerFormData.numberOfPersons,
                       mobileNumber: customerFormData.customerPhone || undefined
                     });
+                    
+                    // Update DB for active orders (first popup only)
+                    try {
+                      if (session.deviceId) {
+                        await api.put('/order/device/profile', {
+                          deviceId: session.deviceId,
+                          customerName: customerFormData.customerName.trim(),
+                          customerPhone: customerFormData.customerPhone || undefined,
+                          numberOfPersons: customerFormData.numberOfPersons
+                        });
+                      }
+                    } catch (error) {
+                      console.error('Failed to sync initial profile to orders:', error);
+                    }
+                    
                     setShowCustomerInfoModal(false);
                     toast.success('Welcome! You can now place your order.');
                   }}

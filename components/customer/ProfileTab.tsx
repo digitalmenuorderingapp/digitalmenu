@@ -35,7 +35,6 @@ export default function ProfileTab({ session, onUpdateSession }: ProfileTabProps
       }
     } catch (error) {
       console.error('Failed to sync profile to orders:', error);
-      // Don't block UI update if DB sync fails
     }
     
     setIsEditing(false);

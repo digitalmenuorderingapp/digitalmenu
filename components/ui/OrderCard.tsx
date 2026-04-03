@@ -424,7 +424,7 @@ const OrderCard = ({
               Serve
             </Button>
           )}
-          {!paid && order.paymentMethod === 'online' && (
+          {!paid && order.paymentMethod === 'online' && !['rejected', 'cancelled'].includes(order.status) && (
             <Button variant="amber" onClick={() => onVerifyPayment?.(order)} leftIcon={<FaCheckCircle className="w-4 h-4" />}>
               Verify Payment
             </Button>
