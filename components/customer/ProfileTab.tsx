@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUser, FaEdit, FaSignOutAlt, FaTrash, FaUsers, FaClock, FaFingerprint, FaCheck, FaTimes, FaUtensils, FaPhone } from 'react-icons/fa';
+import api from '@/services/api';
+import toast from 'react-hot-toast';
 
 interface ProfileTabProps {
   session: any;
@@ -15,10 +17,27 @@ export default function ProfileTab({ session, onUpdateSession }: ProfileTabProps
   const [mobileNumber, setMobileNumber] = useState(session.mobileNumber || '');
   const [numberOfPersons, setNumberOfPersons] = useState<number>(session.numberOfPersons || 1);
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (onUpdateSession) {
       onUpdateSession({ customerName, mobileNumber, numberOfPersons });
     }
+    
+    // Update database for active orders
+    try {
+      if (session.deviceId) {
+        await api.put('/order/device/profile', {
+          deviceId: session.deviceId,
+          customerName: customerName || session.customerName,
+          customerPhone: mobileNumber || session.mobileNumber,
+          numberOfPersons: numberOfPersons || session.numberOfPersons
+        });
+        toast.success('Profile updated and synced to orders');
+      }
+    } catch (error) {
+      console.error('Failed to sync profile to orders:', error);
+      // Don't block UI update if DB sync fails
+    }
+    
     setIsEditing(false);
   };
 

@@ -79,7 +79,7 @@ export function useCustomerSession() {
 
   const clearSession = () => {
     // Clear all session data
-    const keys = ['restaurantName', 'restaurantId', 'tableNumber', 'tableCapacity', 'customerName', 'numberOfPersons'];
+    const keys = ['restaurantName', 'restaurantId', 'tableNumber', 'tableCapacity', 'customerName', 'mobileNumber', 'numberOfPersons'];
     keys.forEach(key => localStorage.removeItem(key));
     setSession({});
   };

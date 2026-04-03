@@ -450,11 +450,20 @@ function CustomerPageContent() {
       return;
     }
 
+    // Get mobileNumber directly from localStorage to ensure we have the latest value
+    // This avoids any stale state issues
+    const customerPhone = localStorage.getItem('mobileNumber') || session.mobileNumber || '';
+    
+    console.log('[DEBUG] Session mobileNumber:', session.mobileNumber);
+    console.log('[DEBUG] localStorage mobileNumber:', localStorage.getItem('mobileNumber'));
+    console.log('[DEBUG] Using customerPhone:', customerPhone);
+
     try {
       const orderData = {
         restaurantId: session.restaurantId,
         tableNumber: parseInt(session.tableNumber),
         customerName: session.customerName || 'Guest',
+        customerPhone: customerPhone,
         numberOfPersons: session.numberOfPersons || 1,
         deviceId: session.deviceId,
         sessionId: session.deviceId,
@@ -472,6 +481,8 @@ function CustomerPageContent() {
         utrNumber: utrNumber || undefined,
         specialInstructions: specialInstructions || undefined
       };
+
+      console.log('[DEBUG] Order data being sent:', orderData);
 
       const response = await api.post('/order', orderData);
 

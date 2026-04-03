@@ -82,13 +82,15 @@ function AuthPageContent() {
             if (result?.notVerified) {
                 setOtpEmail(email);
                 setShowOtp(true);
+                setIsLoading(false);
             } else {
-                router.push('/admin');
+                // Keep loading active during navigation - don't set isLoading false here
+                // The page will unmount anyway after navigation
+                router.push('/admin/dashboard');
             }
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Login failed');
-            setCaptchaKey(prev => prev + 1); // Refresh captcha on error
-        } finally {
+            setCaptchaKey(prev => prev + 1);
             setIsLoading(false);
         }
     };
@@ -163,10 +165,8 @@ function AuthPageContent() {
         setIsLoading(true);
         try {
             await verifyOtp(otpEmail, otp);
-            router.push('/admin');
+            router.push('/admin/dashboard');
         } catch (err) {
-            // Handled in context
-        } finally {
             setIsLoading(false);
         }
     };

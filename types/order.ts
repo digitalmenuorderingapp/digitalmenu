@@ -2,7 +2,6 @@ export interface MenuItem {
     _id: string;
     name: string;
     price: number;
-    category: string;
     foodType?: string;
     description?: string;
     image?: string;
@@ -28,6 +27,10 @@ export interface OrderItem {
 export interface Order {
     _id: string;
     orderNumber?: string;
+    tableNumber?: number;
+    customerName: string;
+    customerPhone?: string;
+    numberOfPersons?: number;
     items: OrderItem[];
     totalAmount: number;
     status: 'placed' | 'preparing' | 'served' | 'rejected' | 'cancelled' | 'completed' | 'ready' | 'pending' | 'confirmed';

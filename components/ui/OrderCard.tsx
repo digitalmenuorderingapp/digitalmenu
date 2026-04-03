@@ -80,7 +80,7 @@ interface OrderItem {
 interface Order {
   _id: string;
   orderNumber?: string;
-  tableNumber: number;
+  tableNumber?: number;
   customerName: string;
   customerPhone?: string;
   numberOfPersons?: number;
@@ -174,6 +174,7 @@ const OrderCard = ({
     );
   }
 
+  console.log("orders", order)
   return (
     <motion.div
       layout
@@ -413,34 +414,34 @@ const OrderCard = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex flex-wrap gap-3 pt-3">
           {order.status === 'placed' && (
-            <Button size="sm" onClick={() => onUpdateStatus?.(order._id, 'preparing')} leftIcon={<FaUtensils className="w-3 h-3" />}>
+            <Button onClick={() => onUpdateStatus?.(order._id, 'preparing')} leftIcon={<FaUtensils className="w-4 h-4" />}>
               Prepare
             </Button>
           )}
           {order.status === 'preparing' && (
-            <Button variant="success" size="sm" onClick={() => onUpdateStatus?.(order._id, 'served')} leftIcon={<FaCheck className="w-3 h-3" />}>
+            <Button variant="success" onClick={() => onUpdateStatus?.(order._id, 'served')} leftIcon={<FaCheck className="w-4 h-4" />}>
               Serve
             </Button>
           )}
           {!paid && order.paymentMethod === 'online' && (
-            <Button variant="amber" size="sm" onClick={() => onVerifyPayment?.(order)} leftIcon={<FaCheckCircle className="w-3 h-3" />}>
+            <Button variant="amber" onClick={() => onVerifyPayment?.(order)} leftIcon={<FaCheckCircle className="w-4 h-4" />}>
               Verify Payment
             </Button>
           )}
           {!paid && order.paymentMethod === 'cash' && order.status === 'served' && (
-            <Button variant="success" size="sm" onClick={() => onCollectCash?.(order._id)} leftIcon={<FaMoneyBillWave className="w-3 h-3" />}>
+            <Button variant="success" onClick={() => onCollectCash?.(order._id)} leftIcon={<FaMoneyBillWave className="w-4 h-4" />}>
               Collect Cash
             </Button>
           )}
           {paid && order.status !== 'served' && order.refund?.status !== 'refunded' && (
-             <Button variant="amber" size="sm" onClick={() => onRefund?.(order)} leftIcon={<FaUndo className="w-3 h-3" />}>
+             <Button variant="amber" onClick={() => onRefund?.(order)} leftIcon={<FaUndo className="w-4 h-4" />}>
               Refund
             </Button>
           )}
           {(order.status === 'placed' || order.status === 'preparing') && (
-            <Button variant="danger" size="sm" onClick={() => onReject?.(order._id)} leftIcon={<FaTimes className="w-3 h-3" />}>
+            <Button variant="danger" onClick={() => onReject?.(order._id)} leftIcon={<FaTimes className="w-4 h-4" />}>
               Reject
             </Button>
           )}
