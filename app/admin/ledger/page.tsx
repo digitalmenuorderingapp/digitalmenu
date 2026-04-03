@@ -217,12 +217,6 @@ export default function LedgerPage() {
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div className="flex items-center space-x-5">
-            <Link
-              href="/admin/dashboard"
-              className="w-12 h-12 bg-white border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-100 hover:bg-indigo-50 shadow-sm transition-all group"
-            >
-              <FaArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            </Link>
             <div>
               <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Audit Ledger</h1>
               <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">Operational Truth & Financial Integrity</p>
@@ -497,9 +491,33 @@ export default function LedgerPage() {
 
       {activeTab === 'transactions' && (
         <div className="space-y-6">
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Transaction Journal</h2>
-            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">All transactions grouped by date</p>
+          {/* Monthly Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatsCard 
+              label="Monthly Orders" 
+              value={transactions.filter(t => t.type === 'PAYMENT').length} 
+              variant="indigo" 
+              icon={<FaUtensils />} 
+              description={`${transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').length} Verified`}
+            />
+            <StatsCard 
+              label="Cash Collected" 
+              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
+              variant="amber" 
+              icon={<FaMoneyBillWave />} 
+            />
+            <StatsCard 
+              label="Online Settled" 
+              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.paymentMode === 'ONLINE' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
+              variant="blue" 
+              icon={<FaCreditCard />} 
+            />
+            <StatsCard 
+              label="Monthly Net" 
+              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0) - transactions.filter(t => t.type === 'REFUND').reduce((sum, t) => sum + Math.abs(t.amount), 0))}`} 
+              variant="green" 
+              icon={<FaChartLine />} 
+            />
           </div>
 
           {transactions.length > 0 ? (

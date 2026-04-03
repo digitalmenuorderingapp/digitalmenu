@@ -574,6 +574,8 @@ export default function OrdersPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
+              min={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`}
+              max={new Date().toISOString().split('T')[0]}
               className="border-none focus:ring-0 p-0 text-xs font-black text-gray-700 uppercase tracking-widest bg-transparent cursor-pointer"
             />
           </div>
