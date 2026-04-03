@@ -95,7 +95,6 @@ export default function CartTab({
 
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{item.category}</p>
 
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center space-x-2">
