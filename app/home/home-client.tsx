@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaQrcode, FaUtensils, FaChartLine, FaMobileAlt, FaClock,
   FaShieldAlt, FaCheckCircle, FaTimesCircle, FaArrowRight,
@@ -16,10 +16,17 @@ import { TRANSLATIONS, Language } from '../../utils/translations';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 import { Skeleton } from '@/components/ui/Skeleton';
 
+const SECTION_IDS = ['hero', 'crisis', 'pricing', 'platform', 'customer-journey', 'features', 'trust'];
+const SECTION_LABELS = ['Home', 'Problems', 'Pricing', 'Platform', 'Experience', 'Features', 'Security'];
+
 export default function MarketingHomeClient() {
   const { isLoading, isAuthenticated } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [lang, setLang] = useState<Language>('en');
+  const [activeSection, setActiveSection] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const isScrolling = useRef(false);
+  const touchStartY = useRef(0);
 
   // Persistence for language
   useEffect(() => {
@@ -71,10 +78,94 @@ export default function MarketingHomeClient() {
     return () => clearInterval(timer);
   }, []);
 
-  // Removed full-page loader to enable skeletons
-  // if (isLoading) {
-  //   return <BrandLoader />;
-  // }
+  // Detect desktop
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const scrollToSection = useCallback((index: number) => {
+    const id = SECTION_IDS[index];
+    const el = document.getElementById(id);
+    if (!el) return;
+    isScrolling.current = true;
+    setActiveSection(index);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => { isScrolling.current = false; }, 900);
+  }, []);
+
+  // Intersection Observer — track which section is visible
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    SECTION_IDS.forEach((id, idx) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveSection(idx); },
+        { threshold: 0.4 }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach(o => o.disconnect());
+  }, []);
+
+  // Wheel snap (desktop only)
+  useEffect(() => {
+    if (!isDesktop) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (isScrolling.current) return;
+      const delta = e.deltaY;
+      if (Math.abs(delta) < 30) return;
+      e.preventDefault();
+      const next = delta > 0
+        ? Math.min(activeSection + 1, SECTION_IDS.length - 1)
+        : Math.max(activeSection - 1, 0);
+      if (next !== activeSection) scrollToSection(next);
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [isDesktop, activeSection, scrollToSection]);
+
+  // Keyboard arrow snap (desktop only)
+  useEffect(() => {
+    if (!isDesktop) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (isScrolling.current) return;
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault();
+        scrollToSection(Math.min(activeSection + 1, SECTION_IDS.length - 1));
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        scrollToSection(Math.max(activeSection - 1, 0));
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isDesktop, activeSection, scrollToSection]);
+
+  // Touch swipe snap (desktop only)
+  useEffect(() => {
+    if (!isDesktop) return;
+    const handleTouchStart = (e: TouchEvent) => { touchStartY.current = e.touches[0].clientY; };
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isScrolling.current) return;
+      const delta = touchStartY.current - e.changedTouches[0].clientY;
+      if (Math.abs(delta) < 50) return;
+      const next = delta > 0
+        ? Math.min(activeSection + 1, SECTION_IDS.length - 1)
+        : Math.max(activeSection - 1, 0);
+      if (next !== activeSection) scrollToSection(next);
+    };
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDesktop, activeSection, scrollToSection]);
 
   return (
     <motion.div 
@@ -83,6 +174,30 @@ export default function MarketingHomeClient() {
       transition={{ duration: 0.5 }}
       className={`min-h-screen bg-white text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden ${lang === 'hi' ? 'font-hindi' : lang === 'bn' ? 'font-bengali' : 'font-sans'}`}
     >
+
+      {/* Side dot navigation — desktop only */}
+      {isDesktop && (
+        <nav className="fixed right-5 top-1/2 -translate-y-1/2 z-[200] flex flex-col gap-3" aria-label="Page sections">
+          {SECTION_IDS.map((id, idx) => (
+            <button
+              key={id}
+              onClick={() => scrollToSection(idx)}
+              title={SECTION_LABELS[idx]}
+              aria-label={`Go to ${SECTION_LABELS[idx]}`}
+              className="group relative flex items-center justify-end"
+            >
+              <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-all duration-200 text-[10px] font-black text-gray-700 bg-white border border-gray-200 px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm">
+                {SECTION_LABELS[idx]}
+              </span>
+              <span className={`block rounded-full transition-all duration-300 shadow-sm ${
+                activeSection === idx
+                  ? 'w-3 h-3 bg-indigo-600 shadow-indigo-300 shadow-md'
+                  : 'w-2 h-2 bg-gray-300 hover:bg-indigo-400'
+              }`} />
+            </button>
+          ))}
+        </nav>
+      )}
 
       {/* --- NAVBAR --- */}
       <header>
@@ -102,7 +217,7 @@ export default function MarketingHomeClient() {
                 </span>
               </motion.div>
 
-              <div className="hidden md:flex items-center space-x-10">
+              <div className="hidden lg:flex items-center space-x-10">
                 <NavItem href="#platform" label={t.nav_platform} />
                 <NavItem href="#features" label={t.nav_features} />
                 <NavItem href="#trust" label={t.nav_trust} />
@@ -154,7 +269,7 @@ export default function MarketingHomeClient() {
 
       <main>
         {/* --- HERO SECTION --- */}
-        <section className="relative min-h-screen flex items-start md:items-center bg-white overflow-hidden pt-36 pb-20 md:pt-0 md:pb-0">
+        <section id="hero" className="relative min-h-screen flex items-start md:items-center bg-white overflow-hidden pt-36 pb-20 md:pt-0 md:pb-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -257,18 +372,18 @@ export default function MarketingHomeClient() {
         </section>
 
         {/* --- STRATEGIC PIVOT: PROBLEMS WITH PRINTED MENUS (FULL SCREEN) --- */}
-        <section id="crisis" className="py-14 md:py-24 lg:py-32 bg-slate-900 border-t items-center flex relative overflow-hidden">
+        <section id="crisis" className="min-h-screen py-8 md:py-12 lg:py-16 bg-slate-900 border-t items-center flex relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/10 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
           
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+          <div className="w-full px-4 sm:px-8 lg:px-16 xl:px-24 relative z-10">
             <div className="text-center mb-10 md:mb-16">
               <span className={`text-red-400 font-black text-xs uppercase mb-4 md:mb-6 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.crisis_badge}</span>
               <h2 className={`text-3xl sm:text-5xl md:text-7xl font-black text-white leading-tight tracking-tighter mb-4 md:mb-8 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.crisis_title}</h2>
               <p className={`text-base sm:text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>{t.crisis_desc}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
               <ProblemFocusedCard icon={<FaMoneyBillWave />} title={t.crisis_prob1_t} desc={t.crisis_prob1_d} lang={lang} />
               <ProblemFocusedCard icon={<FaExclamationTriangle />} title={t.crisis_prob2_t} desc={t.crisis_prob2_d} lang={lang} />
               <ProblemFocusedCard icon={<FaExpandArrowsAlt />} title={t.crisis_prob3_t} desc={t.crisis_prob3_d} lang={lang} />
@@ -288,7 +403,7 @@ export default function MarketingHomeClient() {
         </section>
 
         {/* --- LIFETIME FREE OFFER (SEPARATE SECTION) --- */}
-        <section id="pricing" className="py-14 md:py-24 lg:py-32 bg-gray-50 relative overflow-hidden flex items-center justify-center">
+        <section id="pricing" className="min-h-screen py-8 md:py-12 lg:py-16 bg-gray-50 relative overflow-hidden flex items-center justify-center">
           <div className="max-w-4xl mx-auto px-4 w-full relative">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -323,23 +438,23 @@ export default function MarketingHomeClient() {
         </section>
 
         {/* --- CORE PLATFORM: SOLUTION + STEPS --- */}
-        <section id="platform" className="py-14 md:py-24 lg:py-32 bg-white">
+        <section id="platform" className="min-h-screen py-8 md:py-12 lg:py-16 bg-white flex items-center">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="mb-10 md:mb-16 lg:mb-24">
-              <span className={`text-indigo-600 font-black text-xs uppercase mb-4 md:mb-6 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.platform_badge}</span>
-              <h2 className={`text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 tracking-tighter mb-5 md:mb-10 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.platform_title}</h2>
-              <p className={`text-base sm:text-xl md:text-2xl text-gray-500 max-w-3xl mx-auto ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
+            <div className="mb-6 md:mb-8">
+              <span className={`text-indigo-600 font-black text-xs uppercase mb-3 md:mb-4 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.platform_badge}</span>
+              <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tighter mb-4 md:mb-6 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.platform_title}</h2>
+              <p className={`text-base sm:text-lg md:text-xl text-gray-500 max-w-3xl mx-auto ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
                 {t.platform_desc}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-start">
-              <div className="bg-indigo-600 rounded-3xl md:rounded-[5rem] p-6 sm:p-10 md:p-16 text-white text-left relative overflow-hidden shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-stretch">
+              <div className="bg-indigo-600 rounded-3xl md:rounded-[3.5rem] p-6 sm:p-9 md:p-12 text-white text-left relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px]" aria-hidden="true" />
-                <h3 className="text-2xl md:text-4xl font-black mb-6 md:mb-12 flex items-center">
+                <h3 className="text-xl md:text-3xl font-black mb-5 md:mb-8 flex items-center">
                   <FaMobileAlt className="mr-3" aria-hidden="true" /> {t.platform_setup}
                 </h3>
-                <div className="space-y-6 md:space-y-12 relative z-10">
+                <div className="space-y-5 md:space-y-8 relative z-10">
                   <MiniStep num="1" title={t.plat_step1_title} desc={t.plat_step1_desc} lang={lang} />
                   <MiniStep num="2" title={t.plat_step2_title} desc={t.plat_step2_desc} lang={lang} />
                   <MiniStep num="3" title={t.plat_step3_title} desc={t.plat_step3_desc} lang={lang} />
@@ -347,9 +462,9 @@ export default function MarketingHomeClient() {
                 </div>
               </div>
 
-              <div className="relative group hidden lg:block" aria-hidden="true">
-                <div className="bg-gray-100 rounded-[4.5rem] p-4 group-hover:scale-[1.02] transition-transform duration-700 shadow-2xl">
-                  <div className="bg-white rounded-[3.5rem] overflow-hidden shadow-inner p-10 aspect-[4/5] flex items-center justify-center">
+              <div className="relative group hidden lg:flex flex-col" aria-hidden="true">
+                <div className="bg-gray-100 rounded-[4.5rem] p-4 group-hover:scale-[1.02] transition-transform duration-700 shadow-2xl flex-1 flex flex-col">
+                  <div className="bg-white rounded-[3.5rem] overflow-hidden shadow-inner p-8 flex-1 flex items-center justify-center">
                     <div className="w-full h-full border-8 border-gray-50 rounded-[2.5rem] flex items-center justify-center relative bg-white">
                       <FaUtensils className="text-[150px] text-indigo-50" />
                       <div className="absolute inset-0 flex flex-col justify-end p-10">
@@ -382,9 +497,9 @@ export default function MarketingHomeClient() {
         </section>
 
         {/* --- CUSTOMER EXPERIENCE: FRICTIONLESS JOURNEY --- */}
-        <section id="customer-journey" className="py-14 md:py-24 lg:py-32 bg-indigo-50/50 relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 md:mb-16 lg:mb-24">
+        <section id="customer-journey" className="min-h-screen py-8 md:py-12 lg:py-16 bg-indigo-50/50 relative overflow-hidden flex items-center">
+          <div className="w-full px-4 sm:px-8 lg:px-16 xl:px-24">
+            <div className="text-center mb-6 md:mb-8 lg:mb-10">
               <span className={`text-indigo-600 font-black text-xs uppercase mb-4 md:mb-6 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.cust_exp_badge}</span>
               <h2 className={`text-3xl sm:text-5xl md:text-7xl font-black text-gray-900 tracking-tighter mb-5 md:mb-10 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.cust_exp_title}</h2>
               <p className={`text-base sm:text-xl md:text-2xl text-gray-500 max-w-4xl mx-auto ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
@@ -392,7 +507,7 @@ export default function MarketingHomeClient() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-8 lg:gap-12">
               <div className="bg-white p-5 sm:p-8 md:p-12 rounded-2xl md:rounded-[3.5rem] shadow-xl border border-indigo-100/50 hover:shadow-2xl transition-all">
                 <div className="w-14 h-14 sm:w-20 sm:h-20 bg-indigo-600 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white text-2xl sm:text-4xl mb-5 sm:mb-10 shadow-lg shadow-indigo-200">
                   <FaQrcode />
@@ -430,15 +545,15 @@ export default function MarketingHomeClient() {
         </section>
 
         {/* --- THE SAAS ENGINE: FEATURES --- */}
-        <section id="features" className="py-14 md:py-24 lg:py-32 bg-indigo-950 relative overflow-hidden">
+        <section id="features" className="min-h-screen py-8 md:py-12 lg:py-16 bg-indigo-950 relative overflow-hidden flex items-center">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" aria-hidden="true" />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 md:mb-16 lg:mb-24">
+          <div className="w-full px-4 sm:px-8 lg:px-16 xl:px-24">
+            <div className="text-center mb-6 md:mb-8 lg:mb-10">
               <span className={`text-indigo-400 font-black text-xs uppercase mb-4 md:mb-6 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.feat_badge}</span>
               <h2 className={`text-3xl sm:text-5xl md:text-6xl lg:text-[80px] font-black text-white tracking-tighter mb-5 md:mb-10 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.feat_title}</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-8 lg:gap-10">
               <FeatureCard icon={<FaSyncAlt aria-hidden="true" />} title={t.feat1_title} desc={t.feat1_desc} lang={lang} />
               <FeatureCard icon={<FaChartLine aria-hidden="true" />} title={t.feat2_title} desc={t.feat2_desc} lang={lang} />
               <FeatureCard icon={<FaShieldAlt aria-hidden="true" />} title={t.feat3_title} desc={t.feat3_desc} lang={lang} />
@@ -450,19 +565,19 @@ export default function MarketingHomeClient() {
         </section>
 
         {/* --- TRUST ECOSYSTEM: ARCH + SECURITY + DATA + DEV --- */}
-        <section id="trust" className="py-14 md:py-24 lg:py-32 bg-white">
+        <section id="trust" className="min-h-screen py-8 md:py-14 bg-white flex items-center">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-32 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-20 items-stretch">
 
               {/* Column 1: Technology & Privacy */}
-              <div className="space-y-8 md:space-y-20">
+              <div className="space-y-6 md:space-y-10">
                 <article>
-                  <span className={`text-indigo-600 font-black text-xs uppercase mb-4 md:mb-6 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.trust_badge}</span>
-                  <h2 className={`text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-5 md:mb-8 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.trust_title_p1} <br /> {t.trust_title_p2}</h2>
-                  <p className={`text-base md:text-xl text-gray-500 font-medium mb-6 md:mb-10 ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
+                  <span className={`text-indigo-600 font-black text-xs uppercase mb-4 md:mb-5 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.trust_badge}</span>
+                  <h2 className={`text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-4 md:mb-6 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.trust_title_p1} <br /> {t.trust_title_p2}</h2>
+                  <p className={`text-base md:text-lg text-gray-500 font-medium mb-5 md:mb-8 ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
                     {t.trust_desc}
                   </p>
-                  <div className="grid grid-cols-2 gap-3 md:gap-6">
+                  <div className="grid grid-cols-2 gap-3 md:gap-4">
                     <TechToken icon={<FaServer aria-hidden="true" />} label={t.trust_tech1} />
                     <TechToken icon={<FaDatabase aria-hidden="true" />} label={t.trust_tech2} />
                     <TechToken icon={<FaLock aria-hidden="true" />} label={t.trust_tech3} />
@@ -470,29 +585,28 @@ export default function MarketingHomeClient() {
                   </div>
                 </article>
 
-                <div className="bg-gray-50 p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-gray-100 relative overflow-hidden group">
-                  {/* Decorative blobs */}
+                <div className="bg-gray-50 p-5 sm:p-7 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-600/5 rounded-full -translate-y-1/2 translate-x-1/2" aria-hidden="true" />
                   <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/5 rounded-full translate-y-1/2 -translate-x-1/2" aria-hidden="true" />
 
                   {/* Quote */}
-                  <div className="relative flex items-start gap-3 mb-5 md:mb-7">
-                    <FaShieldAlt className="text-xl md:text-2xl text-indigo-500 mt-0.5 shrink-0" aria-hidden="true" />
-                    <blockquote className={`text-sm sm:text-base md:text-lg font-bold text-gray-700 italic leading-relaxed ${lang !== 'en' ? 'indic-spacing' : ''}`}>
+                  <div className="relative flex items-start gap-3 mb-5">
+                    <FaShieldAlt className="text-lg text-indigo-500 mt-0.5 shrink-0" aria-hidden="true" />
+                    <blockquote className={`text-sm sm:text-base font-bold text-gray-700 italic leading-relaxed ${lang !== 'en' ? 'indic-spacing' : ''}`}>
                       {t.trust_quote}
                     </blockquote>
                   </div>
 
                   {/* Divider */}
-                  <div className="border-t border-gray-200 mb-5 md:mb-7" />
+                  <div className="border-t border-gray-200 mb-5" />
 
                   {/* Feature 1: Email Export */}
-                  <div className="flex items-start gap-3 sm:gap-4 mb-4 md:mb-5 group/item">
-                    <div className="w-9 h-9 md:w-11 md:h-11 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-indigo-600 transition-colors">
-                      <FaEnvelope className="text-indigo-600 group-hover/item:text-white transition-colors text-sm md:text-base" aria-hidden="true" />
+                  <div className="flex items-start gap-3 sm:gap-4 mb-4 group/item">
+                    <div className="w-9 h-9 md:w-10 md:h-10 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-indigo-600 transition-colors">
+                      <FaEnvelope className="text-indigo-600 group-hover/item:text-white transition-colors text-sm" aria-hidden="true" />
                     </div>
                     <div>
-                      <div className="font-black text-gray-900 text-sm md:text-base tracking-tight">
+                      <div className="font-black text-gray-900 text-sm tracking-tight">
                         {lang === 'bn' ? 'ইমেইলে এক্সপোর্ট করুন যেকোনো সময়' : lang === 'hi' ? 'कभी भी ईमेल एक्सपोर्ट करें' : 'Email Export — Anytime'}
                       </div>
                       <div className="text-xs text-gray-400 font-medium mt-0.5">
@@ -505,12 +619,12 @@ export default function MarketingHomeClient() {
                   </div>
 
                   {/* Feature 2: Monthly Auto-Report Email */}
-                  <div className="flex items-start gap-3 sm:gap-4 mb-4 md:mb-5 group/item">
-                    <div className="w-9 h-9 md:w-11 md:h-11 bg-orange-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-orange-500 transition-colors">
-                      <FaChartLine className="text-orange-500 group-hover/item:text-white transition-colors text-sm md:text-base" aria-hidden="true" />
+                  <div className="flex items-start gap-3 sm:gap-4 mb-4 group/item">
+                    <div className="w-9 h-9 md:w-10 md:h-10 bg-orange-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-orange-500 transition-colors">
+                      <FaChartLine className="text-orange-500 group-hover/item:text-white transition-colors text-sm" aria-hidden="true" />
                     </div>
                     <div>
-                      <div className="font-black text-gray-900 text-sm md:text-base tracking-tight">
+                      <div className="font-black text-gray-900 text-sm tracking-tight">
                         {lang === 'bn' ? 'মাসিক রিপোর্ট নিবন্ধিত মেইলে' : lang === 'hi' ? 'मासिक रिपोर्ट पंजीकृत ईमेल पर' : 'Monthly Report to Registered Email'}
                       </div>
                       <div className="text-xs text-gray-400 font-medium mt-0.5">
@@ -524,11 +638,11 @@ export default function MarketingHomeClient() {
 
                   {/* Feature 3: Auto Monthly Cleanup */}
                   <div className="flex items-start gap-3 sm:gap-4 group/item">
-                    <div className="w-9 h-9 md:w-11 md:h-11 bg-purple-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-purple-600 transition-colors">
-                      <FaSyncAlt className="text-purple-600 group-hover/item:text-white transition-colors text-sm md:text-base" aria-hidden="true" />
+                    <div className="w-9 h-9 md:w-10 md:h-10 bg-purple-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-purple-600 transition-colors">
+                      <FaSyncAlt className="text-purple-600 group-hover/item:text-white transition-colors text-sm" aria-hidden="true" />
                     </div>
                     <div>
-                      <div className="font-black text-gray-900 text-sm md:text-base tracking-tight">
+                      <div className="font-black text-gray-900 text-sm tracking-tight">
                         {lang === 'bn' ? 'প্রতি মাসে স্বয়ংক্রিয় পরিষ্কার' : lang === 'hi' ? 'मासिक ऑटो क्लीनअप' : 'Auto Monthly Cleanup'}
                       </div>
                       <div className="text-xs text-gray-400 font-medium mt-0.5">
@@ -544,27 +658,27 @@ export default function MarketingHomeClient() {
 
               {/* Column 2: Developer & Security Manifest */}
               <div className="flex flex-col">
-                <div className="bg-indigo-950 rounded-3xl md:rounded-[4.5rem] p-6 sm:p-10 md:p-16 text-white flex-1 relative overflow-hidden flex flex-col justify-between">
+                <div className="bg-indigo-950 rounded-3xl md:rounded-[3rem] p-6 sm:p-10 md:p-12 text-white flex-1 relative overflow-hidden flex flex-col justify-between">
                   <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-[100px]" aria-hidden="true" />
                   <div>
-                    <h3 className="text-xl md:text-3xl font-black mb-5 md:mb-10 flex items-center tracking-tight">
+                    <h3 className="text-xl md:text-2xl font-black mb-5 md:mb-8 flex items-center tracking-tight">
                       <FaLock className="mr-3 text-indigo-400" aria-hidden="true" /> {t.sec_manifest}
                     </h3>
-                    <div className="space-y-5 md:space-y-8">
+                    <div className="space-y-5 md:space-y-6">
                       <SimpleSecurityPoint title={t.sec1_title} desc={t.sec1_desc} lang={lang} />
                       <SimpleSecurityPoint title={t.sec2_title} desc={t.sec2_desc} lang={lang} />
                       <SimpleSecurityPoint title={t.sec3_title} desc={t.sec3_desc} lang={lang} />
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-8 md:mt-16 md:pt-16 border-t border-white/10">
-                    <div className="flex items-center space-x-4 md:space-x-6">
-                      <div className="w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shrink-0">
+                  <div className="mt-8 pt-8 border-t border-white/10">
+                    <div className="flex items-center space-x-4 md:space-x-5">
+                      <div className="w-12 h-12 md:w-14 md:h-14 bg-white/10 rounded-2xl flex items-center justify-center text-2xl shrink-0">
                         <FaIdCard className="text-indigo-400" aria-hidden="true" />
                       </div>
                       <div>
                         <div className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-1">{t.sec_dev}</div>
-                        <div className="text-base md:text-xl font-black tracking-tight" translate="no">Sahin Arman</div>
+                        <div className="text-base md:text-lg font-black tracking-tight" translate="no">Sahin Arman</div>
                         <div className="text-xs text-white/40 font-bold tracking-widest mt-1">sahin401099@gmail.com</div>
                         <div className="text-xs text-white/40 font-bold tracking-widest mt-0.5">+91 9563401099</div>
                       </div>
@@ -576,37 +690,36 @@ export default function MarketingHomeClient() {
           </div>
         </section>
 
-        {/* --- CTA SECTION --- */}
-        <section className="py-12 md:py-24 bg-white" aria-labelledby="cta-heading">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="bg-indigo-600 rounded-3xl md:rounded-[4rem] px-5 sm:px-10 py-10 sm:py-14 md:py-20 text-white shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent pointer-events-none" aria-hidden="true" />
-              <h2 id="cta-heading" className={`text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter mb-6 md:mb-10 relative z-10 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.cta_title_p1} <br /> {t.cta_title_p2}</h2>
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-0 sm:space-x-8 relative z-10">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
-                  <Link href="/auth?mode=register" className="px-7 sm:px-10 md:px-12 py-3.5 sm:py-5 md:py-6 bg-white text-indigo-600 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl shadow-2xl hover:bg-gray-50 transition-all flex items-center justify-center w-full sm:w-auto">
-                    {t.cta_btn}
-                  </Link>
-                </motion.div>
-                <button
-                  onClick={() => window.open('https://wa.me/919563401099', '_blank')}
-                  className="flex items-center space-x-2 sm:space-x-3 text-base sm:text-xl font-bold group"
-                  aria-label="Contact support on WhatsApp"
-                >
-                  <FaWhatsapp className="text-2xl sm:text-3xl" aria-hidden="true" />
-                  <span>{t.cta_chat}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+
       </main>
 
       {/* --- FOOTER --- */}
-      <footer className="bg-slate-950 text-white">
+      <footer className="bg-slate-950 text-white relative pt-12 md:pt-20">
+        <div className="max-w-4xl mx-auto px-4 relative z-10">
+          <div className="bg-indigo-600 rounded-2xl md:rounded-[3rem] px-6 sm:px-10 py-8 md:py-16 text-white shadow-2xl relative overflow-hidden group text-center">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent pointer-events-none" aria-hidden="true" />
+            <h2 className={`text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter mb-6 md:mb-10 relative z-10 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.cta_title_p1} <br /> {t.cta_title_p2}</h2>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-0 sm:space-x-8 relative z-10">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+                <Link href="/auth?mode=register" className="px-8 sm:px-12 py-3 sm:py-5 bg-white text-indigo-600 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl shadow-lg hover:bg-gray-50 transition-all flex items-center justify-center w-full sm:w-auto">
+                  {t.cta_btn}
+                </Link>
+              </motion.div>
+              <button
+                onClick={() => window.open('https://wa.me/919563401099', '_blank')}
+                className="flex items-center space-x-2 sm:space-x-3 text-base sm:text-xl font-bold group pt-4 sm:pt-0"
+                aria-label="Contact support on WhatsApp"
+              >
+                <FaWhatsapp className="text-2xl sm:text-3xl" aria-hidden="true" />
+                <span>{t.cta_chat}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Main footer body */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10 md:pt-20 md:pb-14">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6 md:pt-20 md:pb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
 
             {/* Column 1: Brand */}
             <div className="sm:col-span-2 lg:col-span-1">
