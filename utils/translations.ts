@@ -22,7 +22,7 @@ export const TRANSLATIONS = {
     hero_subtext_3: "Real-time analytics and remote menu control. You're in charge, even when you're away.",
     hero_cta_3: "Join Network",
     hero_secondary_3: "Explore Admin",
-    
+
     // Crisis Section - High Persuasion
     crisis_badge: "The Painful Reality",
     crisis_title: "Is Your Paper Menu Hurting Your Business ?",
@@ -40,12 +40,12 @@ export const TRANSLATIONS = {
     crisis_prob6_d: "Customers wait 5-10 mins just to see the menu. Digital is instant.",
     crisis_highlight: "Instant Updates. Zero Printing. Infinite Growth.",
     crisis_desc: "Stop relying on limited paper and slow service. Your customers' phones are the only remote they need to order.",
-    
+
     offer_badge: "Limited Founder's Offer",
     offer_free: "FREE FOREVER",
     offer_desc_p1: "No Commissions. No Setup Fee. No BS.",
     offer_desc_p2: "Claim one of the 100 Free spots today. After that, a minimal ₹500/yr plan will apply.",
-    offer_cta: "Create My Free Account",
+    offer_cta: "Create Free Account",
     offer_learn: "Why is it free ?",
     platform_badge: "Frictionless Tech",
     platform_title: "Built for Humans.",
@@ -109,7 +109,13 @@ export const TRANSLATIONS = {
     foot_privacy: "Privacy Policy",
     foot_terms: "Terms of Use",
     foot_api: "Developer API",
-    foot_rights: "All Rights Reserved."
+    foot_rights: "All Rights Reserved.",
+    why_free_badge: "Our Journey",
+    why_free_title: "Why is Digital Menu Order Free?",
+    why_free_headline: "Empowering Every Small Restaurant in India.",
+    why_free_body1: "We started this project because we saw how difficult and expensive it was for local restaurants to adopt modern technology. From costly POS hardware to hidden setup fees, going digital often meant sacrificing already thin profit margins.",
+    why_free_body2: "Our 'Founder's Offer' is our commitment to building the best platform together with you. The first 100 restaurants to join will be 'Free Forever' as a thank you for trusting our early vision.",
+    why_free_body3: "Our future business model will focus on advanced analytics and enterprise tools for larger chains, but the core ordering system for small independent restaurants will always be accessible and affordable."
   },
   hi: {
     nav_platform: "कैसे काम करता है",
@@ -132,7 +138,7 @@ export const TRANSLATIONS = {
     hero_subtext_3: "घर बैठे मेन्यू और कीमतें बदलें। आप ही असली बॉस हैं।",
     hero_cta_3: "शुरू करें",
     hero_secondary_3: "एडमिन देखें",
-    
+
     // Crisis Section - High Persuasion
     crisis_badge: "कड़वा सच",
     crisis_title: "क्या छपे हुए मेन्यू आपका नुकसान कर रहे हैं ?",
@@ -150,12 +156,12 @@ export const TRANSLATIONS = {
     crisis_prob6_d: "मेन्यू देखने के लिए ग्राहक 10 मिनट वेट क्यों करें ? डिजिटल तो तुरंत है।",
     crisis_highlight: "तुरंत बदलाव। जीरो छपाई। अनलिमिटेड तरक्की।",
     crisis_desc: "सीमित कागज और धीमी सर्विस छोड़िए। ग्राहकों का फोन ही उनका डिजिटल रिमोट है।",
-    
+
     offer_badge: "एक बार का विज़नरी ऑफर",
     offer_free: "हमेशा के लिए फ्री",
     offer_desc_p1: "कोई कमीशन नहीं। कोई सेटअप फीस नहीं।",
     offer_desc_p2: "आज ही अपना फ्री स्लॉट सुरक्षित करें। 100 रेस्तरां के बाद, ₹500/साल का छोटा चार्ज लगेगा।",
-    offer_cta: "मेरा फ्री खाता बनाएं",
+    offer_cta: " फ्री खाता बनाएं",
     offer_learn: "यह फ्री क्यों है ?",
     platform_badge: "स्मार्ट तकनीक",
     platform_title: "इंसानों के लिए बना।",
@@ -219,7 +225,13 @@ export const TRANSLATIONS = {
     foot_privacy: "प्राइवेसी पॉलिसी",
     foot_terms: "शर्तें",
     foot_api: "डेवलपर API",
-    foot_rights: "सर्वाधिकार सुरक्षित।"
+    foot_rights: "सर्वाधिकार सुरक्षित।",
+    why_free_badge: "हमारी यात्रा",
+    why_free_title: "डिजिटल मेनू फ्री क्यों है?",
+    why_free_headline: "भारत के हर छोटे रेস্তरां को सशक्त बनाना।",
+    why_free_body1: "हमने यह प्रोजेक्ट इसलिए शुरू किया क्योंकि हमने देखा कि स्थानीय रेस्तरां के लिए आधुनिक तकनीक अपनाना कितना कठिन और महंगा था। महंगे POS हार्डवेयर से लेकर छुपे हुए सेटअप शुल्क तक, डिजिटल होने का मतलब अक्सर कम मुनाफे से समझौता करना था।",
+    why_free_body2: "हमारा 'फाउंडर ऑफर' आपके साथ मिलकर बेहतरीन प्लेटफॉर्म बनाने की हमारी प्रतिबद्धता है। हमारी शुरुआती विजन पर भरोसा करने के लिए धन्यवाद के रूप में शामिल होने वाले पहले 100 रेस्तरां 'हमेशा के लिए फ्री' होंगे।",
+    why_free_body3: "हमारा भविष्य का बिजनेस मॉडल बड़ी चेन के लिए एडवांस एनालिटिक्स और एंटरप्राइज टूल्स पर ध्यान केंद्रित करेगा, लेकिन छोटे स्वतंत्र रेस्तरां के लिए कोर ऑर्डरिंग सिस्टम हमेशा सुलभ और किफायती रहेगा।"
   },
   bn: {
     nav_platform: "কীভাবে কাজ করে",
@@ -242,7 +254,7 @@ export const TRANSLATIONS = {
     hero_subtext_3: "বাড়িতে বসেই মেনু আর দাম নিয়ন্ত্রণ করুন। আপনিই আসল বস।",
     hero_cta_3: "আজই শুরু করুন",
     hero_secondary_3: "অ্যাডমিন দেখুন",
-    
+
     // Crisis Section - High Persuasion
     crisis_badge: "কঠিন বাস্তব",
     crisis_title: "কাগজের মেনু কি আপনার ব্যবসার ক্ষতি করছে ?",
@@ -260,12 +272,12 @@ export const TRANSLATIONS = {
     crisis_prob6_d: "ওয়েটার মেনু আনতে ১০ মিনিট কেন দেরি করবেন ? ডিজিটাল মেনু তো এক সেকেন্ডেই হাজির।",
     crisis_highlight: "ততক্ষণাৎ আপডেট। জিরো খরচ। সীমাহীন উন্নতি।",
     crisis_desc: "কাগজের সীমাবদ্ধতা এড়িয়ে চলুন। আপনার গ্রাহকের ফোনই হবে তাঁদের ডিজিটাল অর্ডার কার্ড।",
-    
+
     offer_badge: "ফাউন্ডার অফার",
     offer_free: "আজীবনের জন্য ফ্রি",
     offer_desc_p1: "কোনো কমিশন নেই। মাসিক কোনো চার্জ নেই।",
     offer_desc_p2: "প্রথম ১০০ জন গ্রাহকের জন্য এই সুযোগ সীমিত। এরপর বছরে মাত্র ৫০০ টাকার প্ল্যান শুরু হবে।",
-    offer_cta: "আমার ফ্রি অ্যাকাউন্ট খুলুন",
+    offer_cta: "ফ্রি অ্যাকাউন্ট খুলুন",
     offer_learn: "সবকিছু ফ্রি কেন ?",
     platform_badge: "অত্যাধুনিক প্রযুক্তি",
     platform_title: "আপনার জন্য সহজবোধ্য।",
@@ -329,6 +341,12 @@ export const TRANSLATIONS = {
     foot_privacy: "প্রাইভেসি পলিসি",
     foot_terms: "শর্তাবলী",
     foot_api: "ডেভেলপার API",
-    foot_rights: "সর্বস্বত্ব সংরক্ষিত।"
+    foot_rights: "সর্বস্বত্ব সংরক্ষিত।",
+    why_free_badge: "আমাদের যাত্রা",
+    why_free_title: "ডিজিটাল মেনু ফ্রি কেন?",
+    why_free_headline: "ভারতের প্রতিটি ছোট রেস্তোরাঁকে শক্তিশালী করা।",
+    why_free_body1: "আমরা এই প্রজেক্টটি শুরু করেছি কারণ আমরা দেখেছি স্থানীয় রেস্তোরাঁগুলোর জন্য আধুনিক প্রযুক্তি গ্রহণ করা কতটা কঠিন এবং ব্যয়বহুল ছিল। দামী POS হার্ডওয়্যার থেকে শুরু করে গোপন সেটআপ ফি পর্যন্ত, ডিজিটাল হওয়ার অর্থ ছিল প্রায়ই অল্প লাভের সঙ্গে আপস করা।",
+    why_free_body2: "আমাদের 'ফাউন্ডার অফার' হলো আপনাদের সাথে মিলে সেরা প্ল্যাটফর্ম তৈরির অঙ্গীকার। আমাদের প্রাথমিক ভিশনের ওপর আস্থা রাখার জন্য প্রথম ১০০টি রেস্তোরাঁ 'আজীবনের জন্য ফ্রি' থাকবে।",
+    why_free_body3: "ভবিষ্যতে আমরা বড় চেইনগুলোর জন্য উন্নত অ্যানালিটিক্স এবং এন্টারপ্রাইজ টুল নিয়ে কাজ করবো, তবে ছোট রেস্তোরাঁগুলোর জন্য মূল অর্ডারিং সিস্টেম সব সময় সহজলভ্য ও সাশ্রয়ী থাকবে।"
   }
 };

@@ -33,9 +33,12 @@ function AuthPageContent() {
     const [captchaKey, setCaptchaKey] = useState(0); // Used to force refresh captcha
 
     // OTP States
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otp, setOtp] = useState('');
     const [otpTimer, setOtpTimer] = useState(30);
     const [resendingOtp, setResendingOtp] = useState(false);
+
+    // Registration agreement
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     // Forgot Password States
     const [forgotStep, setForgotStep] = useState(1);
@@ -105,6 +108,12 @@ function AuthPageContent() {
             return;
         }
 
+        if (!agreedToTerms) {
+            setError('Please agree to the privacy policy and terms of service');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             await register(email, password);
             setOtpEmail(email);
@@ -138,7 +147,7 @@ function AuthPageContent() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await resetPassword(forgotEmail, otp.join(''), newPassword);
+            await resetPassword(forgotEmail, otp, newPassword);
             setShowForgot(false);
             setMode('login');
             setForgotStep(1);
@@ -153,7 +162,7 @@ function AuthPageContent() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await verifyOtp(otpEmail, otp.join(''));
+            await verifyOtp(otpEmail, otp);
             router.push('/admin');
         } catch (err) {
             // Handled in context
@@ -175,15 +184,8 @@ function AuthPageContent() {
         }
     };
 
-    const handleOtpChange = (index: number, value: string) => {
-        if (value.length > 1) value = value.slice(-1);
-        const newOtp = [...otp];
-        newOtp[index] = value;
-        setOtp(newOtp);
-        if (value && index < 5) {
-            const nextInput = document.getElementById(`otp-${index + 1}`);
-            nextInput?.focus();
-        }
+    const handleOtpChange = (value: string) => {
+        setOtp(value.replace(/\D/g, '').slice(0, 6));
     };
 
     const toggleMode = () => {
@@ -289,6 +291,18 @@ function AuthPageContent() {
                                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
                             />
                         </div>
+                        <div className="flex items-center gap-2 px-2 py-2">
+                            <input
+                                type="checkbox"
+                                id="agree-check"
+                                checked={agreedToTerms}
+                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <label htmlFor="agree-check" className="text-sm text-slate-500">
+                                I agree to the <Link href="/privacy-policy" className="text-indigo-600 hover:underline">Privacy Policy</Link> and <Link href="/terms-of-service" className="text-indigo-600 hover:underline">Terms of Service</Link>
+                            </label>
+                        </div>
                         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
                         <MathCaptcha key={`register-${captchaKey}`} onValidate={setRegisterCaptchaValid} />
                         <button
@@ -371,17 +385,31 @@ function AuthPageContent() {
                                     />
                                 </div>
                                 {mode === 'register' && (
-                                    <div className="relative group">
-                                        <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="password"
-                                            placeholder="Confirm Password"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            required
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50"
-                                        />
-                                    </div>
+                                    <>
+                                        <div className="relative group">
+                                            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="password"
+                                                placeholder="Confirm Password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                            />
+                                        </div>
+                                        <div className="flex items-start gap-2 py-1 px-1">
+                                            <input
+                                                type="checkbox"
+                                                id="agree-check-mobile"
+                                                checked={agreedToTerms}
+                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                                className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <label htmlFor="agree-check-mobile" className="text-[10px] text-slate-500 leading-tight">
+                                                I agree to the <Link href="/privacy-policy" className="text-indigo-600 hover:underline">Privacy Policy</Link> and <Link href="/terms-of-service" className="text-indigo-600 hover:underline">Terms of Service</Link>
+                                            </label>
+                                        </div>
+                                    </>
                                 )}
 
                                 {mode === 'login' && (
@@ -475,18 +503,16 @@ function AuthPageContent() {
                                 </form>
                             ) : (
                                 <form onSubmit={handleResetPassword} className="space-y-6">
-                                    <div className="flex justify-between gap-1">
-                                        {otp.map((digit, idx) => (
-                                            <input
-                                                key={idx}
-                                                id={`otp-${idx}`}
-                                                type="text"
-                                                value={digit}
-                                                onChange={(e) => handleOtpChange(idx, e.target.value)}
-                                                className="w-10 h-12 md:w-12 md:h-14 bg-slate-50 border border-slate-200 rounded-xl text-center text-lg md:text-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
-                                                maxLength={1}
-                                            />
-                                        ))}
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="text"
+                                            value={otp}
+                                            onChange={(e) => handleOtpChange(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 text-center text-2xl font-bold tracking-[1em] text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
+                                            placeholder="000000"
+                                            maxLength={6}
+                                        />
+                                        <p className="text-[10px] text-slate-400 text-center">Enter the 6-digit code sent to your email</p>
                                     </div>
                                     <div className="relative group">
                                         <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600" />
@@ -533,22 +559,20 @@ function AuthPageContent() {
                         <p className="text-slate-500 mb-8 text-sm md:text-base">Code sent to {otpEmail}</p>
 
                         <form onSubmit={handleVerifyOtp} className="max-w-md w-full space-y-8">
-                            <div className="flex justify-between gap-2">
-                                {otp.map((digit, idx) => (
-                                    <input
-                                        key={idx}
-                                        id={`otp-verify-${idx}`}
-                                        type="text"
-                                        value={digit}
-                                        onChange={(e) => handleOtpChange(idx, e.target.value)}
-                                        className="w-10 h-12 md:w-12 md:h-14 bg-slate-50 border border-slate-200 rounded-xl text-center text-lg md:text-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
-                                        maxLength={1}
-                                    />
-                                ))}
+                            <div className="flex flex-col gap-4">
+                                <input
+                                    type="text"
+                                    value={otp}
+                                    onChange={(e) => handleOtpChange(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-5 text-center text-3xl font-bold tracking-[1.2em] text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                    placeholder="000000"
+                                    maxLength={6}
+                                />
+                                <p className="text-xs text-slate-400 font-medium">Please enter the numeric code precisely</p>
                             </div>
                             <button
                                 type="submit"
-                                disabled={isLoading || otp.some(v => !v)}
+                                disabled={isLoading || otp.length !== 6}
                                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
                             >
                                 {isLoading ? <FaSpinner className="animate-spin" /> : "Verify & Continue"}

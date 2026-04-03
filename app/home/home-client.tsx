@@ -16,13 +16,13 @@ import { TRANSLATIONS, Language } from '../../utils/translations';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 import { Skeleton } from '@/components/ui/Skeleton';
 
-const SECTION_IDS = ['hero', 'crisis', 'pricing', 'platform', 'customer-journey', 'features', 'trust'];
-const SECTION_LABELS = ['Home', 'Problems', 'Pricing', 'Platform', 'Experience', 'Features', 'Security'];
+const SECTION_IDS = ['hero', 'crisis', 'pricing', 'platform', 'customer-journey', 'features', 'trust', 'footer'];
+const SECTION_LABELS = ['Home', 'Problems', 'Pricing', 'Platform', 'Experience', 'Features', 'Security', 'Contact'];
 
 export default function MarketingHomeClient() {
   const { isLoading, isAuthenticated } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [lang, setLang] = useState<Language>('en');
+  const [lang, setLang] = useState<Language>('hi');
   const [activeSection, setActiveSection] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
   const isScrolling = useRef(false);
@@ -168,7 +168,7 @@ export default function MarketingHomeClient() {
   }, [isDesktop, activeSection, scrollToSection]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -189,11 +189,10 @@ export default function MarketingHomeClient() {
               <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-all duration-200 text-[10px] font-black text-gray-700 bg-white border border-gray-200 px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm">
                 {SECTION_LABELS[idx]}
               </span>
-              <span className={`block rounded-full transition-all duration-300 shadow-sm ${
-                activeSection === idx
-                  ? 'w-3 h-3 bg-indigo-600 shadow-indigo-300 shadow-md'
-                  : 'w-2 h-2 bg-gray-300 hover:bg-indigo-400'
-              }`} />
+              <span className={`block rounded-full transition-all duration-300 shadow-sm ${activeSection === idx
+                ? 'w-3 h-3 bg-indigo-600 shadow-indigo-300 shadow-md'
+                : 'w-2 h-2 bg-gray-300 hover:bg-indigo-400'
+                }`} />
             </button>
           ))}
         </nav>
@@ -213,7 +212,7 @@ export default function MarketingHomeClient() {
                   <FaQrcode className="w-6 h-6 text-white" aria-hidden="true" />
                 </div>
                 <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tighter">
-                  Digital Menu 
+                  Digital Menu
                 </span>
               </motion.div>
 
@@ -231,9 +230,9 @@ export default function MarketingHomeClient() {
               >
                 {/* Language Toggle - Desktop Only */}
                 <div className="hidden md:flex bg-gray-100 rounded-lg p-1 mr-2">
-                  <button onClick={() => handleLanguageChange('en')} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>EN</button>
-                  <button onClick={() => handleLanguageChange('hi')} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>HI</button>
-                  <button onClick={() => handleLanguageChange('bn')} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>BN</button>
+                  <button onClick={() => handleLanguageChange('en')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>EN</button>
+                  <button onClick={() => handleLanguageChange('hi')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>HI</button>
+                  <button onClick={() => handleLanguageChange('bn')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>BN</button>
                 </div>
 
                 {isLoading ? (
@@ -258,9 +257,9 @@ export default function MarketingHomeClient() {
             {/* Language Toggle - Mobile Only (Below main nav content) */}
             <div className="md:hidden flex justify-center pb-4 pt-1 border-t border-gray-50">
               <div className="flex bg-gray-100 rounded-lg p-1">
-                <button onClick={() => handleLanguageChange('en')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>English</button>
-                <button onClick={() => handleLanguageChange('hi')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>हिन्दी</button>
-                <button onClick={() => handleLanguageChange('bn')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>বাংলা</button>
+                <button onClick={() => handleLanguageChange('en')} className={`w-24 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>English</button>
+                <button onClick={() => handleLanguageChange('hi')} className={`w-24 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>हिन्दी</button>
+                <button onClick={() => handleLanguageChange('bn')} className={`w-24 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>বাংলা</button>
               </div>
             </div>
           </div>
@@ -269,7 +268,7 @@ export default function MarketingHomeClient() {
 
       <main>
         {/* --- HERO SECTION --- */}
-        <section id="hero" className="relative min-h-screen flex items-start md:items-center bg-white overflow-hidden pt-36 pb-20 md:pt-0 md:pb-0">
+        <section id="hero" className="relative min-h-[100dvh] flex items-start md:items-center bg-white overflow-hidden pt-28 pb-12 md:pt-0 md:pb-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -282,7 +281,7 @@ export default function MarketingHomeClient() {
             />
           </AnimatePresence>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full md:pt-20">
+          <div className="max-w-7xl mx-auto pt-12 px-4 sm:px-6 lg:px-8 relative w-full md:pt-20">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-20 items-center">
               <div className="z-10 py-4 md:py-10">
                 <AnimatePresence mode="wait">
@@ -296,31 +295,23 @@ export default function MarketingHomeClient() {
                     <motion.span
                       initial={{ scale: 0.9 }}
                       animate={{ scale: 1 }}
-                      className={`inline-block px-4 py-1.5 bg-white/10 text-white text-[10px] font-black rounded-full mb-4 md:mb-8 uppercase backdrop-blur-sm border border-white/10 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}
+                      className={`inline-block px-4 py-1.5 bg-white/10 text-white text-[10px] font-black rounded-full mb-6 md:mb-8 uppercase backdrop-blur-sm border border-white/10 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}
                     >
                       {t.hero_badge}
                     </motion.span>
-                    <h1 className={`text-3xl sm:text-5xl md:text-7xl lg:text-[84px] font-black text-white leading-[1.05] mb-4 md:mb-8 tracking-[-0.04em] ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>
+                    <h1 className={`text-5xl sm:text-6xl md:text-7xl  font-black text-white leading-[1.15] md:leading-[1.05] mb-6 md:mb-8 tracking-[-0.04em] ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>
                       {HERO_SLIDES[currentSlide].headline}
                     </h1>
-                    <p className={`text-base sm:text-xl md:text-2xl text-indigo-50/80 mb-6 md:mb-12 max-w-xl font-medium ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
+                    <p className={`text-xl sm:text-2xl md:text-3xl text-indigo-50/80 mb-10 md:mb-12 max-w-xl font-medium ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
                       {HERO_SLIDES[currentSlide].subtext}
                     </p>
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-6">
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-5 sm:gap-6">
                       <motion.div whileHover={{ y: -5 }} whileTap={{ scale: 0.98 }}>
                         <Link href="/auth?mode=register" className="bg-white text-indigo-600 px-6 sm:px-10 md:px-12 py-3.5 sm:py-5 md:py-6 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl transition-all shadow-2xl flex items-center justify-center w-full sm:w-auto">
                           {HERO_SLIDES[currentSlide].cta}
                           <FaArrowRight className="ml-3" aria-hidden="true" />
                         </Link>
                       </motion.div>
-                      <motion.button
-                        whileHover={{ y: -5 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="px-6 sm:px-10 md:px-12 py-3.5 sm:py-5 md:py-6 bg-white/5 border border-white/20 text-white hover:bg-white/10 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl transition-all flex items-center justify-center backdrop-blur-xl w-full sm:w-auto"
-                        aria-label="View Product Demo"
-                      >
-                        {HERO_SLIDES[currentSlide].secondaryCta}
-                      </motion.button>
                     </div>
                   </motion.div>
                 </AnimatePresence>
@@ -375,7 +366,7 @@ export default function MarketingHomeClient() {
         <section id="crisis" className="min-h-screen py-8 md:py-12 lg:py-16 bg-slate-900 border-t items-center flex relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/10 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
-          
+
           <div className="w-full px-4 sm:px-8 lg:px-16 xl:px-24 relative z-10">
             <div className="text-center mb-10 md:mb-16">
               <span className={`text-red-400 font-black text-xs uppercase mb-4 md:mb-6 block ${lang === 'en' ? 'tracking-[0.3em]' : 'tracking-normal'}`}>{t.crisis_badge}</span>
@@ -417,9 +408,9 @@ export default function MarketingHomeClient() {
                 <span className="text-sm font-bold text-gray-900">Digital Menu Order</span>
                 <div className="text-6xl md:text-8xl font-black text-gray-900 mb-4 md:mb-6 tracking-tighter uppercase italic">{t.offer_free}</div>
                 <p className="text-lg md:text-xl text-gray-500 font-bold mb-6 md:mb-8">{t.offer_desc_p1} <br className="hidden md:block" /> {t.offer_desc_p2}</p>
-                
+
                 <div className={`mb-8 md:mb-10 p-4 md:p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50 text-indigo-700 text-xs md:text-sm font-bold inline-block mx-auto max-w-lg ${lang !== 'en' ? 'indic-spacing' : ''}`}>
-                   {t.offer_limit}
+                  {t.offer_limit}
                 </div>
 
                 <div className="block">
@@ -427,10 +418,10 @@ export default function MarketingHomeClient() {
                     {t.offer_cta}
                   </Link>
                 </div>
-                <div className="flex items-center justify-center space-x-3 text-sm font-bold text-gray-400 group cursor-pointer" role="button" aria-label="Learn more about our free offer">
+                <Link href="/why-free" className="flex items-center justify-center space-x-3 text-sm font-bold text-gray-400 group cursor-pointer hover:text-indigo-600 transition-colors" role="button" aria-label="Learn more about our free offer">
                   <span>{t.offer_learn}</span>
                   <FaArrowRight className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-                </div>
+                </Link>
               </div>
               <div className="absolute -bottom-10 -right-10 w-96 h-96 bg-indigo-100 rounded-full blur-[100px] -z-10" aria-hidden="true" />
             </motion.div>
@@ -475,17 +466,17 @@ export default function MarketingHomeClient() {
                   </div>
                 </div>
                 {/* Floating tags */}
-                <motion.div 
-                  animate={{ y: [0, -10, 0] }} 
-                  transition={{ duration: 3, repeat: Infinity }} 
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
                   className="absolute -top-6 md:-top-10 -right-2 md:-right-10 bg-white p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 z-20 scale-90 md:scale-100"
                 >
                   <FaCheckCircle className="text-green-500 text-xl md:text-3xl mb-1 md:mb-2" />
                   <div className="font-black text-[10px] md:text-sm whitespace-nowrap">{t.plat_float1}</div>
                 </motion.div>
-                <motion.div 
-                  animate={{ y: [0, 10, 0] }} 
-                  transition={{ duration: 4, repeat: Infinity, delay: 0.5 }} 
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, delay: 0.5 }}
                   className="absolute -bottom-2 md:-bottom-5 -left-2 md:-left-5 bg-white p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 z-20 scale-90 md:scale-100"
                 >
                   <FaClock className="text-indigo-500 text-xl md:text-3xl mb-1 md:mb-2" />
@@ -693,138 +684,165 @@ export default function MarketingHomeClient() {
 
       </main>
 
-      {/* --- FOOTER --- */}
-      <footer className="bg-slate-950 text-white relative pt-12 md:pt-20">
-        <div className="max-w-4xl mx-auto px-4 relative z-10">
-          <div className="bg-indigo-600 rounded-2xl md:rounded-[3rem] px-6 sm:px-10 py-8 md:py-16 text-white shadow-2xl relative overflow-hidden group text-center">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent pointer-events-none" aria-hidden="true" />
-            <h2 className={`text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter mb-6 md:mb-10 relative z-10 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>{t.cta_title_p1} <br /> {t.cta_title_p2}</h2>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-0 sm:space-x-8 relative z-10">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
-                <Link href="/auth?mode=register" className="px-8 sm:px-12 py-3 sm:py-5 bg-white text-indigo-600 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl shadow-lg hover:bg-gray-50 transition-all flex items-center justify-center w-full sm:w-auto">
-                  {t.cta_btn}
-                </Link>
-              </motion.div>
-              <button
-                onClick={() => window.open('https://wa.me/919563401099', '_blank')}
-                className="flex items-center space-x-2 sm:space-x-3 text-base sm:text-xl font-bold group pt-4 sm:pt-0"
-                aria-label="Contact support on WhatsApp"
-              >
-                <FaWhatsapp className="text-2xl sm:text-3xl" aria-hidden="true" />
-                <span>{t.cta_chat}</span>
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* --- CTA + FOOTER SECTION (LAST SNAP) --- */}
+      <div id="footer" className="min-h-screen flex flex-col">
+        {/* --- CTA SECTION --- */}
+        <section id="cta" className="w-full bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 relative overflow-hidden flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8" aria-labelledby="cta-heading">
+          <div className="absolute inset-0 bg-black/10" aria-hidden="true" />
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" aria-hidden="true" />
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-black/20 to-transparent" aria-hidden="true" />
 
-        {/* Main footer body */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6 md:pt-20 md:pb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="relative z-10 max-w-6xl mx-auto text-center w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="bg-white/10 backdrop-blur-md rounded-3xl md:rounded-[4rem] p-6 md:p-12 border border-white/20 shadow-2xl"
+            >
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-3xl md:rounded-[4rem]" aria-hidden="true" />
 
-            {/* Column 1: Brand */}
-            <div className="sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center space-x-3 mb-5">
-                <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-900/40">
-                  <FaQrcode className="w-5 h-5 text-white" aria-hidden="true" />
-                </div>
-                <span className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                  Digital Menu Order
+              <h2 className={`text-2xl sm:text-3xl md:text-5xl font-black tracking-tighter mb-6 md:mb-8 relative z-10 ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-200">
+                  {t.cta_title_p1} <br /> {t.cta_title_p2}
                 </span>
-              </div>
-              <p className={`text-slate-400 text-sm leading-relaxed mb-7 max-w-xs ${lang !== 'en' ? 'indic-spacing' : ''}`}>
-                {lang === 'bn'
-                  ? 'আপনার রেস্তোরাঁর জন্য ডিজিটাল মেনু ও অর্ডার ম্যানেজমেন্ট — সম্পূর্ণ বিনামূল্যে।'
-                  : lang === 'hi'
-                  ? 'आपके रेस्तरां के लिए डिजिटल मेनू और ऑर्डर मैनेजमेंट — बिल्कुल मुफ्त।'
-                  : 'Digital menu & order management for your restaurant — completely free.'}
-              </p>
-              {/* Contact buttons */}
-              <div className="flex flex-col gap-3">
-                <a
-                  href="https://wa.me/919563401099"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 px-4 py-2.5 rounded-xl text-sm font-bold transition-all group w-fit"
-                  aria-label="Contact on WhatsApp"
-                >
-                  <FaWhatsapp className="text-lg group-hover:scale-110 transition-transform" />
-                  <span>+91 9563401099</span>
-                </a>
-                <a
-                  href="mailto:sahin401099@gmail.com"
-                  className="flex items-center gap-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 px-4 py-2.5 rounded-xl text-sm font-bold transition-all group w-fit"
-                  aria-label="Send email"
-                >
-                  <FaEnvelope className="text-lg group-hover:scale-110 transition-transform" />
-                  <span>sahin401099@gmail.com</span>
-                </a>
-              </div>
-            </div>
+              </h2>
 
-            {/* Column 2: Quick Links */}
-            <div>
-              <h3 className={`text-xs font-black uppercase text-slate-500 mb-5 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}>
-                {lang === 'bn' ? 'পেজ লিংক' : lang === 'hi' ? 'पेज लिंक' : 'Quick Links'}
-              </h3>
-              <ul className="space-y-3">
-                {[
-                  { href: '#platform', label: lang === 'bn' ? 'প্ল্যাটফর্ম' : lang === 'hi' ? 'प्लेटफ़ॉर्म' : 'Platform' },
-                  { href: '#features', label: lang === 'bn' ? 'ফিচার সমূহ' : lang === 'hi' ? 'विशेषताएँ' : 'Features' },
-                  { href: '#trust', label: lang === 'bn' ? 'নিরাপত্তা' : lang === 'hi' ? 'सुरक्षा' : 'Security' },
-                  { href: '#pricing', label: lang === 'bn' ? 'মূল্য' : lang === 'hi' ? 'मूल्य निर्धारण' : 'Pricing' },
-                  { href: '#crisis', label: lang === 'bn' ? 'সমস্যাগুলো' : lang === 'hi' ? 'समस्याएँ' : 'The Problem' },
-                ].map(({ href, label }) => (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      className="text-slate-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group"
-                    >
-                      <span className="w-1 h-1 bg-indigo-500 rounded-full group-hover:w-2 transition-all" />
-                      {label}
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 relative z-10">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+                  <Link href="/auth?mode=register" className="group relative px-6 sm:px-10 py-3 sm:py-5 bg-white text-indigo-600 rounded-2xl sm:rounded-3xl font-black text-base sm:text-lg md:text-xl shadow-2xl hover:shadow-3xl hover:bg-gray-50 transition-all flex items-center justify-center w-full sm:w-auto overflow-hidden">
+                    <span className="relative z-10">{t.cta_btn}</span>
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </motion.div>
+
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
+                  <button
+                    onClick={() => window.open('https://wa.me/919563401099', '_blank')}
+                    className="group relative flex items-center justify-center space-x-3 text-white text-base sm:text-lg font-bold bg-green-500 hover:bg-green-400 px-5 sm:px-7 py-3 sm:py-5 rounded-2xl shadow-lg hover:shadow-xl transition-all w-full sm:w-auto overflow-hidden"
+                    aria-label="Contact support on WhatsApp"
+                  >
+                    <FaWhatsapp className="text-lg sm:text-xl group-hover:scale-110 transition-transform relative z-10" />
+                    <span className="relative z-10">{t.cta_chat}</span>
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* --- FOOTER --- */}
+        <footer className="bg-slate-950 text-white relative pt-4 md:pt-6">
+          {/* Main footer body */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-4 md:pt-6 md:pb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+
+              {/* Column 1: Brand */}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <div className="flex items-center space-x-3 mb-5">
+                  <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-900/40">
+                    <FaQrcode className="w-5 h-5 text-white" aria-hidden="true" />
+                  </div>
+                  <span className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                    Digital Menu Order
+                  </span>
+                </div>
+                <p className={`text-slate-400 text-sm leading-relaxed mb-7 max-w-xs ${lang !== 'en' ? 'indic-spacing' : ''}`}>
+                  {lang === 'bn'
+                    ? 'আপনার রেস্তোরাঁর জন্য ডিজিটাল মেনু ও অর্ডার ম্যানেজমেন্ট — সম্পূর্ণ বিনামূল্যে।'
+                    : lang === 'hi'
+                      ? 'आपके रेस्तरां के लिए डिजिटल मेनू और ऑर्डर मैनेजमेंट — बिल्कुल मुफ्त।'
+                      : 'Digital menu & order management for your restaurant — completely free.'}
+                </p>
+                {/* Contact buttons */}
+                <div className="flex flex-col gap-3">
+                  <a
+                    href="https://wa.me/919563401099"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 px-4 py-2.5 rounded-xl text-sm font-bold transition-all group w-fit"
+                    aria-label="Contact on WhatsApp"
+                  >
+                    <FaWhatsapp className="text-lg group-hover:scale-110 transition-transform" />
+                    <span>+91 9563401099</span>
+                  </a>
+                  <a
+                    href="mailto:sahin401099@gmail.com"
+                    className="flex items-center gap-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 px-4 py-2.5 rounded-xl text-sm font-bold transition-all group w-fit"
+                    aria-label="Send email"
+                  >
+                    <FaEnvelope className="text-lg group-hover:scale-110 transition-transform" />
+                    <span>sahin401099@gmail.com</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Column 2: Quick Links */}
+              <div>
+                <h3 className={`text-xs font-black uppercase text-slate-500 mb-5 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}>
+                  {lang === 'bn' ? 'পেজ লিংক' : lang === 'hi' ? 'पेज लिंक' : 'Quick Links'}
+                </h3>
+                <ul className="space-y-3">
+                  {[
+                    { href: '#platform', label: lang === 'bn' ? 'প্ল্যাটফর্ম' : lang === 'hi' ? 'प्लेटफ़ॉर्म' : 'Platform' },
+                    { href: '#features', label: lang === 'bn' ? 'ফিচার সমূহ' : lang === 'hi' ? 'विशेषताएँ' : 'Features' },
+                    { href: '#trust', label: lang === 'bn' ? 'নিরাপত্তা' : lang === 'hi' ? 'सुरक्षा' : 'Security' },
+                    { href: '#pricing', label: lang === 'bn' ? 'মূল্য' : lang === 'hi' ? 'मूल्य निर्धारण' : 'Pricing' },
+                    { href: '#crisis', label: lang === 'bn' ? 'সমস্যাগুলো' : lang === 'hi' ? 'समस्याएँ' : 'The Problem' },
+                  ].map(({ href, label }) => (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className="text-slate-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group"
+                      >
+                        <span className="w-1 h-1 bg-indigo-500 rounded-full group-hover:w-2 transition-all" />
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Column 3: Legal */}
+              <div>
+                <h3 className={`text-xs font-black uppercase text-slate-500 mb-5 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}>
+                  {lang === 'bn' ? 'আইনি তথ্য' : lang === 'hi' ? 'कानूनी' : 'Legal'}
+                </h3>
+                <ul className="space-y-3">
+                  <li>
+                    <Link href="/privacy-policy" className="text-slate-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group">
+                      <span className="w-1 h-1 bg-purple-500 rounded-full group-hover:w-2 transition-all" />
+                      {t.foot_privacy}
                     </Link>
                   </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Column 3: Legal */}
-            <div>
-              <h3 className={`text-xs font-black uppercase text-slate-500 mb-5 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}>
-                {lang === 'bn' ? 'আইনি তথ্য' : lang === 'hi' ? 'कानूनी' : 'Legal'}
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link href="/privacy-policy" className="text-slate-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group">
-                    <span className="w-1 h-1 bg-purple-500 rounded-full group-hover:w-2 transition-all" />
-                    {t.foot_privacy}
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms-of-service" className="text-slate-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group">
-                    <span className="w-1 h-1 bg-purple-500 rounded-full group-hover:w-2 transition-all" />
-                    {t.foot_terms}
-                  </Link>
-                </li>
-              </ul>
+                  <li>
+                    <Link href="/terms-of-service" className="text-slate-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group">
+                      <span className="w-1 h-1 bg-purple-500 rounded-full group-hover:w-2 transition-all" />
+                      {t.foot_terms}
+                    </Link>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Bottom bar */}
-        <div className="border-t border-white/5">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className={`text-slate-600 text-xs font-bold ${lang === 'en' ? 'tracking-widest uppercase' : 'tracking-normal'}`}>
-              &copy; {new Date().getFullYear()} {t.foot_rights}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-slate-600 text-xs font-bold">
-                {lang === 'bn' ? 'সব সিস্টেম চালু আছে' : lang === 'hi' ? 'सभी सिस्टम चालू' : 'All systems operational'}
-              </span>
+          {/* Bottom bar */}
+          <div className="border-t border-white/5">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className={`text-slate-600 text-xs font-bold ${lang === 'en' ? 'tracking-widest uppercase' : 'tracking-normal'}`}>
+                &copy; {new Date().getFullYear()} {t.foot_rights}
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-slate-600 text-xs font-bold">
+                  {lang === 'bn' ? 'সব সিস্টেম চালু আছে' : lang === 'hi' ? 'सभी सिस्टम चालू' : 'All systems operational'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
 
     </motion.div>
   );

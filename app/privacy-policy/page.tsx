@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaQrcode, FaArrowRight, FaShieldAlt, FaQuestionCircle } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FaQrcode, FaArrowRight, FaShieldAlt, FaQuestionCircle,
+  FaWhatsapp, FaEnvelope
+} from 'react-icons/fa';
+import { useAuth } from '@/context/AuthContext';
+import { TRANSLATIONS, Language } from '../../utils/translations';
+import { Skeleton } from '@/components/ui/Skeleton';
 
-type Lang = 'en' | 'hi' | 'bn';
+type Lang = Language;
 
 const content = {
   en: {
@@ -251,18 +258,23 @@ const content = {
 };
 
 export default function PrivacyPolicyPage() {
-  const [lang, setLang] = useState<Lang>('en');
+  const { isLoading, isAuthenticated } = useAuth();
+  const [lang, setLang] = useState<Lang>('hi');
 
+  // Persistence for language
   useEffect(() => {
     const saved = localStorage.getItem('digitalmenu_lang') as Lang;
-    if (saved && content[saved]) setLang(saved);
+    if (saved && TRANSLATIONS[saved]) {
+      setLang(saved);
+    }
   }, []);
 
-  const handleLang = (l: Lang) => {
+  const handleLanguageChange = (l: Language) => {
     setLang(l);
     localStorage.setItem('digitalmenu_lang', l);
   };
 
+  const t = TRANSLATIONS[lang];
   const c = content[lang];
   const dateStr = new Date().toLocaleDateString(
     lang === 'bn' ? 'bn-BD' : lang === 'hi' ? 'hi-IN' : 'en-IN',
@@ -270,32 +282,76 @@ export default function PrivacyPolicyPage() {
   );
 
   return (
-    <div className={`min-h-screen bg-white text-gray-900 ${lang === 'hi' ? 'font-hindi' : lang === 'bn' ? 'font-bengali' : 'font-sans'}`}>
-      <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-white/80 border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center space-x-2.5 shrink-0">
-            <div className="p-2 bg-indigo-600 rounded-lg">
-              <FaQrcode className="w-5 h-5 text-white" />
+    <div className={`min-h-screen bg-white text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden ${lang === 'hi' ? 'font-hindi' : lang === 'bn' ? 'font-bengali' : 'font-sans'}`}>
+      {/* --- NAVBAR --- */}
+      <header>
+        <nav className="fixed top-0 w-full z-[100] backdrop-blur-md bg-white/70 border-b border-gray-100" aria-label="Main navigation">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-20">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center space-x-3"
+              >
+                <Link href="/" className="flex items-center space-x-3">
+                  <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-100">
+                    <FaQrcode className="w-6 h-6 text-white" aria-hidden="true" />
+                  </div>
+                  <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tighter">
+                    Digital Menu
+                  </span>
+                </Link>
+              </motion.div>
+
+              <div className="hidden lg:flex items-center space-x-10">
+                <NavItem href="/#platform" label={t.nav_platform} />
+                <NavItem href="/#features" label={t.nav_features} />
+                <NavItem href="/#trust" label={t.nav_trust} />
+                <NavItem href="/#pricing" label={t.nav_pricing} />
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center space-x-4"
+              >
+                {/* Language Toggle - Desktop Only */}
+                <div className="hidden md:flex bg-gray-100 rounded-lg p-1 mr-2">
+                  <button onClick={() => handleLanguageChange('en')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>EN</button>
+                  <button onClick={() => handleLanguageChange('hi')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>HI</button>
+                  <button onClick={() => handleLanguageChange('bn')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>BN</button>
+                </div>
+
+                {isLoading ? (
+                  <Skeleton width={100} height={40} className="rounded-xl" />
+                ) : isAuthenticated ? (
+                  <Link href="/admin/dashboard" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
+                    {t.nav_dashboard}
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/auth" className="px-5 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
+                      {t.nav_login}
+                    </Link>
+                    <Link href="/auth?mode=register" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block">
+                      {t.nav_getStarted}
+                    </Link>
+                  </>
+                )}
+              </motion.div>
             </div>
-            <span className="text-lg font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 hidden sm:block">
-              Digital Menu Order
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              {(['en', 'hi', 'bn'] as Lang[]).map((l) => (
-                <button key={l} onClick={() => handleLang(l)}
-                  className={`px-2.5 py-1 text-[10px] font-black rounded-md transition-all ${lang === l ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>
-                  {l.toUpperCase()}
-                </button>
-              ))}
+
+            {/* Language Toggle - Mobile Only (Below main nav content) */}
+            <div className="md:hidden flex justify-center pb-4 pt-1 border-t border-gray-50">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button onClick={() => handleLanguageChange('en')} className={`w-24 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>English</button>
+                <button onClick={() => handleLanguageChange('hi')} className={`w-24 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>हिन्दी</button>
+                <button onClick={() => handleLanguageChange('bn')} className={`w-24 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>বাংলা</button>
+              </div>
             </div>
-            <Link href="/" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors whitespace-nowrap">
-              {c.back}
-            </Link>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-24">
         <div className="mb-10">
@@ -334,5 +390,18 @@ export default function PrivacyPolicyPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+// --- SUB-COMPONENTS ---
+
+function NavItem({ href, label }: { href: string, label: string }) {
+  return (
+    <Link
+      href={href}
+      className="text-[13px] font-black text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-[0.2em]"
+    >
+      {label}
+    </Link>
   );
 }
