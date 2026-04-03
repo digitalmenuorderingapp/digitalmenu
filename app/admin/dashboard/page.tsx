@@ -126,24 +126,27 @@ export default function DashboardPage() {
       socketService.connect();
       socketService.join(user._id);
 
-      socketService.on('newOrder', (order: any) => {
+      const handleNewOrder = (order: any) => {
         toast.success(`New order from Table #${order.tableNumber}!`);
         playNotificationSound();
         fetchStats();
         fetchLedger(selectedDate);
-      });
+      };
 
-      socketService.on('orderUpdate', (order: any) => {
+      const handleOrderUpdate = (order: any) => {
         fetchStats();
         fetchLedger(selectedDate);
-      });
+      };
+
+      socketService.on('newOrder', handleNewOrder);
+      socketService.on('orderUpdate', handleOrderUpdate);
 
       return () => {
-        socketService.off('newOrder');
-        socketService.off('orderUpdate');
+        socketService.off('newOrder', handleNewOrder);
+        socketService.off('orderUpdate', handleOrderUpdate);
       };
     }
-  }, [user]);
+  }, [user, selectedDate]);
 
   const fetchStats = async () => {
     try {

@@ -98,9 +98,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       socketService.on('orderUpdate', handleOrderUpdate);
 
       return () => {
-        socketService.off('accountStatusUpdate');
-        socketService.off('newOrder');
-        socketService.off('orderUpdate');
+        socketService.off('accountStatusUpdate', handleStatusUpdate);
+        socketService.off('newOrder', handleNewOrder);
+        socketService.off('orderUpdate', handleOrderUpdate);
       };
     }
   }, [isAuthenticated, user?._id, refreshUser]);

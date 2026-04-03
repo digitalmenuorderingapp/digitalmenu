@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment } from 'react-icons/fa';
+import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
 import { Order } from '@/types/order';
@@ -75,6 +76,10 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
 }
 
 export default function OrdersTab({ orders, session }: OrdersTabProps) {
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -139,18 +144,31 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
     );
   };
 
-  const cancelOrder = async (orderId: string) => {
+  const cancelOrder = async () => {
+    if (!cancelOrderId) return;
+    
+    setIsCancelling(true);
     try {
-      const reason = prompt('Please enter a reason for cancellation (optional):');
-      const url = reason
-        ? `/order/${orderId}/cancel?deviceId=${session.deviceId}&reason=${encodeURIComponent(reason)}`
-        : `/order/${orderId}/cancel?deviceId=${session.deviceId}`;
+      const url = cancelReason.trim()
+        ? `/order/${cancelOrderId}/cancel?deviceId=${session.deviceId}&reason=${encodeURIComponent(cancelReason.trim())}`
+        : `/order/${cancelOrderId}/cancel?deviceId=${session.deviceId}`;
 
       await api.put(url);
-      toast.success('Order cancelled');
+      toast.success('Order cancelled successfully');
+      setCancelModalOpen(false);
+      setCancelOrderId(null);
+      setCancelReason('');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
+    } finally {
+      setIsCancelling(false);
     }
+  };
+
+  const openCancelModal = (orderId: string) => {
+    setCancelOrderId(orderId);
+    setCancelReason('');
+    setCancelModalOpen(true);
   };
 
   const submitFeedback = async (orderId: string, comment: string, rating: number) => {
@@ -383,11 +401,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                   {order.status === 'placed' && (
                     <div className="mt-4">
                       <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to cancel this order?')) {
-                            cancelOrder(order._id);
-                          }
-                        }}
+                        onClick={() => openCancelModal(order._id)}
                         className="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-sm"
                       >
                         Cancel Order
@@ -400,6 +414,93 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
           </div>
         )}
       </main>
+
+      {/* Cancel Order Modal */}
+      <AnimatePresence>
+        {cancelModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => !isCancelling && setCancelModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-red-500 to-orange-500 p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-black">Cancel Order</h2>
+                    <p className="text-sm opacity-90 mt-1">Are you sure you want to cancel?</p>
+                  </div>
+                  <button
+                    onClick={() => !isCancelling && setCancelModalOpen(false)}
+                    className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors"
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Reason for cancellation <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value.slice(0, 200))}
+                    placeholder="Tell us why you're cancelling..."
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-right">
+                    {cancelReason.length}/200
+                  </p>
+                </div>
+
+                <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+                  <p className="text-sm text-red-700">
+                    <span className="font-bold">Note:</span> Once cancelled, this action cannot be undone. If payment was already made, a refund will be processed.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setCancelModalOpen(false)}
+                    disabled={isCancelling}
+                    className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  >
+                    Keep Order
+                  </button>
+                  <button
+                    onClick={cancelOrder}
+                    disabled={isCancelling}
+                    className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isCancelling ? (
+                      <>
+                        <FaSpinner className="w-4 h-4 animate-spin" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      'Yes, Cancel'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -17,7 +17,8 @@ import {
   FaUtensils, 
   FaCheck,
   FaTimes,
-  FaArrowRight
+  FaArrowRight,
+  FaPhone
 } from 'react-icons/fa';
 import Button from './Button';
 
@@ -81,6 +82,7 @@ interface Order {
   orderNumber?: string;
   tableNumber: number;
   customerName: string;
+  customerMobile?: string;
   numberOfPersons?: number;
   specialInstructions?: string;
   items: OrderItem[];
@@ -220,6 +222,14 @@ const OrderCard = ({
                 </span>
               )}
             </div>
+            {order.customerMobile && (
+              <div className="flex items-center mt-1">
+                <span className="text-sm font-bold text-gray-600 flex items-center bg-white/60 px-2.5 py-1 rounded-xl border border-gray-100 shadow-sm">
+                  <FaPhone className="mr-2 text-green-500 w-3 h-3" />
+                  {order.customerMobile}
+                </span>
+              </div>
+            )}
             <div className="flex items-center mt-2">
               <span className="text-sm font-black text-gray-600 flex items-center bg-white/60 px-2.5 py-1 rounded-xl border border-gray-100 shadow-sm">
                 <FaClock className="mr-2 text-indigo-500 w-3.5 h-3.5" />

@@ -110,44 +110,43 @@ export default function OrdersPage() {
       socketService.connect();
       socketService.join(user._id);
 
-      socketService.on('newOrder', (order: Order) => {
+      const handleNewOrder = (order: Order) => {
         toast.success(`New order from Table #${order.tableNumber}!`);
         playNotificationSound();
-        // Removed fetchOrders() as newOrder is now followed by orderUpdate for state injection
-      });
+      };
 
-      socketService.on('orderCancelled', (order: Order) => {
+      const handleOrderCancelled = (order: Order) => {
         toast.error(`Order from Table #${order.tableNumber} was cancelled`);
         playNotificationSound();
-        // State update handled by orderUpdate
-      });
+      };
 
-      socketService.on('orderUpdate', (updatedOrder: Order) => {
+      const handleOrderUpdate = (updatedOrder: Order) => {
         setOrders(prevOrders => {
           const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
           if (index !== -1) {
-            // Update existing order
             const newOrders = [...prevOrders];
             newOrders[index] = updatedOrder;
             return newOrders;
           }
-          // Insert new order at beginning
           return [updatedOrder, ...prevOrders];
         });
         
-        // Also update selected order if it's the one being viewed
         if (selectedOrder?._id === updatedOrder._id) {
           setSelectedOrder(updatedOrder);
         }
-      });
+      };
+
+      socketService.on('newOrder', handleNewOrder);
+      socketService.on('orderCancelled', handleOrderCancelled);
+      socketService.on('orderUpdate', handleOrderUpdate);
 
       return () => {
-        socketService.off('newOrder');
-        socketService.off('orderCancelled');
-        socketService.off('orderUpdate');
+        socketService.off('newOrder', handleNewOrder);
+        socketService.off('orderCancelled', handleOrderCancelled);
+        socketService.off('orderUpdate', handleOrderUpdate);
       };
     }
-  }, [user?._id]);
+  }, [user?._id, selectedOrder?._id]);
 
   const handleSendEmail = async () => {
     setIsSendingEmail(true);
