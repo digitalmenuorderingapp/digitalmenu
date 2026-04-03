@@ -230,6 +230,12 @@ function CustomerPageContent() {
     if (session.deviceId) {
       socketService.connect();
       socketService.join(session.deviceId);
+      
+      // Also join restaurant room for menu updates
+      if (session.restaurantId) {
+        socketService.join(session.restaurantId);
+        console.log('[Socket] Joined restaurant room:', session.restaurantId);
+      }
 
       socketService.on('orderStatusUpdate', (order: Order) => {
         const statusMessages: Record<string, string> = {
@@ -387,7 +393,7 @@ function CustomerPageContent() {
         socketService.off('menuUpdated');
       };
     }
-  }, [session.deviceId]);
+  }, [session.deviceId, session.restaurantId]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
