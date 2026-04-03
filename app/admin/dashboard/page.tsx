@@ -266,6 +266,31 @@ export default function DashboardPage() {
 
   const subStatus = getSubscriptionStatus();
 
+  // Date bounds for calendar (current month only)
+  const today = new Date();
+  const minDate = new Date(today.getFullYear(), today.getMonth(), 1)
+    .toISOString()
+    .split("T")[0];
+  const maxDate = today.toISOString().split("T")[0];
+
+  // Calculate month-to-date cumulative balance from monthlyLedgers
+  const monthToDateStats = monthlyLedgers.reduce((acc, ledger) => {
+    acc.totalOrders += ledger.counts?.totalOrders || 0;
+    acc.servedOrders += ledger.counts?.servedOrders || 0;
+    acc.cashBalance += ledger.cash?.balance || 0;
+    acc.onlineBalance += ledger.online?.balance || 0;
+    acc.netBalance += ledger.total?.netBalance || 0;
+    acc.totalRefunded += (ledger.cash?.refunded || 0) + (ledger.online?.refunded || 0);
+    return acc;
+  }, {
+    totalOrders: 0,
+    servedOrders: 0,
+    cashBalance: 0,
+    onlineBalance: 0,
+    netBalance: 0,
+    totalRefunded: 0
+  });
+
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
       {/* Restaurant Welcome Card */}
@@ -436,7 +461,8 @@ export default function DashboardPage() {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
+                    min={minDate}
+                    max={maxDate}
                     className="bg-white border border-gray-200 text-sm font-black uppercase tracking-widest px-3 py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer hover:border-gray-300"
                   />
                 </div>
@@ -459,8 +485,8 @@ export default function DashboardPage() {
             </div>
           ) : ledger ? (
             <div className="p-6">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+              {/* Summary Cards - Daily + Month-to-Date */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 <StatsCard 
                   label="Total Orders" 
                   value={ledger.counts.totalOrders} 
@@ -488,11 +514,18 @@ export default function DashboardPage() {
                   description={ledger.online.refunded > 0 ? `Ref: ₹${ledger.online.refunded}` : undefined}
                 />
                 <StatsCard 
-                  label="Net Balance" 
+                  label="Today Net Balance" 
                   value={`₹${Math.round(ledger.total.netBalance)}`} 
                   variant="purple" 
                   icon={<FaChartLine />} 
                   description={ledger.total.refunded > 0 ? `Ref: ₹${ledger.total.refunded}` : undefined}
+                />
+                <StatsCard 
+                  label={`${new Date().toLocaleDateString('en-IN', { month: 'long' })}'s Overall`} 
+                  value={`₹${Math.round(monthToDateStats.netBalance)}`} 
+                  variant="emerald" 
+                  icon={<FaCalendarDay />} 
+                  description={`${monthToDateStats.totalOrders} orders`}
                 />
               </div>
 
