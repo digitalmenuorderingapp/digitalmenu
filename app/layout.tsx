@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import LayoutClient from './layout-client';
 import './globals.css';
-import { Bricolage_Grotesque, Inter, Hind, Hind_Siliguri } from 'next/font/google';
+import { Bricolage_Grotesque, DM_Sans, Noto_Sans_Devanagari, Noto_Sans_Bengali } from 'next/font/google';
 
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -11,26 +11,27 @@ const bricolage = Bricolage_Grotesque({
   preload: false,
 });
 
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-dm-sans',
+  weight: ['300', '400', '500', '600', '700'],
   preload: false,
 });
 
-const hind = Hind({
-  subsets: ['latin', 'devanagari'],
-  weight: ['300', '400', '500', '600', '700'],
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ['devanagari', 'latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
   display: 'swap',
-  variable: '--font-hind',
+  variable: '--font-devanagari',
   preload: false,
 });
 
-const hindSiliguri = Hind_Siliguri({
-  subsets: ['latin', 'bengali'],
-  weight: ['300', '400', '500', '600', '700'],
+const notoBengali = Noto_Sans_Bengali({
+  subsets: ['bengali', 'latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
   display: 'swap',
-  variable: '--font-hind-siliguri',
+  variable: '--font-bengali',
   preload: false,
 });
 
@@ -54,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`scroll-smooth ${bricolage.variable} ${inter.variable} ${hind.variable} ${hindSiliguri.variable}`}>
+    <html lang="en" className={`scroll-smooth ${bricolage.variable} ${dmSans.variable} ${notoDevanagari.variable} ${notoBengali.variable}`}>
       <body className="font-sans antialiased text-gray-900 overflow-x-hidden">
         <LayoutClient>
           {children}
