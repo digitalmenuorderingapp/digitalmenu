@@ -82,7 +82,7 @@ interface Order {
   orderNumber?: string;
   tableNumber: number;
   customerName: string;
-  customerMobile?: string;
+  customerPhone?: string;
   numberOfPersons?: number;
   specialInstructions?: string;
   items: OrderItem[];
@@ -222,11 +222,11 @@ const OrderCard = ({
                 </span>
               )}
             </div>
-            {order.customerMobile && (
+            {order.customerPhone && (
               <div className="flex items-center mt-1">
                 <span className="text-sm font-bold text-gray-600 flex items-center bg-white/60 px-2.5 py-1 rounded-xl border border-gray-100 shadow-sm">
                   <FaPhone className="mr-2 text-green-500 w-3 h-3" />
-                  {order.customerMobile}
+                  {order.customerPhone}
                 </span>
               </div>
             )}
