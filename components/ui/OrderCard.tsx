@@ -174,7 +174,6 @@ const OrderCard = ({
     );
   }
 
-  console.log("orders", order)
   return (
     <motion.div
       layout
