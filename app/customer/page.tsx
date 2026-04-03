@@ -61,12 +61,11 @@ function CustomerPageContent() {
       if (!session.deviceId) {
         const newDeviceId = uuidv4();
         updateSession({ deviceId: newDeviceId });
-        // Show customer info modal for new device
-        setShowCustomerInfoModal(true);
-      } else if (!session.customerName) {
-        // Existing device but no customer name - show modal
+        // Show customer info modal only for new device
         setShowCustomerInfoModal(true);
       }
+      // Note: For returning devices, we don't show the modal even if customerName is missing
+      // because the server sends previous records
 
       // Handle QR code
       if (qrParam) {
