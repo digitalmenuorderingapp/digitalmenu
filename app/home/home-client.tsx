@@ -238,7 +238,7 @@ export default function MarketingHomeClient() {
                 {isLoading ? (
                   <Skeleton width={100} height={40} className="rounded-xl" />
                 ) : isAuthenticated ? (
-                  <Link href="/admin/dashboard" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
+                  <Link href="/admin/dashboard" className="flex items-center justify-center px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
                     {t.nav_dashboard}
                   </Link>
                 ) : (

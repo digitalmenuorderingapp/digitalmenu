@@ -283,29 +283,29 @@ export default function DashboardPage() {
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <div className="flex-1">
                 {/* Admin Badge */}
-                  <div className="flex items-center gap-6 mb-4">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-4 text-center sm:text-left">
                     {user?.logo ? (
-                      <div className="relative group p-0.5 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl shadow-2xl">
+                      <div className="relative group p-0.5 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl shadow-2xl shrink-0">
                         <img 
                           src={user.logo} 
                           alt="Restaurant Logo" 
                           className="w-20 h-20 lg:w-24 lg:h-24 rounded-[1.25rem] object-cover border-4 border-slate-900 group-hover:scale-[1.02] transition-transform duration-500"
                         />
-                        <div className="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-slate-900 shadow-lg animate-pulse" title="System Online"></div>
+                        <div className="absolute -bottom-2 -right-2 sm:-bottom-2 sm:-right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-slate-900 shadow-lg animate-pulse" title="System Online"></div>
                       </div>
                     ) : (
-                      <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center border-2 border-white/10 shadow-3xl">
+                      <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center border-2 border-white/10 shadow-3xl shrink-0">
                         <FaUtensils className="w-10 h-10 text-indigo-300 opacity-50" />
                       </div>
                     )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
+                    <div className="flex-1 flex flex-col items-center sm:items-start">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 mb-2 sm:mb-1">
                         <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tighter text-white">
                            {user?.restaurantName || 'DigitalMenu Admin'}
                         </h1>
-                        <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-black text-indigo-300 rounded-lg tracking-widest uppercase">Premium</span>
+                        <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-black text-indigo-300 rounded-lg tracking-widest uppercase mt-1 sm:mt-2">Premium</span>
                       </div>
-                      <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md leading-relaxed">
+                      <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md mx-auto sm:mx-0 leading-relaxed">
                         Manage your digital menu, track orders, and grow your business with our state-of-the-art platform.
                       </p>
                     </div>
@@ -419,9 +419,9 @@ export default function DashboardPage() {
       <div className="mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
                   <FaChartLine className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
@@ -429,8 +429,8 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-500">Sales and order summary</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                <div className="flex items-center space-x-2 shrink-0">
                   <FaCalendarDay className="w-5 h-5 text-indigo-400" />
                   <input
                     type="date"

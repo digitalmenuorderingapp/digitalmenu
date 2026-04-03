@@ -226,24 +226,24 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FaUtensils className="text-2xl" />
-                  <h2 className="text-2xl font-bold">Create Counter Order</h2>
+              <div className="flex items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <FaUtensils className="text-xl sm:text-2xl" />
+                  <h2 className="text-lg sm:text-2xl font-bold">Create Counter Order</h2>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors shrink-0"
                 >
                   <FaTimes className="text-xl" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex" style={{ height: 'calc(95vh - 120px)' }}>
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden" style={{ minHeight: 0 }}>
               {/* Left Side - Menu Items */}
-              <div className="flex-1 overflow-y-auto border-r border-gray-200 bg-gray-50">
-                <div className="p-6">
+              <div className="flex-none lg:flex-1 lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50">
+                <div className="p-4 sm:p-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <FaUtensils className="text-indigo-600" />
                     Menu Items
@@ -329,9 +329,9 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
               </div>
 
               {/* Right Side - Order Details */}
-              <div className="w-[420px] flex flex-col bg-white">
+              <div className="w-full lg:w-[420px] flex flex-col bg-white flex-none shrink-0 lg:shrink-none">
                 {/* Scrollable Content Area */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 lg:overflow-y-auto">
                   {/* Customer Details */}
                   <div className="p-6 border-b border-gray-200 bg-gradient-to-b from-white to-gray-50">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">

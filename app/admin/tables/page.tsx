@@ -290,7 +290,7 @@ export default function TableManagementPage() {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center space-x-4">
           {user?.logo && (
             <img
@@ -436,11 +436,11 @@ export default function TableManagementPage() {
           <div className="flex items-center justify-center min-h-screen px-4">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setIsPrintModalOpen(false)} />
             <div className="relative bg-white rounded-2xl p-6 w-full max-w-4xl">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-start sm:items-center justify-between gap-4 mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Print QR Codes</h2>
                 <button
                   onClick={() => setIsPrintModalOpen(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600"
+                  className="p-2 text-gray-400 hover:text-gray-600 shrink-0"
                 >
                   <FaTimes className="w-5 h-5" />
                 </button>

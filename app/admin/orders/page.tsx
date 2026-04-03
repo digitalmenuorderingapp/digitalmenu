@@ -643,7 +643,7 @@ export default function OrdersPage() {
                 className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <div className="p-6 border-b border-gray-100 flex items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <FaCreditCard className="w-5 h-5 text-blue-600" />
@@ -694,12 +694,12 @@ export default function OrdersPage() {
                     </p>
                   </div>
 
-                  <div className="flex space-x-3 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <button
                       type="button"
                       onClick={() => setVerifyModalOpen(false)}
                       disabled={isVerifying}
-                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                      className="w-full sm:flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors order-2 sm:order-1"
                     >
                       Cancel
                     </button>
@@ -707,7 +707,7 @@ export default function OrdersPage() {
                       type="button"
                       onClick={verifyOnlinePayment}
                       disabled={isVerifying}
-                      className="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-blue-200"
+                      className="w-full sm:flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-blue-200 order-1 sm:order-2"
                     >
                       {isVerifying ? (
                         <>
@@ -749,7 +749,7 @@ export default function OrdersPage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="bg-purple-600 px-6 py-4 flex items-center justify-between">
+                <div className="bg-purple-600 px-6 py-4 flex items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center space-x-3">
                     <FaMoneyBillWave className="w-6 h-6 text-white" />
                     <h2 className="text-xl font-bold text-white">Process Refund</h2>
@@ -847,18 +847,18 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex space-x-3">
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => setRefundModalOpen(false)}
                     disabled={isProcessingRefund}
-                    className="flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="w-full sm:flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 order-2 sm:order-1"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={processRefund}
                     disabled={isProcessingRefund}
-                    className="flex-1 px-4 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                    className="w-full sm:flex-1 px-4 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 order-1 sm:order-2"
                   >
                     {isProcessingRefund ? (
                       <>

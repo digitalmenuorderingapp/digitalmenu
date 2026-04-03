@@ -12,6 +12,7 @@ import {
   FaToggleOff,
   FaSpinner,
   FaImage,
+  FaTimes,
 } from 'react-icons/fa';
 import { Skeleton, MenuItemSkeleton } from '@/components/ui/Skeleton';
 
@@ -194,7 +195,7 @@ export default function MenuManagementPage() {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Menu Management</h1>
           <p className="text-gray-600 mt-1">Add, edit, and manage your restaurant menu items.</p>
@@ -335,9 +336,18 @@ export default function MenuManagementPage() {
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={closeModal} />
             <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
               <form onSubmit={handleSubmit} className="p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">
-                  {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
-                </h2>
+                <div className="flex items-start sm:items-center justify-between gap-4 mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="p-2 text-gray-400 hover:text-gray-600 shrink-0"
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </button>
+                </div>
 
                 {/* Image Upload */}
                 <div className="mb-4">

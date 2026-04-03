@@ -129,7 +129,7 @@ export default function ActiveDevicesPage() {
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Active Devices</h1>
             <p className="text-gray-600 mt-1">Manage your logged-in sessions and devices</p>
