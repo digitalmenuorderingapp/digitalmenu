@@ -450,7 +450,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                           }`}
                         >
                           <FaMoneyBillWave className="mx-auto mb-1" />
-                          <span className="text-xs">Cash</span>
+                          <span className="text-xs">Counter</span>
                         </button>
                         <button
                           type="button"

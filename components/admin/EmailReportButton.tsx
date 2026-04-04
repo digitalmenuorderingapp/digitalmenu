@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FaFileExcel, FaSpinner, FaEnvelope } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { requestEmailReport } from '@/services/report.api';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 interface EmailReportButtonProps {
   variant?: 'button' | 'card';

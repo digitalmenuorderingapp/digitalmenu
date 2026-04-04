@@ -54,7 +54,7 @@ interface Order {
   paymentMethod?: 'ONLINE' | 'COUNTER';
   paymentStatus: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
   paymentDueStatus?: 'CLEAR' | 'DUE';
-  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
+  collectedVia?: 'COUNTER' | 'ONLINE' | 'NOT_COLLECTED';
   refund: {
     status: 'NOT_REQUIRED' | 'PENDING' | 'COMPLETED';
     method?: string;
@@ -183,7 +183,7 @@ export default function OrdersPage() {
 
     if (action === 'COLLECT_PAYMENT' && !payload.confirmed) {
       setCurrentAction({ id: orderId, type: 'COLLECT_PAYMENT' });
-      setActionPayload({ method: 'CASH', utr: '' });
+      setActionPayload({ method: 'COUNTER', utr: '' });
       setActionModalOpen(true);
       return;
     }

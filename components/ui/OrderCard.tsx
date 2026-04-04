@@ -57,7 +57,7 @@ export const getPaymentStatusDisplay = (order: Order) => {
   // For paid orders
   if (paid) {
     return {
-      text: order.collectedVia === 'CASH' ? 'Cash Collected' : 'Online Verified',
+      text: order.collectedVia === 'COUNTER' ? 'Counter Collected' : 'Online Verified',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     };
@@ -108,7 +108,7 @@ interface Order {
   paymentMethod?: 'ONLINE' | 'COUNTER';
   paymentStatus: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
   paymentDueStatus?: 'CLEAR' | 'DUE';
-  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
+  collectedVia?: 'COUNTER' | 'ONLINE' | 'NOT_COLLECTED';
   utr?: string;
   refund?: {
     status: 'NOT_REQUIRED' | 'PENDING' | 'COMPLETED';
