@@ -23,42 +23,6 @@ import {
 } from 'react-icons/fa';
 import { TRANSLATIONS, Language } from '@/utils/translations';
 
-const faqs = [
-  {
-    question: "How do I update my restaurant's digital menu?",
-    answer: "Navigate to the 'Menu' section in your sidebar. There you can add new categories, create food items with descriptions, images, and prices. Any changes are synced instantly to your QR codes."
-  },
-  {
-    question: "How do I generate QR codes for new tables?",
-    answer: "Go to the 'Tables' section. You can add new tables and instantly generate unique QR codes for each. You can download and print these to place them on your restaurant tables."
-  },
-  {
-    question: "How do payments work with DigitalMenu?",
-    answer: "DigitalMenu supports both Cash and Online payments. Customers can choose their preferred method at checkout. If they choose online, they can pay via the integrated gateway. You can verify all payments in the 'Orders' section."
-  },
-  {
-    question: "What should I do if a device goes offline?",
-    answer: "First, check your internet connection. If the issue persists, go to the 'Devices' section to see the status of all active terminals. You can refresh the connection or re-login if necessary."
-  },
-  {
-    question: "How do I use keyboard shortcuts?",
-    answer: "Press Alt + any key to quickly navigate between pages. For example, Alt + D for Dashboard, Alt + O for Orders, Alt + L for Ledger. Press Shift + ? to see all shortcuts. These work anywhere in the admin panel."
-  }
-];
-
-const keyboardShortcuts = [
-  { key: 'Alt + D', description: 'Go to Dashboard', icon: <FaHome className="w-4 h-4" /> },
-  { key: 'Alt + O', description: 'Go to Orders', icon: <FaClipboardList className="w-4 h-4" /> },
-  { key: 'Alt + L', description: 'Go to Ledger', icon: <FaChartLine className="w-4 h-4" /> },
-  { key: 'Alt + M', description: 'Go to Menu', icon: <FaUtensils className="w-4 h-4" /> },
-  { key: 'Alt + T', description: 'Go to Tables', icon: <FaTable className="w-4 h-4" /> },
-  { key: 'Alt + R', description: 'Go to Restaurant Info', icon: <FaStore className="w-4 h-4" /> },
-  { key: 'Alt + V', description: 'Go to Devices', icon: <FaDesktop className="w-4 h-4" /> },
-  { key: 'Alt + H', description: 'Go to Help & Support', icon: <FaLifeRing className="w-4 h-4" /> },
-  { key: 'Shift + ?', description: 'Show Keyboard Shortcuts', icon: <FaKeyboard className="w-4 h-4" /> },
-  { key: 'Esc', description: 'Go Back / Close Modal', icon: <FaArrowLeft className="w-4 h-4" /> },
-];
-
 export default function SupportPage() {
   const [lang, setLang] = useState<Language>('hi');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -95,24 +59,15 @@ export default function SupportPage() {
         <div className="flex flex-col sm:flex-row items-center gap-4">
           {/* Language Toggle */}
           <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-            <button 
-              onClick={() => handleLanguageChange('en')} 
-              className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${lang === 'en' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-gray-500 hover:text-gray-800'}`}
-            >
-              EN
-            </button>
-            <button 
-              onClick={() => handleLanguageChange('hi')} 
-              className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${lang === 'hi' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-gray-500 hover:text-gray-800'}`}
-            >
-              HI
-            </button>
-            <button 
-              onClick={() => handleLanguageChange('bn')} 
-              className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${lang === 'bn' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-gray-500 hover:text-gray-800'}`}
-            >
-              BN
-            </button>
+            {(['en', 'hi', 'bn'] as const).map((l) => (
+              <button 
+                key={l}
+                onClick={() => handleLanguageChange(l)} 
+                className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${lang === l ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-gray-500 hover:text-gray-800'}`}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
           </div>
 
           <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100">
@@ -134,10 +89,10 @@ export default function SupportPage() {
           <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6">
             <FaHeadset className="text-indigo-600 text-3xl" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Voice Support</h3>
-          <p className="text-gray-500 mb-6 text-sm leading-relaxed">Speak directly with our technical team for immediate assistance.</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{t.support_voice_title}</h3>
+          <p className="text-gray-500 mb-6 text-sm leading-relaxed">{t.support_voice_desc}</p>
           <a href="tel:+919563401099" className="flex items-center gap-2 text-indigo-600 font-black text-lg hover:underline underline-offset-4">
-            Call +91 95634...
+            Call +91 95634 01099
           </a>
         </motion.div>
 
@@ -151,8 +106,8 @@ export default function SupportPage() {
           <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-6">
             <FaWhatsapp className="text-green-600 text-3xl" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">WhatsApp Business</h3>
-          <p className="text-gray-500 mb-6 text-sm leading-relaxed">Send us screenshots or voice notes for operational troubleshooting.</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{t.support_whatsapp_title}</h3>
+          <p className="text-gray-500 mb-6 text-sm leading-relaxed">{t.support_whatsapp_desc}</p>
           <a href="https://wa.me/919563401099" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-green-600 font-black text-lg hover:underline underline-offset-4">
             Chat on WhatsApp
           </a>
@@ -168,15 +123,15 @@ export default function SupportPage() {
           <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
             <FaEnvelope className="text-blue-600 text-3xl" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Official Email</h3>
-          <p className="text-gray-500 mb-6 text-sm leading-relaxed">For non-urgent queries and detailed documentation requests.</p>
-          <a href="mailto:digitalmenu.orderingapp@zohomail.in" className="flex items-center gap-2 text-blue-600 font-black text-lg hover:underline underline-offset-4 overflow-hidden text-ellipsis whitespace-nowrap">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{t.support_email_title}</h3>
+          <p className="text-gray-500 mb-6 text-sm leading-relaxed">{t.support_email_desc}</p>
+          <a href="mailto:digitalmenu.orderingapp@zohomail.in" className="flex items-center gap-2 text-blue-600 font-black text-sm sm:text-base lg:text-lg hover:underline underline-offset-4 break-all">
             digitalmenu.orderingapp@zohomail.in
           </a>
         </motion.div>
       </div>
 
-      {/* Security Section (NEW) */}
+      {/* Security Section */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -235,7 +190,7 @@ export default function SupportPage() {
           </div>
           
           <div className="divide-y divide-gray-50">
-            {faqs.map((faq, index) => (
+            {t.support_faqs.map((faq: any, index: number) => (
               <div key={index} className="px-8 py-2">
                 <button 
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
@@ -274,17 +229,17 @@ export default function SupportPage() {
               {t.support_shortcuts_title}
             </h3>
             <span className="text-xs font-bold text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
-              Pro Tips
+              {t.support_shortcuts_pro}
             </span>
           </div>
           
           <div className="p-8">
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-              Navigate faster with these keyboard shortcuts. Press the key combinations anywhere in the admin panel to quickly jump to different sections.
+              {t.support_shortcuts_desc}
             </p>
             
             <div className="grid grid-cols-1 gap-3">
-              {keyboardShortcuts.map((shortcut, index) => (
+              {t.support_shortcuts.map((shortcut: any, index: number) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: -20 }}
@@ -294,7 +249,8 @@ export default function SupportPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                      {shortcut.icon}
+                      {/* Mapping back to icons if needed, or just keeping the text */}
+                      <FaKeyboard className="w-4 h-4" />
                     </div>
                     <span className="font-medium text-gray-700 text-sm">{shortcut.description}</span>
                   </div>
@@ -308,7 +264,7 @@ export default function SupportPage() {
             <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-100">
               <p className="text-xs font-medium text-amber-800 flex items-center gap-2">
                 <FaKeyboard className="w-3 h-3" />
-                Tip: Shortcuts don't work while typing in input fields
+                {t.support_shortcuts_tip}
               </p>
             </div>
           </div>

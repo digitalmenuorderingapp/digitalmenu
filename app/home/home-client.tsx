@@ -8,7 +8,7 @@ import {
   FaShieldAlt, FaCheckCircle, FaTimesCircle, FaArrowRight,
   FaWhatsapp, FaEnvelope, FaServer, FaDatabase, FaLock, FaSyncAlt,
   FaExclamationCircle, FaIdCard, FaMapMarkerAlt, FaGlobe, FaUserSecret,
-  FaExclamationTriangle, FaExpandArrowsAlt, FaTrash, FaImage
+  FaExclamationTriangle, FaExpandArrowsAlt, FaTrash, FaImage, FaMoneyBillWave
 } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import { FaSpinner } from 'react-icons/fa';
@@ -908,13 +908,6 @@ function SimpleSecurityPoint({ title, desc, lang }: { title: string, desc: strin
   );
 }
 
-function FaMoneyBillWave(props: any) {
-  return (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 640 512" height="1em" width="1em" {...props}>
-      <path d="M621.16 54.46C582.37 38.19 543.55 32 504.75 32c-123.17-.01-246.33 62.27-369.5 62.27-30.56 0-61.1-4.72-91.66-14.16-4.14-1.28-8.54.44-10.7 4.14L3.44 135.2c-2.45 4.2-1.84 9.47 1.5 13.01l99.3 105.28c2.4 2.55 6.09 3.65 9.43 2.62 43.14-13.25 86.26-19.86 129.33-19.88 123.17 0 246.33 62.27 369.5 62.27 30.56 0 61.1-4.72 91.66-14.16 4.14-1.28 8.54.44 10.7-4.14l29.15-50.94c2.45-4.2 1.84-9.47-1.5-13.01L532.19 111.02c-2.4-2.55-6.09-3.65-9.43-2.62-43.14 13.25-86.26 19.86-129.33 19.88-123.17 0-246.33-62.27-369.5-62.27-30.56 0-61.1 4.72-91.66 14.16-4.14 1.28-8.54-.44-10.7 4.14L3.44 135.2c-2.45 4.2-1.84 9.47 1.5 13.01l99.3 105.28c2.4 2.55 6.09 3.65 9.43 2.62 43.14-13.25 86.26-19.86 129.33-19.88 123.17 0 246.33 62.27 369.5 62.27 30.56 0 61.1-4.72 91.66-14.16 4.14-1.28 8.54.44 10.7-4.14l29.15-50.94c2.45-4.2 1.84-9.47-1.5-13.01L532.19 111.02c-2.4-2.55-6.09-3.65-9.43-2.62-43.14 13.25-86.26 19.86-129.33 19.88zM320 352c-44.18 0-80-35.82-80-80s35.82-80 80-80 80 35.82 80 80-35.82 80-80 80z"></path>
-    </svg>
-  );
-}
 
 function ProblemFocusedCard({ icon, title, desc, lang }: { icon: React.ReactNode, title: string, desc: string, lang: string }) {
   return (

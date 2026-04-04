@@ -209,8 +209,8 @@ export default function OrdersPage() {
     setIsSendingEmail(true);
     const loadingToast = toast.loading('Sending report...');
     try {
-      await api.post('/order/report/email');
-      toast.success('Report sent successfully!', { id: loadingToast });
+      const response = await api.post('/ledger/exportreporttomail');
+      toast.success(response.data.message || 'Report sent successfully!', { id: loadingToast });
     } catch (error: any) {
       toast.error('Failed to send report.', { id: loadingToast });
     } finally {
@@ -240,64 +240,81 @@ export default function OrdersPage() {
       .filter(o => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
       .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
     onlinePending: orders.filter(o => o.paymentMethod === 'ONLINE' && o.paymentStatus === 'PENDING').length,
-    cashPending: orders.filter(o => o.paymentDueStatus === 'DUE' && o.paymentStatus !== 'VERIFIED').length,
+    counterPending: orders.filter(o => o.paymentMethod === 'COUNTER' && o.paymentStatus === 'PENDING' && o.status !== 'COMPLETED').length,
+    duesPending: orders.filter(o => o.paymentDueStatus === 'DUE' && o.paymentStatus === 'PENDING').length,
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+      <div className="mb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Orders & Analytics</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage state-based transitions and collection</p>
+            <h1 className="text-xl font-bold text-gray-900">Orders & Analytics</h1>
+            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Growth • Integrity • Operations</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center bg-gray-100 p-1 rounded-xl w-fit">
-              <button
-                onClick={() => setActiveTab('today')}
-                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'today' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Today
-              </button>
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                History
-              </button>
+              {(['today', 'all'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === tab ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
 
-            <Button variant="primary" onClick={() => setCreateOrderModalOpen(true)} leftIcon={<FaPlus className="text-white" />}>
-              <span className="text-[10px] font-black uppercase tracking-widest">Add Order</span>
+            <Button variant="primary" onClick={() => setCreateOrderModalOpen(true)} className="!py-1.5 !px-3.5" leftIcon={<FaPlus className="text-white text-[10px]" />}>
+              <span className="text-[9px] font-black uppercase tracking-widest">Add Order</span>
             </Button>
 
-            <Button variant="outline" onClick={handleSendEmail} isLoading={isSendingEmail} leftIcon={<FaEnvelope className="text-indigo-500" />}>
-              <span className="text-[10px] font-black uppercase tracking-widest">Email Report</span>
+            <Button variant="outline" onClick={handleSendEmail} isLoading={isSendingEmail} className="!py-1.5 !px-3.5 border-gray-200" leftIcon={<FaEnvelope className="text-indigo-500 text-[10px]" />}>
+              <span className="text-[9px] font-black uppercase tracking-widest">Email Report</span>
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-          <StatsCard label="Total" value={orderCounts.totalOrders} variant="indigo" icon={<FaClipboardList />} />
-          <StatsCard label="Cancelled" value={orderCounts.CANCELLED} variant="red" icon={<FaTimes />} />
-          <StatsCard label="Rejected" value={orderCounts.REJECTED} variant="amber" icon={<FaExclamationCircle />} />
-          <StatsCard label="Refunds" value={refundStats.pending} variant="purple" icon={<FaUndo />} description="Pending Action" />
-          <StatsCard label="Verify" value={paymentStats.onlinePending || 0} variant="blue" icon={<FaCreditCard />} description="Online Pending" />
-          <StatsCard label="Dues" value={paymentStats.cashPending || 0} variant="amber" icon={<FaMoneyBillWave />} description="Collection Due" />
-          <StatsCard label="Revenue" value={`₹${paymentStats.totalRevenue.toFixed(0)}`} variant="green" icon={<FaCheckCircle />} />
+        <div className="flex flex-col xl:flex-row gap-6">
+          {/* Pending Actions Section - Needs immediate attention */}
+          <div className="flex-1 bg-red-50/20 border border-red-100/50 rounded-2xl p-3">
+            <h3 className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-3 flex items-center px-1">
+              <FaExclamationCircle className="mr-2" /> Pending Actions
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <StatsCard isMini label="Online" value={paymentStats.onlinePending || 0} variant="blue" icon={<FaCreditCard />} />
+              <StatsCard isMini label="Refunds" value={refundStats.pending} variant="purple" icon={<FaUndo />} />
+              <StatsCard isMini label="Counter" value={paymentStats.counterPending || 0} variant="amber" icon={<FaMoneyBillWave />} />
+              <StatsCard isMini label="Dues" value={paymentStats.duesPending || 0} variant="red" icon={<FaExclamationCircle />} />
+            </div>
+          </div>
+
+          {/* Overview Section - Business Health */}
+          <div className="flex-[2] bg-gray-50/50 border border-gray-100 rounded-2xl p-3">
+            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center px-1">
+              Business Overview
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+              <StatsCard isMini label="Revenue" value={`₹${paymentStats.totalRevenue.toFixed(0)}`} variant="green" icon={<FaCheckCircle />} />
+              <StatsCard isMini label="Total" value={orderCounts.totalOrders} variant="indigo" icon={<FaClipboardList />} />
+              <StatsCard isMini label="Served" value={orderCounts.COMPLETED} variant="emerald" icon={<FaCheck />} />
+              <StatsCard isMini label="Cancelled" value={orderCounts.CANCELLED} variant="red" icon={<FaTimes />} />
+              <StatsCard isMini label="Rejected" value={orderCounts.REJECTED} variant="amber" icon={<FaExclamationCircle />} />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <div className="relative w-full md:w-64 lg:w-72 shrink-0">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="relative w-full md:w-56 lg:w-60 shrink-0">
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Order ID / Customer..."
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm"
+            placeholder="Search..."
+            className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-xl text-[11px] focus:ring-2 focus:ring-indigo-50"
           />
         </div>
 

@@ -24,7 +24,8 @@ import {
   FaCheck,
   FaCrown,
   FaWhatsapp,
-  FaCheckCircle
+  FaCheckCircle,
+  FaChartLine
 } from 'react-icons/fa';
 import Image from 'next/image';
 import { TRANSLATIONS, Language } from '@/utils/translations';
@@ -50,6 +51,7 @@ export default function RestaurantPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isExportingReport, setIsExportingReport] = useState(false);
   const [copied, setCopied] = useState(false);
   const [lang, setLang] = useState<Language>('hi');
   const [formData, setFormData] = useState<RestaurantFormData>({
@@ -113,6 +115,22 @@ export default function RestaurantPage() {
       toast.error(message);
     } finally {
       setIsSendingOtp(false);
+    }
+  };
+
+  const handleExportReport = async () => {
+    setIsExportingReport(true);
+    const loadingToast = toast.loading(t.export_report_sending || 'Generating Report...');
+    try {
+      const response = await api.post('/ledger/exportreporttomail');
+      if (response.data.success) {
+        toast.success(response.data.message || t.export_report_success, { id: loadingToast });
+      }
+    } catch (error: any) {
+      console.error('Failed to export report:', error);
+      toast.error(error.response?.data?.message || t.export_report_error, { id: loadingToast });
+    } finally {
+      setIsExportingReport(false);
     }
   };
 
@@ -279,6 +297,18 @@ export default function RestaurantPage() {
                 >
                   <FaEnvelope className="text-gray-400" />
                   <span>{t.sub_contact_email}</span>
+                </button>
+                <button 
+                  onClick={handleExportReport}
+                  disabled={isExportingReport}
+                  className="w-full flex items-center justify-center space-x-2 py-3 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
+                >
+                  {isExportingReport ? (
+                    <FaSpinner className="animate-spin" />
+                  ) : (
+                    <FaChartLine className="text-indigo-400" />
+                  )}
+                  <span>{t.export_report_btn}</span>
                 </button>
               </div>
             </div>

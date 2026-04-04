@@ -15,6 +15,7 @@ interface StatsCardProps {
     isUp?: boolean;
   };
   isLoading?: boolean;
+  isMini?: boolean;
 }
 
 const StatsCard = ({
@@ -24,7 +25,8 @@ const StatsCard = ({
   description,
   variant = 'indigo',
   trend,
-  isLoading = false
+  isLoading = false,
+  isMini = false
 }: StatsCardProps) => {
   const themes = {
     indigo: {
@@ -87,49 +89,73 @@ const StatsCard = ({
 
   const theme = themes[variant];
 
+  if (isMini) {
+    return (
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className={`relative p-3 rounded-2xl border flex items-center space-x-3 ${theme.bg} ${theme.border} transition-all duration-300 group h-full`}
+      >
+        <div className={`w-9 h-9 rounded-xl ${theme.iconBg} flex items-center justify-center ${theme.iconColor} text-base group-hover:scale-110 transition-transform flex-shrink-0`}>
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className={`text-[9px] font-black uppercase tracking-wider ${theme.labelColor} opacity-70 truncate`}>
+            {label}
+          </p>
+          <h4 className={`text-base font-black tracking-tight ${theme.valueColor} truncate`}>
+            {value}
+          </h4>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.01 }}
-      className={`relative p-5 rounded-3xl border ${theme.bg} ${theme.border} shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 group overflow-hidden`}
+      className={`relative p-4 rounded-3xl border ${theme.bg} ${theme.border} shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 group overflow-hidden h-full flex flex-col justify-between`}
     >
       {/* Decorative background shapes */}
       <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500 ${theme.iconBg}`} />
       
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 ${theme.iconBg} rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-          <div className={`${theme.iconColor} text-xl`}>
-            {icon}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+            <div className={`${theme.iconColor} text-lg`}>
+              {icon}
+            </div>
           </div>
-        </div>
-        
-        {trend && (
-          <div className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center ${
-            trend.isUp ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
-          }`}>
-            {trend.value}
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-1 relative z-10">
-        <p className={`text-[10px] font-black uppercase tracking-widest ${theme.labelColor} opacity-70`}>
-          {label}
-        </p>
-        <div className="flex items-baseline space-x-2">
-          {isLoading ? (
-            <div className="h-8 w-24 bg-gray-200 animate-pulse rounded-lg" />
-          ) : (
-            <h3 className={`text-2xl font-black tracking-tight ${theme.valueColor}`}>
-              {value}
-            </h3>
+          
+          {trend && (
+            <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center ${
+              trend.isUp ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
+            }`}>
+              {trend.value}
+            </div>
           )}
         </div>
-        {description && (
-          <p className="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-tight">
-            {description}
+
+        <div className="space-y-0.5 relative z-10">
+          <p className={`text-[9px] font-black uppercase tracking-widest ${theme.labelColor} opacity-70`}>
+            {label}
           </p>
-        )}
+          <div className="flex items-baseline space-x-2">
+            {isLoading ? (
+              <div className="h-6 w-20 bg-gray-200 animate-pulse rounded-lg" />
+            ) : (
+              <h3 className={`text-lg font-black tracking-tight ${theme.valueColor}`}>
+                {value}
+              </h3>
+            )}
+          </div>
+        </div>
       </div>
+
+      {description && (
+        <p className="text-[9px] text-gray-500 font-bold mt-2 uppercase tracking-tight relative z-10 border-t border-black/5 pt-2">
+          {description}
+        </p>
+      )}
     </motion.div>
   );
 };

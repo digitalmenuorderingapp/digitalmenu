@@ -23,9 +23,11 @@ import {
   FaCheckCircle,
   FaSkull,
   FaUndo,
+  FaCheck,
   FaPlusCircle,
   FaMinusCircle,
-  FaEnvelope
+  FaEnvelope,
+  FaSync
 } from 'react-icons/fa';
 import Button from '@/components/ui/Button';
 import StatsCard from '@/components/ui/StatsCard';
@@ -38,7 +40,7 @@ interface LedgerTransaction {
   restaurant: string;
   orderId: string;
   type: 'PAYMENT' | 'REFUND';
-  paymentMode: 'CASH' | 'ONLINE';
+  paymentMode: 'COUNTER' | 'ONLINE' | 'CASH';
   status: 'PENDING' | 'VERIFIED';
   amount: number;
   transactionDate: string;
@@ -70,7 +72,7 @@ interface Ledger {
   _id: string;
   restaurant: string;
   date: string;
-  cash: {
+  counter: {
     received: number;
     verified: number;
     pending: number;
@@ -108,6 +110,7 @@ export default function LedgerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'today' | 'transactions'>('today');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
 
   const { isAuthenticated } = useAuth();
 
@@ -148,7 +151,7 @@ export default function LedgerPage() {
     setIsSendingEmail(true);
     const loadingToast = toast.loading('Generating and sending your monthly financial report...');
     try {
-      const response = await api.post('/ledger/report/email');
+      const response = await api.post('/ledger/exportreporttomail');
       if (response.data.success) {
         toast.success(response.data.message || 'Financial report sent successfully!', { id: loadingToast });
       }
@@ -157,6 +160,23 @@ export default function LedgerPage() {
       toast.error(error.response?.data?.message || 'Failed to send report. Please try again.', { id: loadingToast });
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+  
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    const loadingToast = toast.loading('Syncing all orders and transactions...');
+    try {
+      const response = await api.post('/ledger/recalculate');
+      if (response.data.success) {
+        toast.success('Sync complete! Your ledger is now up to date.', { id: loadingToast });
+        fetchTodayLedger(); // Refresh the data
+      }
+    } catch (error: any) {
+      console.error('Failed to recalculate ledger:', error);
+      toast.error(error.response?.data?.message || 'Failed to sync. Please try again.', { id: loadingToast });
+    } finally {
+      setIsRecalculating(false);
     }
   };
 
@@ -212,80 +232,122 @@ export default function LedgerPage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-          <div className="flex items-center space-x-5">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+      <div className="mb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center space-x-3">
+            <Link 
+              href="/admin" 
+              className="p-2 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm"
+            >
+              <FaArrowLeft className="w-3.5 h-3.5" />
+            </Link>
             <div>
-              <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Audit Ledger</h1>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">Operational Truth & Financial Integrity</p>
+              <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">Audit Ledger</h1>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">Truth • Integrity • Operations</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center bg-gray-100/80 p-1.5 rounded-2xl w-fit shadow-inner border border-gray-200/50 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center bg-gray-100/80 p-1 rounded-xl w-fit shadow-inner border border-gray-200/50 backdrop-blur-sm">
               <button
                 onClick={() => setActiveTab('today')}
-                className={`flex items-center space-x-2.5 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'today'
-                  ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100 scale-[1.02] border border-indigo-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-white/40'
+                className={`flex items-center space-x-2 px-4 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'today'
+                  ? 'bg-white text-indigo-600 shadow-sm scale-[1.02] border border-indigo-50'
+                  : 'text-gray-500 hover:text-gray-700'
                   }`}
               >
-                <FaCalendarDay className="w-3.5 h-3.5" />
+                <FaCalendarDay className="w-3 h-3" />
                 <span>Today</span>
               </button>
               <button
                 onClick={() => setActiveTab('transactions')}
-                className={`flex items-center space-x-2.5 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'transactions'
-                  ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100 scale-[1.02] border border-indigo-100'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-white/40'
+                className={`flex items-center space-x-2 px-4 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'transactions'
+                  ? 'bg-white text-indigo-600 shadow-sm scale-[1.02] border border-indigo-50'
+                  : 'text-gray-500 hover:text-gray-700'
                   }`}
               >
-                <FaClipboardList className="w-3.5 h-3.5" />
+                <FaClipboardList className="w-3 h-3" />
                 <span>Journal</span>
               </button>
             </div>
 
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={handleSendEmail}
               isLoading={isSendingEmail}
-              className="!py-3 !px-5 !rounded-2xl shadow-sm hover:shadow-md border border-gray-100"
-              leftIcon={<FaEnvelope className="text-indigo-500" />}
+              className="!py-1.5 !px-3.5"
+              leftIcon={<FaEnvelope className="text-indigo-500 text-[10px]" />}
             >
-              <span className="text-[10px] font-black uppercase tracking-widest">Send Ledger Report to Mail</span>
+              <span className="text-[9px] font-black uppercase tracking-widest">Email Report</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleRecalculate}
+              isLoading={isRecalculating}
+              className="!py-1.5 !px-3.5"
+              leftIcon={<FaSync className={`${isRecalculating ? 'animate-spin' : ''} text-indigo-500 text-[10px]`} />}
+            >
+              <span className="text-[9px] font-black uppercase tracking-widest">Recalculate</span>
             </Button>
           </div>
         </div>
 
         {activeTab === 'today' && ledger && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard 
-              label="Operational Orders" 
-              value={ledger.counts.totalOrders} 
-              variant="indigo" 
-              icon={<FaUtensils />} 
-              description={`${ledger.counts.servedOrders} Served Successfully`}
-            />
-            <StatsCard 
-              label="Cash In-Hand" 
-              value={`₹${Math.round(ledger.cash.balance)}`} 
-              variant="amber" 
-              icon={<FaMoneyBillWave />} 
-            />
-            <StatsCard 
-              label="Online Revenue" 
-              value={`₹${Math.round(ledger.online.balance)}`} 
-              variant="blue" 
-              icon={<FaCreditCard />} 
-            />
-            <StatsCard 
-              label="Net Balance" 
-              value={`₹${Math.round(ledger.total.netBalance)}`} 
-              variant="green" 
-              icon={<FaChartLine />} 
-            />
+          <div className="flex flex-col xl:flex-row gap-6">
+            {/* Financial Section */}
+            <div className="flex-[2] bg-indigo-50/20 border border-indigo-100/50 rounded-2xl p-3">
+              <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 flex items-center px-1">
+                Financial Reconciliation
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <StatsCard 
+                  isMini
+                  label="Counter" 
+                  value={`₹${Math.round(ledger.counter.balance)}`} 
+                  variant="amber" 
+                  icon={<FaMoneyBillWave />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Online" 
+                  value={`₹${Math.round(ledger.online.balance)}`} 
+                  variant="blue" 
+                  icon={<FaCreditCard />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Net Balance" 
+                  value={`₹${Math.round(ledger.total.netBalance)}`} 
+                  variant="green" 
+                  icon={<FaChartLine />} 
+                />
+              </div>
+            </div>
+
+            {/* Operational Section */}
+            <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-2xl p-3">
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center px-1">
+                Operational Overview
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <StatsCard 
+                  isMini
+                  label="Total" 
+                  value={ledger.counts.totalOrders} 
+                  variant="indigo" 
+                  icon={<FaUtensils />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Served" 
+                  value={ledger.counts.servedOrders} 
+                  variant="emerald" 
+                  icon={<FaCheck />} 
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -310,9 +372,9 @@ export default function LedgerPage() {
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-colors group-hover:bg-amber-50/30 group-hover:border-amber-100/30">
                     <div className="flex items-center space-x-3 text-sm font-bold text-gray-500 uppercase tracking-tighter">
                       <FaMoneyBillWave className="text-amber-500" />
-                      <span>Cash Verification Pending Amount</span>
+                      <span>Counter Verification Pending Amount</span>
                     </div>
-                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.cash.pending)}</span>
+                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.counter.pending)}</span>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-colors group-hover:bg-blue-50/30 group-hover:border-blue-100/30">
                     <div className="flex items-center space-x-3 text-sm font-bold text-gray-500 uppercase tracking-tighter">
@@ -323,7 +385,7 @@ export default function LedgerPage() {
                   </div>
                   <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Gross Pending Amount</span>
-                    <span className="text-3xl font-black text-red-600 tracking-tighter">₹{Math.round(ledger.cash.pending + ledger.online.pending)}</span>
+                    <span className="text-3xl font-black text-red-600 tracking-tighter">₹{Math.round(ledger.counter.pending + ledger.online.pending)}</span>
                   </div>
                 </div>
               </div>
@@ -335,7 +397,7 @@ export default function LedgerPage() {
                       <FaMoneyBillWave className="w-5 h-5 text-amber-600" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-amber-900 uppercase tracking-tight">Cash Ledger</h3>
+                      <h3 className="text-sm font-black text-amber-900 uppercase tracking-tight">Counter Ledger</h3>
                       <p className="text-[10px] font-black text-amber-600/50 uppercase tracking-widest">Physical Collection</p>
                     </div>
                   </div>
@@ -346,18 +408,18 @@ export default function LedgerPage() {
                       <FaPlusCircle className="text-green-500" />
                       <span>Gross Verified</span>
                     </div>
-                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.cash.verified)}</span>
+                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.counter.verified)}</span>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-red-50/20 rounded-2xl border border-red-100/30">
                     <div className="flex items-center space-x-3 text-sm font-bold text-red-500 uppercase tracking-tighter">
                       <FaMinusCircle />
                       <span>Refunded Amount</span>
                     </div>
-                    <span className="text-lg font-black text-red-600">-₹{Math.round(ledger.cash.refunded)}</span>
+                    <span className="text-lg font-black text-red-600">-₹{Math.round(ledger.counter.refunded)}</span>
                   </div>
                   <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Net Balance</span>
-                    <span className="text-3xl font-black text-amber-600 tracking-tighter">₹{Math.round(ledger.cash.balance)}</span>
+                    <span className="text-3xl font-black text-amber-600 tracking-tighter">₹{Math.round(ledger.counter.balance)}</span>
                   </div>
                 </div>
               </div>
@@ -501,8 +563,8 @@ export default function LedgerPage() {
               description={`${transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').length} Verified`}
             />
             <StatsCard 
-              label="Cash Collected" 
-              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
+              label="Counter Collected" 
+              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && (t.paymentMode === 'CASH' || t.paymentMode === 'COUNTER') && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
               variant="amber" 
               icon={<FaMoneyBillWave />} 
             />

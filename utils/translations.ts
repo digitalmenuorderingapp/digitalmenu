@@ -133,7 +133,54 @@ export const TRANSLATIONS = {
     support_security_step1: "Reset your password using the OTP verification method.",
     support_security_step2: "Go to the 'Devices' section and remove all devices other than your current one.",
     support_faq_title: "Frequently Asked Questions",
-    support_shortcuts_title: "Keyboard Shortcuts"
+    support_shortcuts_title: "Keyboard Shortcuts",
+    export_report_btn: "Export Current Month Report",
+    export_report_sending: "Generating Report...",
+    export_report_success: "Financial report sent to your email!",
+    export_report_error: "Failed to send report. Please try again.",
+    support_voice_title: "Voice Support",
+    support_voice_desc: "Speak directly with our technical team for immediate assistance.",
+    support_whatsapp_title: "WhatsApp Business",
+    support_whatsapp_desc: "Send us screenshots or voice notes for operational troubleshooting.",
+    support_email_title: "Official Email",
+    support_email_desc: "For non-urgent queries and detailed documentation requests.",
+    support_shortcuts_desc: "Navigate faster with these keyboard shortcuts. Press the key combinations anywhere in the admin panel to quickly jump to different sections.",
+    support_shortcuts_pro: "Pro Tips",
+    support_shortcuts_tip: "Tip: Shortcuts don't work while typing in input fields",
+    support_faqs: [
+      {
+        question: "How do I update my restaurant's digital menu?",
+        answer: "Navigate to the 'Menu' section in your sidebar. There you can add new categories, create food items with descriptions, images, and prices. Any changes are synced instantly to your QR codes."
+      },
+      {
+        question: "How do I generate QR codes for new tables?",
+        answer: "Go to the 'Tables' section. You can add new tables and instantly generate unique QR codes for each. You can download and print these to place them on your restaurant tables."
+      },
+      {
+        question: "How do payments work with DigitalMenu?",
+        answer: "DigitalMenu supports both Cash and Online payments. Customers can choose their preferred method at checkout. If they choose online, they can pay via the integrated gateway. You can verify all payments in the 'Orders' section."
+      },
+      {
+        question: "What should I do if a device goes offline?",
+        answer: "First, check your internet connection. If the issue persists, go to the 'Devices' section to see the status of all active terminals. You can refresh the connection or re-login if necessary."
+      },
+      {
+        question: "How do I use keyboard shortcuts?",
+        answer: "Press Alt + any key to quickly navigate between pages. For example, Alt + D for Dashboard, Alt + O for Orders, Alt + L for Ledger. Press Shift + ? to see all shortcuts."
+      }
+    ],
+    support_shortcuts: [
+      { key: 'Alt + D', description: 'Go to Dashboard' },
+      { key: 'Alt + O', description: 'Go to Orders' },
+      { key: 'Alt + L', description: 'Go to Ledger' },
+      { key: 'Alt + M', description: 'Go to Menu' },
+      { key: 'Alt + T', description: 'Go to Tables' },
+      { key: 'Alt + R', description: 'Go to Restaurant Info' },
+      { key: 'Alt + V', description: 'Go to Devices' },
+      { key: 'Alt + H', description: 'Go to Help & Support' },
+      { key: 'Shift + ?', description: 'Show Keyboard Shortcuts' },
+      { key: 'Esc', description: 'Go Back / Close Modal' },
+    ]
   },
   hi: {
     nav_platform: "कैसे काम करता है",
@@ -267,7 +314,54 @@ export const TRANSLATIONS = {
     support_security_step1: "OTP सत्यापन विधि का उपयोग करके अपना पासवर्ड रीसेट करें।",
     support_security_step2: "'डिवाइस' सेक्शन में जाएं और अपने वर्तमान डिवाइस के अलावा अन्य सभी डिवाइस को हटा दें।",
     support_faq_title: "अक्सर पूछे जाने वाले प्रश्न",
-    support_shortcuts_title: "कीबोर्ड शॉर्टकट"
+    support_shortcuts_title: "कीबोर्ड शॉर्टकट",
+    export_report_btn: "इस महीने की रिपोर्ट ई-मेल करें",
+    export_report_sending: "रिपोर्ट तैयार हो रही है...",
+    export_report_success: "वित्तीय रिपोर्ट आपके ई-मेल पर भेज दी गई है!",
+    export_report_error: "रिपोर्ट भेजने में विफल। कृपया पुन: प्रयास करें।",
+    support_voice_title: "वॉइस सपोर्ट",
+    support_voice_desc: "तत्काल सहायता के लिए हमारी तकनीकी टीम से सीधे बात करें।",
+    support_whatsapp_title: "व्हाट्सएप बिजनेस",
+    support_whatsapp_desc: "समस्या निवारण के लिए हमें स्क्रीनশॉट या वॉइस नोट भेजें।",
+    support_email_title: "आधिकारिक ईमेल",
+    support_email_desc: "गैर-जरूरी प्रश्नों और विस्तृत दस्तावेजों के अनुरोध के लिए।",
+    support_shortcuts_desc: "इन कीबोर्ड शॉर्टकट के साथ तेज़ी से नेविगेट करें। विभिन्न सेक्शन में तुरंत कूदने के लिए एडमिन पैनल में कहीं भी की कॉम्बिनेशन दबाएं।",
+    support_shortcuts_pro: "प्रो टिप्स",
+    support_shortcuts_tip: "सुझाव: इनपुट फ़ील्ड में टाइप करते समय शॉर्टकट काम नहीं करते हैं",
+    support_faqs: [
+      {
+        question: "मैं अपने रेस्तरां का डिजिटल मेनू कैसे अपडेट करूँ?",
+        answer: "अपने साइडबार में 'मेन्यू' सेक्शन पर जाएं। वहां आप नई कैटेगरी जोड़ सकते हैं, विवरण, फोटो और कीमतों के साथ डिशेज बना सकते हैं। कोई भी बदलाव आपके QR कोड पर तुरंत सिंक हो जाता है।"
+      },
+      {
+        question: "मैं नई टेबल के लिए QR कोड कैसे जनरेट करूँ?",
+        answer: "'टेबल' सेक्शन में जाएं। आप नई टेबल जोड़ सकते हैं और प्रत्येक के लिए तुरंत यूनिक QR कोड जनरेट कर सकते हैं। आप इन्हें डाउनलोड और प्रिंट करके अपनी टेबल पर रख सकते हैं।"
+      },
+      {
+        question: "डिजिटलमेन्यू पर भुगतान कैसे काम करता है?",
+        answer: "डिजिटलमेन्यू नकद और ऑनलाइन दोनों भुगतानों का समर्थन करता है। ग्राहक चेकआउट के समय अपनी पसंद का तरीका चुन सकते हैं। यदि वे ऑनलाइन चुनते हैं, तो वे एकीकृत गेटवे के माध्यम से भुगतान कर सकते हैं। आप 'ऑर्डर्स' सेक्शन में सभी भुगतानों को वेरिफाई कर सकते हैं।"
+      },
+      {
+        question: "अगर कोई डिवाइस ऑफलाइन हो जाए तो मुझे क्या करना चाहिए?",
+        answer: "पहले अपना इंटरनेट कनेक्शन चेक करें। यदि समस्या बनी रहती है, तो सभी सक्रिय टर्मिनलों की स्थिति देखने के लिए 'डिवाइस' सेक्शन में जाएं। आप कनेक्शन रिफ्रेश या फिर से लॉग-इन कर सकते हैं।"
+      },
+      {
+        question: "मैं कीबोर्ड शॉर्टकट का उपयोग कैसे करूँ?",
+        answer: "पेजों के बीच तेज़ी से नेविगेट करने के लिए Alt + कोई भी की दबाएं। उदाहरण के लिए, डैशबोर्ड के लिए Alt + D, ऑर्डर्स के लिए Alt + O। सभी शॉर्टकट देखने के लिए Shift + ? दबाएं।"
+      }
+    ],
+    support_shortcuts: [
+      { key: 'Alt + D', description: 'डैशबोर्ड पर जाएं' },
+      { key: 'Alt + O', description: 'ऑर्डर्स पर जाएं' },
+      { key: 'Alt + L', description: 'लेजर पर जाएं' },
+      { key: 'Alt + M', description: 'मेन्यू पर जाएं' },
+      { key: 'Alt + T', description: 'टेबल पर जाएं' },
+      { key: 'Alt + R', description: 'रेस्तरां जानकारी पर जाएं' },
+      { key: 'Alt + V', description: 'डिवाइस पर जाएं' },
+      { key: 'Alt + H', description: 'सहायता और समर्थन पर जाएं' },
+      { key: 'Shift + ?', description: 'कीबोर्ड शॉर्टकट दिखाएं' },
+      { key: 'Esc', description: 'पीछे जाएं / बंद करें' },
+    ]
   },
   bn: {
     nav_platform: "কীভাবে কাজ করে",
@@ -401,6 +495,53 @@ export const TRANSLATIONS = {
     support_security_step1: "OTP যাচাইকরণ পদ্ধতি ব্যবহার করে আপনার পাসওয়ার্ড রিসেট করুন।",
     support_security_step2: "'ডিভাইস' বিভাগে যান এবং আপনার বর্তমান ডিভাইস ছাড়া অন্য সব ডিভাইস সরিয়ে ফেলুন।",
     support_faq_title: "প্রায়শই জিজ্ঞাসিত প্রশ্নাবলী",
-    support_shortcuts_title: "কীবোর্ড শর্টকাট"
+    support_shortcuts_title: "কীবোর্ড শর্টকাট",
+    export_report_btn: "এই মাসের রিপোর্ট ই-মেল করুন",
+    export_report_sending: "রিপোর্ট তৈরি হচ্ছে...",
+    export_report_success: "আর্থিক রিপোর্ট আপনার ই-মেলে পাঠানো হয়েছে!",
+    export_report_error: "রিপোর্ট পাঠাতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
+    support_voice_title: "ভয়েস সাপোর্ট",
+    support_voice_desc: "তাত্ক্ষণিক সহায়তার জন্য সরাসরি আমাদের প্রযুক্তিগত দলের সাথে কথা বলুন।",
+    support_whatsapp_title: "হোয়াটসঅ্যাপ বিজনেস",
+    support_whatsapp_desc: "যেকোনো সমস্যার জন্য আমাদের স্ক্রিনশট বা ভয়েস নোট পাঠান।",
+    support_email_title: "অফিসিয়াল ইমেল",
+    support_email_desc: "জরুরি নয় এমন প্রশ্ন এবং বিস্তারিত নথিপত্রের জন্য।",
+    support_shortcuts_desc: "এই কীবোর্ড শর্টকাটগুলির সাহায্যে দ্রুত নেভিগেট করুন। বিভিন্ন বিভাগে দ্রুত ঝাঁপ দিতে অ্যাডমিন প্যানেলের যেকোনো জায়গায় কী কম্বিনেশনগুলি টিপুন।",
+    support_shortcuts_pro: "প্রো টিপস",
+    support_shortcuts_tip: "টিপ: ইনপুট ফিল্ডে টাইপ করার সময় শর্টকাট কাজ করে না",
+    support_faqs: [
+      {
+        question: "আমি কীভাবে আমার রেস্তোরাঁর ডিজিটাল মেনু আপডেট করব?",
+        answer: "আপনার সাইডবারের 'মেনু' বিভাগে যান। সেখানে আপনি নতুন ক্যাটাগরি যোগ করতে পারেন, খাবার ও দাম সেট করতে পারেন। যেকোনো পরিবর্তন আপনার QR কোডে তাৎক্ষণিকভাবে সিঙ্ক হয়ে যাবে।"
+      },
+      {
+        question: "আমি কীভাবে নতুন টেবিলের জন্য QR কোড তৈরি করব?",
+        answer: "'টেবল' বিভাগে যান। আপনি নতুন টেবিল যোগ করতে পারেন এবং প্রতিটির জন্য অনন্য QR কোড তৈরি করতে পারেন। আপনি এগুলি ডাউনলোড এবং প্রিন্ট করে টেবিলে রাখতে পারেন।"
+      },
+      {
+        question: "ডিজিটালমেনুতে পেমেন্ট কীভাবে কাজ করে?",
+        answer: "ডিজিটালমেনু নগদ এবং অনলাইন উভয় পেমেন্ট সমর্থন করে। গ্রাহকরা চেকআউটের সময় তাদের পছন্দের পদ্ধতি বেছে নিতে পারেন। অনলাইন হলে তারা সরাসরি পেমেন্ট করতে পারবেন। আপনি 'অর্ডার' বিভাগে পেমেন্ট যাচাই করতে পারবেন।"
+      },
+      {
+        question: "ডিভাইস অফলাইন হয়ে গেলে আমার কী করা উচিত?",
+        answer: "প্রথমে আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন। সমস্যা থাকলে 'ডিভাইস' বিভাগে গিয়ে স্ট্যাটাস দেখুন। আপনি কানেকশন রিফ্রেশ বা পুনরায় লগ-ইন করতে পারেন।"
+      },
+      {
+        question: "আমি কীভাবে কীবোর্ড শর্টকাট ব্যবহার করব?",
+        answer: "দ্রুত নেভিগেট করতে Alt + যেকোনো কী টিপুন। উদাহরণস্বরূপ, ড্যাশবোর্ডের জন্য Alt + D, অর্ডারের জন্য Alt + O। সব শর্টকাট দেখতে Shift + ? টিপুন।"
+      }
+    ],
+    support_shortcuts: [
+      { key: 'Alt + D', description: 'ড্যাশবোর্ডে যান' },
+      { key: 'Alt + O', description: 'অর্ডারে যান' },
+      { key: 'Alt + L', description: 'লেজারে যান' },
+      { key: 'Alt + M', description: 'মেনুতে যান' },
+      { key: 'Alt + T', description: 'টেবিলে যান' },
+      { key: 'Alt + R', description: 'রেস্তোরাঁর তথ্যে যান' },
+      { key: 'Alt + V', description: 'ডিভাইসে যান' },
+      { key: 'Alt + H', description: 'সাহায্য ও সহযোগিতায় যান' },
+      { key: 'Shift + ?', description: 'কীবোর্ড শর্টকাট দেখান' },
+      { key: 'Esc', description: 'পিছনে যান / বন্ধ করুন' },
+    ]
   }
 };

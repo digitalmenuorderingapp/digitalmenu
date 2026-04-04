@@ -16,7 +16,7 @@ import {
 interface Transaction {
   _id: string;
   type: 'PAYMENT' | 'REFUND';
-  paymentMode: 'CASH' | 'ONLINE';
+  paymentMode: 'CASH' | 'ONLINE' | 'COUNTER';
   status: 'PENDING' | 'VERIFIED';
   amount: number;
   createdAt: string;

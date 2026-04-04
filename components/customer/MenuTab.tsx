@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaUtensils, FaPlus, FaMinus, FaLeaf, FaDotCircle, FaSlidersH, FaTimes } from 'react-icons/fa';
+import { FaUtensils, FaPlus, FaMinus, FaLeaf, FaDotCircle, FaSlidersH, FaTimes, FaShoppingCart } from 'react-icons/fa';
 import { MenuItem, CartItem } from '@/types/order';
 
 interface MenuTabProps {
@@ -14,6 +14,7 @@ interface MenuTabProps {
   getItemQuantity: (itemId: string) => number;
   restaurantInfo: { name: string; id: string; logo?: string } | null;
   session: any;
+  onGoToCart?: () => void;
 }
 
 export default function MenuTab({
@@ -23,11 +24,13 @@ export default function MenuTab({
   removeFromCart,
   getItemQuantity,
   restaurantInfo,
-  session
+  session,
+  onGoToCart
 }: MenuTabProps) {
   const [activeFoodType, setActiveFoodType] = useState<string>('');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const totalCartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   const foodTypes = Array.from(
     new Set(
@@ -337,30 +340,52 @@ export default function MenuTab({
 
               <div className="absolute bottom-0 left-0 right-0 p-6 pt-2 bg-gradient-to-t from-white via-white to-transparent">
                   <div className="flex items-center gap-4">
+                    {/* Left: Cart Button */}
+                    <button 
+                      onClick={() => {
+                        setSelectedItem(null);
+                        onGoToCart?.();
+                      }}
+                      className="relative w-14 h-14 bg-orange-500 text-white rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200"
+                      title="Go to Cart"
+                    >
+                      <FaShoppingCart className="w-5 h-5" />
+                      {totalCartCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm tabular-nums">
+                          {totalCartCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Middle: Quantity Management */}
+                    <div className="flex-1">
+                      {getItemQuantity(selectedItem._id) === 0 ? (
+                        <button 
+                          onClick={() => addToCart(selectedItem)}
+                          className="w-full h-14 bg-gray-900 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:bg-black transition-all"
+                        >
+                          <FaPlus className="w-3 h-3 text-indigo-400" />
+                          Add to Order
+                        </button>
+                      ) : (
+                        <div className="h-14 bg-indigo-600 rounded-2xl flex items-center p-1 shadow-xl">
+                          <button onClick={() => removeFromCart(selectedItem._id)} className="w-12 h-12 flex items-center justify-center text-white"><FaMinus /></button>
+                          <div className="flex-1 text-center">
+                            <p className="text-sm font-black text-white">{getItemQuantity(selectedItem._id)}</p>
+                            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-tighter">In Cart</p>
+                          </div>
+                          <button onClick={() => addToCart(selectedItem)} className="w-12 h-12 flex items-center justify-center text-white"><FaPlus /></button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right: Close Button */}
                     <button 
                       onClick={() => setSelectedItem(null)}
                       className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition-colors"
                     >
                       <FaTimes className="text-gray-900" />
                     </button>
-                    {getItemQuantity(selectedItem._id) === 0 ? (
-                      <button 
-                        onClick={() => addToCart(selectedItem)}
-                        className="flex-1 h-14 bg-gray-900 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:bg-black transition-all"
-                      >
-                        <FaPlus className="w-3 h-3 text-indigo-400" />
-                        Add to Order
-                      </button>
-                    ) : (
-                      <div className="flex-1 h-14 bg-indigo-600 rounded-2xl flex items-center p-1 shadow-xl">
-                        <button onClick={() => removeFromCart(selectedItem._id)} className="w-12 h-12 flex items-center justify-center text-white"><FaMinus /></button>
-                        <div className="flex-1 text-center">
-                          <p className="text-sm font-black text-white">{getItemQuantity(selectedItem._id)}</p>
-                          <p className="text-[8px] font-black text-indigo-200 uppercase">In Cart</p>
-                        </div>
-                        <button onClick={() => addToCart(selectedItem)} className="w-12 h-12 flex items-center justify-center text-white"><FaPlus /></button>
-                      </div>
-                    )}
                   </div>
               </div>
             </motion.div>

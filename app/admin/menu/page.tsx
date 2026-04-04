@@ -14,6 +14,9 @@ import {
   FaSpinner,
   FaImage,
   FaTimes,
+  FaUtensils,
+  FaCloudUploadAlt,
+  FaSave,
 } from 'react-icons/fa';
 import { Skeleton, MenuItemSkeleton } from '@/components/ui/Skeleton';
 
@@ -359,186 +362,268 @@ export default function MenuManagementPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal - Add/Edit Menu Item */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={closeModal} />
-            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
-              <form onSubmit={handleSubmit} className="p-6">
-                <div className="flex items-start sm:items-center justify-between gap-4 mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="p-2 text-gray-400 hover:text-gray-600 shrink-0"
-                  >
-                    <FaTimes className="w-5 h-5" />
-                  </button>
+          <div className="flex min-h-screen items-center justify-center p-2 sm:p-4">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" 
+              onClick={closeModal} 
+            />
+            
+            {/* Modal Content */}
+            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-white">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-100 rounded-xl">
+                    <FaUtensils className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                      {editingItem ? 'Edit Menu Item' : 'Add New Item'}
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      {editingItem ? 'Update item details' : 'Create a new menu item'}
+                    </p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
 
-                {/* Image Upload */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
-                  <div className="flex items-center space-x-4">
+              <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
+                {/* Image Upload Section */}
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                  <div className="relative shrink-0">
                     {imagePreview ? (
-                      <div className="relative w-24 h-24">
+                      <div className="relative w-28 h-28 sm:w-32 sm:h-32 group">
                         <Image
                           src={imagePreview}
                           alt="Preview"
                           fill
-                          className="object-cover rounded-lg"
+                          className="object-cover rounded-2xl shadow-md"
                         />
+                        <button
+                          type="button"
+                          onClick={() => { setImageFile(null); setImagePreview(''); }}
+                          className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                        >
+                          <FaTimes className="w-3 h-3" />
+                        </button>
                       </div>
                     ) : (
-                      <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <FaImage className="w-8 h-8 text-gray-400" />
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-gray-300">
+                        <FaImage className="w-8 h-8 text-gray-400 mb-2" />
+                        <span className="text-xs text-gray-500">No image</span>
                       </div>
                     )}
-                    <label className="flex-1">
+                  </div>
+                  <div className="flex-1 w-full">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Item Image
+                    </label>
+                    <label className="flex flex-col items-center justify-center w-full h-20 sm:h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group">
+                      <div className="flex flex-col items-center">
+                        <FaCloudUploadAlt className="w-6 h-6 text-gray-400 group-hover:text-indigo-500 mb-1 transition-colors" />
+                        <span className="text-xs text-gray-500 group-hover:text-indigo-600 font-medium">
+                          {imagePreview ? 'Change Image' : 'Click to upload image'}
+                        </span>
+                        <span className="text-[10px] text-gray-400 mt-0.5">PNG, JPG up to 5MB</span>
+                      </div>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handleImageChange}
                         className="hidden"
                       />
-                      <span className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-colors">
-                        {imagePreview ? 'Change Image' : 'Upload Image'}
-                      </span>
                     </label>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                {/* Basic Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Item Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       required
+                      placeholder="e.g., Butter Chicken"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Description
+                    </label>
                     <textarea
                       rows={2}
+                      placeholder="Brief description of the dish..."
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all resize-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+                  {/* Price Row */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Price (₹) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         required
+                        placeholder="0.00"
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full pl-8 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Offer Price
-                        {formData.price && formData.offerPrice && (
-                          <span className="ml-2 text-xs text-green-600">
-                            ({calculateDiscount(parseFloat(formData.price), parseFloat(formData.offerPrice))}% off)
-                          </span>
-                        )}
-                      </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Offer Price
+                      {formData.price && formData.offerPrice && Number(formData.offerPrice) < Number(formData.price) && (
+                        <span className="ml-2 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                          {Math.round((1 - Number(formData.offerPrice) / Number(formData.price)) * 100)}% OFF
+                        </span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
+                        placeholder="0.00"
                         value={formData.offerPrice}
                         onChange={(e) => setFormData({ ...formData, offerPrice: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full pl-8 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
                       />
                     </div>
                   </div>
 
+                  {/* Food Type & Status Row */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Food Type</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Category
+                    </label>
                     <select
                       value={formData.foodType}
                       onChange={(e) => setFormData({ ...formData, foodType: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all appearance-none cursor-pointer"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
                     >
-                      <option value="Cold Beverage">Cold Beverage</option>
-                      <option value="Hot Beverage">Hot Beverage</option>
-                      <option value="Appetizers">Appetizers</option>
-                      <option value="Soups">Soups</option>
-                      <option value="Salads">Salads</option>
-                      <option value="Main Course">Main Course</option>
-                      <option value="Sides">Sides</option>
-                      <option value="Desserts">Desserts</option>
+                      <option value="Cold Beverage">🧊 Cold Beverage</option>
+                      <option value="Hot Beverage">☕ Hot Beverage</option>
+                      <option value="Appetizers">🍤 Appetizers</option>
+                      <option value="Soups">🍜 Soups</option>
+                      <option value="Salads">🥗 Salads</option>
+                      <option value="Main Course">🍽️ Main Course</option>
+                      <option value="Sides">🍟 Sides</option>
+                      <option value="Desserts">🍰 Desserts</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Ingredients</label>
-                    <input
-                      type="text"
-                      value={formData.ingredients}
-                      onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="e.g., Chicken, Spices, Herbs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Preparation Method</label>
-                    <input
-                      type="text"
-                      value={formData.preparationMethod}
-                      onChange={(e) => setFormData({ ...formData, preparationMethod: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="e.g., Grilled for 15 minutes"
-                    />
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={formData.isActive}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    />
-                    <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
-                      Active
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors w-full">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={formData.isActive}
+                          onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">
+                        {formData.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                      {formData.isActive ? (
+                        <FaToggleOn className="w-5 h-5 text-green-500 ml-auto" />
+                      ) : (
+                        <FaToggleOff className="w-5 h-5 text-gray-400 ml-auto" />
+                      )}
                     </label>
                   </div>
                 </div>
 
-                <div className="mt-6 flex space-x-3">
+                {/* Additional Details */}
+                <div className="space-y-4 pt-2 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Additional Details</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Ingredients
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Chicken, Cream, Butter, Spices"
+                      value={formData.ingredients}
+                      onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Preparation Method
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Marinated for 4 hours, grilled in tandoor"
+                      value={formData.preparationMethod}
+                      onChange={(e) => setFormData({ ...formData, preparationMethod: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    className="flex-[2] px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
                   >
                     {isSubmitting ? (
-                      <FaSpinner className="w-5 h-5 animate-spin mx-auto" />
+                      <>
+                        <FaSpinner className="w-5 h-5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
                     ) : editingItem ? (
-                      'Update'
+                      <>
+                        <FaSave className="w-5 h-5" />
+                        <span>Update Item</span>
+                      </>
                     ) : (
-                      'Create'
+                      <>
+                        <FaPlus className="w-5 h-5" />
+                        <span>Create Item</span>
+                      </>
                     )}
                   </button>
                 </div>

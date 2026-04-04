@@ -462,12 +462,12 @@ function CustomerPageContent() {
     try {
       const orderData = {
         restaurantId: session.restaurantId,
-        tableNumber: parseInt(session.tableNumber),
+        tableNumber: parseInt(session.tableNumber || '0') || 0,
         customerName: session.customerName || 'Guest',
-        customerPhone: customerPhone,
+        customerPhone: customerPhone || undefined,
         numberOfPersons: session.numberOfPersons || 1,
         deviceId: session.deviceId,
-        sessionId: session.deviceId,
+        sessionId: session.sessionId || session.deviceId,
         items: cart.map(item => ({
           itemId: item._id,
           name: item.name,
@@ -545,6 +545,7 @@ function CustomerPageContent() {
             getItemQuantity={getItemQuantity}
             restaurantInfo={restaurantInfo}
             session={session}
+            onGoToCart={() => setActiveTab('cart')}
           />
         );
       case 'cart':
