@@ -1,7 +1,20 @@
 import { io, Socket } from 'socket.io-client';
 
 const getSocketUrl = () => {
-    // Hardcoded production URL as requested to avoid environment variable issues on Vercel/Render
+    // Check for environment variable first
+    if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+        return process.env.NEXT_PUBLIC_SOCKET_URL;
+    }
+
+    // Dynamic fallback based on current environment
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+            return 'http://localhost:5000';
+        }
+    }
+
+    // Default production URL as final fallback
     return 'https://digitalmenu-server.onrender.com';
 };
 

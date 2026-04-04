@@ -40,7 +40,12 @@ const navItems = [
 export default function BottomNav({ cartCount = 0, onTabChange, activeTab }: BottomNavProps) {
   return (
     <div className="fixed bottom-6 left-0 right-0 px-4 z-50 flex justify-center pointer-events-none">
-      <nav className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] px-3 py-2 flex items-center gap-10 pointer-events-auto">
+      <motion.nav 
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', damping: 20, stiffness: 100, delay: 0.2 }}
+        className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem] px-3 py-2 flex items-center gap-10 pointer-events-auto"
+      >
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           const Icon = item.icon;
@@ -92,7 +97,7 @@ export default function BottomNav({ cartCount = 0, onTabChange, activeTab }: Bot
             </button>
           );
         })}
-      </nav>
+      </motion.nav>
       
       <style jsx global>{`
         @keyframes bounce-short {
