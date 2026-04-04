@@ -51,7 +51,7 @@ interface Stats {
 interface Ledger {
   _id: string;
   date: string;
-  cash: {
+  counter: {
     received: number;
     refunded: number;
     balance: number;
@@ -316,15 +316,15 @@ export default function DashboardPage() {
   const monthToDateStats = monthlyLedgers.reduce((acc, ledger) => {
     acc.totalOrders += ledger.counts?.totalOrders || 0;
     acc.servedOrders += ledger.counts?.servedOrders || 0;
-    acc.cashBalance += ledger.cash?.balance || 0;
+    acc.counterBalance += ledger.counter?.balance || 0;
     acc.onlineBalance += ledger.online?.balance || 0;
     acc.netBalance += ledger.total?.netBalance || 0;
-    acc.totalRefunded += (ledger.cash?.refunded || 0) + (ledger.online?.refunded || 0);
+    acc.totalRefunded += (ledger.counter?.refunded || 0) + (ledger.online?.refunded || 0);
     return acc;
   }, {
     totalOrders: 0,
     servedOrders: 0,
-    cashBalance: 0,
+    counterBalance: 0,
     onlineBalance: 0,
     netBalance: 0,
     totalRefunded: 0
@@ -616,11 +616,11 @@ export default function DashboardPage() {
                   icon={<FaCheckCircle />} 
                 />
                 <StatsCard 
-                  label="Cash Balance" 
-                  value={`₹${Math.round(ledger.cash.balance)}`} 
+                  label="Counter Balance" 
+                  value={`₹${Math.round(ledger.counter.balance)}`} 
                   variant="amber" 
                   icon={<FaMoneyBillWave />} 
-                  description={ledger.cash.refunded > 0 ? `Ref: ₹${ledger.cash.refunded}` : undefined}
+                  description={ledger.counter.refunded > 0 ? `Ref: ₹${ledger.counter.refunded}` : undefined}
                 />
                 <StatsCard 
                   label="Online Balance" 
@@ -650,20 +650,20 @@ export default function DashboardPage() {
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
                     <FaMoneyBillWave className="w-4 h-4 text-amber-600" />
-                    <span>Cash Summary</span>
+                    <span>Counter Summary</span>
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Gross Received</span>
-                      <span className="font-medium">₹{Math.round(ledger.cash.received)}</span>
+                      <span className="font-medium">₹{Math.round(ledger.counter.received)}</span>
                     </div>
                     <div className="flex justify-between text-red-600">
                       <span>Total Refunded</span>
-                      <span className="font-medium">₹{Math.round(ledger.cash.refunded)}</span>
+                      <span className="font-medium">₹{Math.round(ledger.counter.refunded)}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1 font-semibold">
-                      <span>Net Cash</span>
-                      <span className="text-amber-700">₹{Math.round(ledger.cash.balance)}</span>
+                      <span>Net Counter</span>
+                      <span className="text-amber-700">₹{Math.round(ledger.counter.balance)}</span>
                     </div>
                   </div>
                 </div>
