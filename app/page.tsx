@@ -1,21 +1,65 @@
-'use client';
+import { Metadata } from 'next';
+import MarketingHomeClient from './home/home-client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { BrandLoader } from '@/components/ui/BrandLoader';
+export const metadata: Metadata = {
+  title: 'DigitalMenu | Smart QR Restaurant Ordering System',
+  description: 'Transform your restaurant with DigitalMenu. Let customers scan, order, and pay instantly. Reduce errors, increase speed, and boost profits with our contactless QR menu system.',
+  keywords: ['QR menu', 'digital restaurant ordering', 'contactless dining', 'restaurant POS', 'smart menu system', 'SaaS for restaurants'],
+  alternates: {
+    canonical: 'https://digitalmenuorder.vercel.app/',
+  },
+  openGraph: {
+    title: 'DigitalMenu | The Future of Dining',
+    description: 'The fastest QR-based ordering system for modern restaurants.',
+    url: 'https://digitalmenuorder.vercel.app/',
+    siteName: 'DigitalMenu',
+    images: [{ 
+      url: 'https://digitalmenuorder.vercel.app/og-image.png',
+      width: 1200,
+      height: 630,
+      alt: 'DigitalMenu QR System',
+    }],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DigitalMenu | The Future of Dining',
+    description: 'The fastest QR-based ordering system for modern restaurants.',
+    images: ['https://digitalmenuorder.vercel.app/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default function HomePage() {
-  const router = useRouter();
-  const { user, isLoading, isAuthenticated } = useAuth();
-  
-  useEffect(() => {
-    if (!isLoading) {
-      // Home page is now accessible to everyone
-      router.replace('/home');
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DigitalMenu",
+    "operatingSystem": "Web",
+    "applicationCategory": "BusinessApplication",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "ratingCount": "120"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
     }
-  }, [router, isLoading]);
+  };
 
-  // Show premium brand loader while checking auth/redirecting
-  return <BrandLoader />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <MarketingHomeClient />
+    </>
+  );
 }

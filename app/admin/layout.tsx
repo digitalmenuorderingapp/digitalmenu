@@ -330,7 +330,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
             <div className="my-3 border-t border-gray-200" />
             <Link
-              href="/home"
+              href="/"
               className="flex items-center space-x-3 w-full px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-indigo-600 transition-colors"
             >
               <FaHome className="w-5 h-5" />
@@ -508,7 +508,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   whileTap={{ scale: 0.98 }}
                 >
                   <Link
-                    href="/home"
+                    href="/"
                     onClick={() => setSidebarOpen(false)}
                     className="flex items-center space-x-3 w-full px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-indigo-600 transition-colors"
                   >
