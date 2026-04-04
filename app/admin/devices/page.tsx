@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
-import { FaSpinner, FaDesktop, FaMobileAlt, FaGlobe, FaClock, FaSignOutAlt, FaArrowLeft } from 'react-icons/fa';
+import { FaSpinner, FaDesktop, FaMobileAlt, FaGlobe, FaClock, FaTrashAlt, FaArrowLeft, FaShieldAlt } from 'react-icons/fa';
 
 interface Session {
   loggedInAt: string;
@@ -65,10 +65,25 @@ export default function ActiveDevicesPage() {
     setActionLoading(deviceId);
     try {
       await api.delete(`/devices/${deviceId}/remove`);
-      toast.success('Device history removed successfully');
+      toast.success('Device removed successfully');
       fetchDevices();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to remove device');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemoveAllOthers = async () => {
+    if (!confirm('Are you sure you want to remove ALL other devices? This will permanently delete their history and sessions.')) return;
+    
+    setActionLoading('all-others');
+    try {
+      await api.delete('/devices/remove/all-others');
+      toast.success('All other devices removed');
+      fetchDevices();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to remove other devices');
     } finally {
       setActionLoading(null);
     }
@@ -153,13 +168,27 @@ export default function ActiveDevicesPage() {
             <h1 className="text-2xl font-bold text-gray-900">Active Devices</h1>
             <p className="text-gray-600 mt-1">Manage your logged-in sessions and devices</p>
           </div>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <FaArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </button>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            {devices.length > 1 && (
+              <button
+                onClick={handleRemoveAllOthers}
+                disabled={actionLoading === 'all-others'}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-colors font-bold text-sm"
+              >
+                {actionLoading === 'all-others' ? <FaSpinner className="animate-spin" /> : <FaTrashAlt className="w-3 h-3" />}
+                <span>Remove All Others</span>
+              </button>
+            )}
+            
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <FaArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -189,7 +218,7 @@ export default function ActiveDevicesPage() {
           <div className="bg-red-50 rounded-lg p-4">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
-                <FaSignOutAlt className="w-6 h-6 text-white" />
+                <FaTrashAlt className="w-6 h-6 text-white" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-red-600">{offlineCount}</p>
@@ -261,32 +290,23 @@ export default function ActiveDevicesPage() {
                               )}
                             </div>
                           </div>
-                          {device.revokedAt ? (
-                            <button
-                              onClick={() => handleRemoveDevice(device.deviceId)}
-                              disabled={actionLoading === device.deviceId || isCurrentDevice(device)}
-                              className="bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 border border-gray-200 hover:border-red-200 px-3 py-1 rounded-lg transition-colors duration-200 text-sm flex items-center space-x-2"
-                            >
-                              {actionLoading === device.deviceId ? (
-                                <FaSpinner className="w-4 h-4 animate-spin text-red-500" />
-                              ) : (
-                                <FaSignOutAlt className="w-4 h-4" />
-                              )}
-                              <span>{actionLoading === device.deviceId ? 'Removing...' : 'Remove Device'}</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleLogoutDevice(device.deviceId)}
-                              disabled={actionLoading === device.deviceId || isCurrentDevice(device)}
-                              className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-3 py-1 rounded-lg transition-colors duration-200 text-sm flex items-center space-x-1"
-                            >
-                              {actionLoading === device.deviceId ? (
-                                <FaSpinner className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <FaSignOutAlt className="w-4 h-4" />
-                              )}
-                              <span>{actionLoading === device.deviceId ? 'Logging out...' : 'Logout'}</span>
-                            </button>
+                          
+                          {/* Main Action: Remove */}
+                          {!isCurrentDevice(device) && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <button
+                                onClick={() => handleRemoveDevice(device.deviceId)}
+                                disabled={actionLoading === device.deviceId}
+                                className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2 rounded-xl transition-all duration-200 text-sm font-bold flex items-center space-x-2 shadow-sm hover:shadow-md"
+                              >
+                                {actionLoading === device.deviceId ? (
+                                  <FaSpinner className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <FaTrashAlt className="w-4 h-4" />
+                                )}
+                                <span>{actionLoading === device.deviceId ? 'Removing...' : 'Remove Device'}</span>
+                              </button>
+                            </div>
                           )}
                         </div>
 

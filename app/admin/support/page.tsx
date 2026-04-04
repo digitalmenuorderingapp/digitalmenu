@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaLifeRing, 
@@ -8,11 +8,9 @@ import {
   FaWhatsapp, 
   FaQuestionCircle, 
   FaChevronDown, 
-  FaPaperPlane,
   FaHeadset,
   FaClock,
   FaShieldAlt,
-  FaGlobe,
   FaKeyboard,
   FaHome,
   FaClipboardList,
@@ -23,6 +21,7 @@ import {
   FaDesktop,
   FaArrowLeft
 } from 'react-icons/fa';
+import { TRANSLATIONS, Language } from '@/utils/translations';
 
 const faqs = [
   {
@@ -61,20 +60,25 @@ const keyboardShortcuts = [
 ];
 
 export default function SupportPage() {
+  const [lang, setLang] = useState<Language>('hi');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [formData, setFormData] = useState({ subject: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      alert('Your message has been sent to our support team. We will get back to you shortly!');
-      setFormData({ subject: '', message: '' });
-      setIsSubmitting(false);
-    }, 1500);
+  // Persistence for language
+  useEffect(() => {
+    const saved = localStorage.getItem('digitalmenu_lang') as Language;
+    if (saved && TRANSLATIONS[saved]) {
+      setLang(saved);
+    }
+  }, []);
+
+  const handleLanguageChange = (l: Language) => {
+    setLang(l);
+    localStorage.setItem('digitalmenu_lang', l);
   };
+
+  const t = TRANSLATIONS[lang];
 
   return (
     <div className="p-6 lg:p-10 space-y-10 bg-gray-50/50 min-h-screen">
@@ -83,14 +87,38 @@ export default function SupportPage() {
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
             <FaLifeRing className="text-indigo-600 animate-pulse" />
-            Support Center
+            {t.support_title}
           </h1>
-          <p className="text-gray-500 mt-1 font-medium italic">Direct assistance for your restaurant operations</p>
+          <p className="text-gray-500 mt-1 font-medium italic">{t.support_subtitle}</p>
         </div>
         
-        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-          <span className="text-sm font-bold text-gray-700">System Status: Optimal</span>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          {/* Language Toggle */}
+          <div className="flex bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+            <button 
+              onClick={() => handleLanguageChange('en')} 
+              className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${lang === 'en' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-gray-500 hover:text-gray-800'}`}
+            >
+              EN
+            </button>
+            <button 
+              onClick={() => handleLanguageChange('hi')} 
+              className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${lang === 'hi' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-gray-500 hover:text-gray-800'}`}
+            >
+              HI
+            </button>
+            <button 
+              onClick={() => handleLanguageChange('bn')} 
+              className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${lang === 'bn' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-gray-500 hover:text-gray-800'}`}
+            >
+              BN
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+            <span className="text-sm font-bold text-gray-700">{t.support_status}</span>
+          </div>
         </div>
       </div>
 
@@ -148,13 +176,61 @@ export default function SupportPage() {
         </motion.div>
       </div>
 
+      {/* Security Section (NEW) */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden text-white"
+      >
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+          <FaShieldAlt size={120} />
+        </div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-500/30">
+              <FaShieldAlt className="text-red-400 text-2xl" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black">{t.support_security_title}</h3>
+              <p className="text-indigo-200/60 text-sm">{t.support_security_desc}</p>
+            </div>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+            <h4 className="text-red-400 font-bold mb-3 flex items-center gap-2">
+              <FaShieldAlt className="w-4 h-4" />
+              {t.support_security_instruction_title}
+            </h4>
+            <p className="text-gray-300 text-sm mb-6">
+              {t.support_security_instruction_body}
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0 font-bold">1</div>
+                <p className="text-sm text-gray-200">
+                  {t.support_security_step1}
+                </p>
+              </div>
+              <div className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0 font-bold">2</div>
+                <p className="text-sm text-gray-200">
+                  {t.support_security_step2}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* FAQ Section */}
         <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-100 border border-gray-100 overflow-hidden">
           <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
               <FaQuestionCircle className="text-indigo-500" />
-              Frequently Asked Questions
+              {t.support_faq_title}
             </h3>
           </div>
           
@@ -195,7 +271,7 @@ export default function SupportPage() {
           <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
               <FaKeyboard className="text-indigo-500" />
-              Keyboard Shortcuts
+              {t.support_shortcuts_title}
             </h3>
             <span className="text-xs font-bold text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
               Pro Tips

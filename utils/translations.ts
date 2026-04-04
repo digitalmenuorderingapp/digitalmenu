@@ -122,7 +122,18 @@ export const TRANSLATIONS = {
     sub_copy_id: "Copy ID",
     sub_id_copied: "ID Copied!",
     sub_contact_whatsapp: "WhatsApp Support",
-    sub_contact_email: "Email Support"
+    sub_contact_email: "Email Support",
+    support_title: "Help & Support",
+    support_subtitle: "Direct assistance for your restaurant operations",
+    support_status: "System Status: Optimal",
+    support_security_title: "Security & Account Safety",
+    support_security_desc: "Protect your restaurant account from unauthorized access.",
+    support_security_instruction_title: "Suspicious Activity?",
+    support_security_instruction_body: "If you notice any suspicious login activity, please take these steps immediately:",
+    support_security_step1: "Reset your password using the OTP verification method.",
+    support_security_step2: "Go to the 'Devices' section and remove all devices other than your current one.",
+    support_faq_title: "Frequently Asked Questions",
+    support_shortcuts_title: "Keyboard Shortcuts"
   },
   hi: {
     nav_platform: "कैसे काम करता है",
@@ -245,7 +256,18 @@ export const TRANSLATIONS = {
     sub_copy_id: "ID कॉपी करें",
     sub_id_copied: "ID कॉपी हो गई!",
     sub_contact_whatsapp: "व्हाट्सएप सपोर्ट",
-    sub_contact_email: "ईमेल सपोर्ट"
+    sub_contact_email: "ईमेल सपोर्ट",
+    support_title: "सहायता और समर्थन",
+    support_subtitle: "आपके रेस्तरां संचालन के लिए सीधी सहायता",
+    support_status: "सिस्टम स्थिति: इष्टतम",
+    support_security_title: "सुरक्षा और खाता सुरक्षा",
+    support_security_desc: "अपने रेस्तरां खाते को अनधिकृत पहुंच से बचाएं।",
+    support_security_instruction_title: "संदिग्ध गतिविधि?",
+    support_security_instruction_body: "यदि आप कोई संदिग्ध लॉगिन गतिविधि देखते हैं, तो कृपया ये कदम तुरंत उठाएं:",
+    support_security_step1: "OTP सत्यापन विधि का उपयोग करके अपना पासवर्ड रीसेट करें।",
+    support_security_step2: "'डिवाइस' सेक्शन में जाएं और अपने वर्तमान डिवाइस के अलावा अन्य सभी डिवाइस को हटा दें।",
+    support_faq_title: "अक्सर पूछे जाने वाले प्रश्न",
+    support_shortcuts_title: "कीबोर्ड शॉर्टकट"
   },
   bn: {
     nav_platform: "কীভাবে কাজ করে",
@@ -368,6 +390,17 @@ export const TRANSLATIONS = {
     sub_copy_id: "ID কপি করুন",
     sub_id_copied: "ID কপি করা হয়েছে!",
     sub_contact_whatsapp: "হোয়াটসঅ্যাপ সাপোর্ট",
-    sub_contact_email: "ইমেইল সাপোর্ট"
+    sub_contact_email: "ইমেইল সাপোর্ট",
+    support_title: "সাহায্য ও সহযোগিতা",
+    support_subtitle: "আপনার রেস্তোরাঁ পরিচালনার জন্য সরাসরি সহায়তা",
+    support_status: "সিস্টেম স্ট্যাটাস: অপ্টিমাল",
+    support_security_title: "নিরাপত্তা ও অ্যাকাউন্ট সুরক্ষা",
+    support_security_desc: "আপনার রেস্তোরাঁ অ্যাকাউন্ট অননুমোদিত অ্যাক্সেস থেকে রক্ষা করুন।",
+    support_security_instruction_title: "সন্দেহজনক কার্যকলাপ?",
+    support_security_instruction_body: "যদি আপনি কোনো সন্দেহজনক লগইন কার্যকলাপ লক্ষ্য করেন, তবে অনুগ্রহ করে অবিলম্বে এই পদক্ষেপগুলি নিন:",
+    support_security_step1: "OTP যাচাইকরণ পদ্ধতি ব্যবহার করে আপনার পাসওয়ার্ড রিসেট করুন।",
+    support_security_step2: "'ডিভাইস' বিভাগে যান এবং আপনার বর্তমান ডিভাইস ছাড়া অন্য সব ডিভাইস সরিয়ে ফেলুন।",
+    support_faq_title: "প্রায়শই জিজ্ঞাসিত প্রশ্নাবলী",
+    support_shortcuts_title: "কীবোর্ড শর্টকাট"
   }
 };
