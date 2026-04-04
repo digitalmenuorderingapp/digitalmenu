@@ -136,8 +136,8 @@ export default function SupportPage() {
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Voice Support</h3>
           <p className="text-gray-500 mb-6 text-sm leading-relaxed">Speak directly with our technical team for immediate assistance.</p>
-          <a href="tel:+918250000000" className="flex items-center gap-2 text-indigo-600 font-black text-lg hover:underline underline-offset-4">
-            Call +91 8250...
+          <a href="tel:+919563401099" className="flex items-center gap-2 text-indigo-600 font-black text-lg hover:underline underline-offset-4">
+            Call +91 95634...
           </a>
         </motion.div>
 
@@ -153,7 +153,7 @@ export default function SupportPage() {
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">WhatsApp Business</h3>
           <p className="text-gray-500 mb-6 text-sm leading-relaxed">Send us screenshots or voice notes for operational troubleshooting.</p>
-          <a href="https://wa.me/918250000000" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-green-600 font-black text-lg hover:underline underline-offset-4">
+          <a href="https://wa.me/919563401099" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-green-600 font-black text-lg hover:underline underline-offset-4">
             Chat on WhatsApp
           </a>
         </motion.div>
@@ -170,8 +170,8 @@ export default function SupportPage() {
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Official Email</h3>
           <p className="text-gray-500 mb-6 text-sm leading-relaxed">For non-urgent queries and detailed documentation requests.</p>
-          <a href="mailto:support@digitalmenu.com" className="flex items-center gap-2 text-blue-600 font-black text-lg hover:underline underline-offset-4 overflow-hidden text-ellipsis whitespace-nowrap">
-            support@digitalmenu.com
+          <a href="mailto:digitalmenu.orderingapp@zohomail.in" className="flex items-center gap-2 text-blue-600 font-black text-lg hover:underline underline-offset-4 overflow-hidden text-ellipsis whitespace-nowrap">
+            digitalmenu.orderingapp@zohomail.in
           </a>
         </motion.div>
       </div>

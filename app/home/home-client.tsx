@@ -670,7 +670,7 @@ export default function MarketingHomeClient() {
                       <div>
                         <div className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-1">{t.sec_dev}</div>
                         <div className="text-base md:text-lg font-black tracking-tight" translate="no">Sahin Arman</div>
-                        <div className="text-xs text-white/40 font-bold tracking-widest mt-1">sahin401099@gmail.com</div>
+                        <div className="text-xs text-white/40 font-bold tracking-widest mt-1">digitalmenu.orderingapp@zohomail.in</div>
                         <div className="text-xs text-white/40 font-bold tracking-widest mt-0.5">+91 9563401099</div>
                       </div>
                     </div>
@@ -768,12 +768,12 @@ export default function MarketingHomeClient() {
                     <span>+91 9563401099</span>
                   </a>
                   <a
-                    href="mailto:sahin401099@gmail.com"
+                    href="mailto:digitalmenu.orderingapp@zohomail.in"
                     className="flex items-center gap-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 px-4 py-2.5 rounded-xl text-sm font-bold transition-all group w-fit"
                     aria-label="Send email"
                   >
                     <FaEnvelope className="text-lg group-hover:scale-110 transition-transform" />
-                    <span>sahin401099@gmail.com</span>
+                    <span>digitalmenu.orderingapp@zohomail.in</span>
                   </a>
                 </div>
               </div>
