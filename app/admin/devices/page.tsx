@@ -19,6 +19,7 @@ interface Device {
   userAgent: string;
   isOnline: boolean;
   lastSeen: string;
+  revokedAt?: string;
   sessions: Session[];
 }
 
@@ -53,6 +54,21 @@ export default function ActiveDevicesPage() {
       fetchDevices();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to logout device');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemoveDevice = async (deviceId: string) => {
+    if (!confirm('Are you sure you want to remove this device entry permanently? This will clear all session history for this device.')) return;
+    
+    setActionLoading(deviceId);
+    try {
+      await api.delete(`/devices/${deviceId}/remove`);
+      toast.success('Device history removed successfully');
+      fetchDevices();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to remove device');
     } finally {
       setActionLoading(null);
     }
@@ -99,6 +115,9 @@ export default function ActiveDevicesPage() {
   };
 
   const getDeviceStatus = (device: Device) => {
+    if (device.revokedAt) {
+      return { status: 'revoked', color: 'red', text: 'Revoked' };
+    }
     if (device.isOnline) {
       return { status: 'online', color: 'green', text: 'Online' };
     }
@@ -213,6 +232,7 @@ export default function ActiveDevicesPage() {
                     <div className="flex items-start space-x-4 flex-1">
                       {/* Device Icon */}
                       <div className={`w-16 h-16 rounded-xl flex items-center justify-center shrink-0 ${
+                        deviceStatus.status === 'revoked' ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
                         deviceStatus.color === 'green' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
                         'bg-gradient-to-r from-yellow-500 to-orange-500'
                       }`}>
@@ -241,18 +261,33 @@ export default function ActiveDevicesPage() {
                               )}
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleLogoutDevice(device.deviceId)}
-                            disabled={actionLoading === device.deviceId || isCurrentDevice(device)}
-                            className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-3 py-1 rounded-lg transition-colors duration-200 text-sm flex items-center space-x-1"
-                          >
-                            {actionLoading === device.deviceId ? (
-                              <FaSpinner className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <FaSignOutAlt className="w-4 h-4" />
-                            )}
-                            <span>{actionLoading === device.deviceId ? 'Logging out...' : 'Logout'}</span>
-                          </button>
+                          {device.revokedAt ? (
+                            <button
+                              onClick={() => handleRemoveDevice(device.deviceId)}
+                              disabled={actionLoading === device.deviceId || isCurrentDevice(device)}
+                              className="bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 border border-gray-200 hover:border-red-200 px-3 py-1 rounded-lg transition-colors duration-200 text-sm flex items-center space-x-2"
+                            >
+                              {actionLoading === device.deviceId ? (
+                                <FaSpinner className="w-4 h-4 animate-spin text-red-500" />
+                              ) : (
+                                <FaSignOutAlt className="w-4 h-4" />
+                              )}
+                              <span>{actionLoading === device.deviceId ? 'Removing...' : 'Remove Device'}</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleLogoutDevice(device.deviceId)}
+                              disabled={actionLoading === device.deviceId || isCurrentDevice(device)}
+                              className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-3 py-1 rounded-lg transition-colors duration-200 text-sm flex items-center space-x-1"
+                            >
+                              {actionLoading === device.deviceId ? (
+                                <FaSpinner className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <FaSignOutAlt className="w-4 h-4" />
+                              )}
+                              <span>{actionLoading === device.deviceId ? 'Logging out...' : 'Logout'}</span>
+                            </button>
+                          )}
                         </div>
 
                         <div className="space-y-1 text-sm text-gray-600">
