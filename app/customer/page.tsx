@@ -241,18 +241,19 @@ function CustomerPageContent() {
 
       socketService.on('orderStatusUpdate', (order: Order) => {
         const statusMessages: Record<string, string> = {
-          placed: 'Order placed successfully! 📝',
-          preparing: 'Your order is being prepared! 🍳',
-          served: 'Your order has been served! 🍽️',
-          rejected: 'Sorry, your order was rejected. ❌',
-          cancelled: 'Your order has been cancelled. 🚫',
+          PLACED: 'Order placed successfully! 📝',
+          ACCEPTED: 'Your order is being prepared! 🍳',
+          COMPLETED: 'Your order has been served! 🍽️',
+          REJECTED: 'Sorry, your order was rejected. ❌',
+          CANCELLED: 'Your order has been cancelled. 🚫',
+          RETRY: 'Verification failed. Please retry payment. 🔁',
           paymentVerified: 'Payment verified successfully! ✅',
         };
 
         const message = statusMessages[order.status] || `Your order status: ${order.status}`;
 
         // Special handling for rejected/cancelled orders with reasons
-        if (order.status === 'rejected' && order.rejectionReason) {
+        if (order.status === 'REJECTED' && order.rejectionReason) {
           toast.error(`Order rejected: ${order.rejectionReason}`, {
             duration: 8000,
             style: {
@@ -261,7 +262,7 @@ function CustomerPageContent() {
               color: '#fff',
             },
           });
-        } else if (order.status === 'cancelled' && order.cancellationReason) {
+        } else if (order.status === 'CANCELLED' && order.cancellationReason) {
           toast.error(`Order cancelled: ${order.cancellationReason}`, {
             duration: 8000,
             style: {
@@ -272,11 +273,11 @@ function CustomerPageContent() {
           });
         } else {
           toast(message, {
-            icon: order.status === 'rejected' || order.status === 'cancelled' ? '❌' : '🔔',
-            duration: order.status === 'rejected' || order.status === 'cancelled' ? 8000 : 6000,
+            icon: order.status === 'REJECTED' || order.status === 'CANCELLED' ? '❌' : '🔔',
+            duration: order.status === 'REJECTED' || order.status === 'CANCELLED' ? 8000 : 6000,
             style: {
               borderRadius: '12px',
-              background: order.status === 'rejected' || order.status === 'cancelled' ? '#dc2626' : '#1e293b',
+              background: order.status === 'REJECTED' || order.status === 'CANCELLED' ? '#dc2626' : '#1e293b',
               color: '#fff',
             },
           });
@@ -322,7 +323,7 @@ function CustomerPageContent() {
 
       // Listen for refund updates
       socketService.on('orderRefundUpdate', (order: Order) => {
-        if (order.refund?.status === 'refunded') {
+        if (order.refund?.status === 'COMPLETED') {
           toast.success(`Refund of ₹${order.refund.amount?.toFixed(2)} processed via ${order.refund.method}! 💰`, {
             duration: 8000,
             style: {
@@ -331,7 +332,7 @@ function CustomerPageContent() {
               color: '#fff',
             },
           });
-        } else if (order.refund?.status === 'pending') {
+        } else if (order.refund?.status === 'PENDING') {
           toast('Refund is being processed... ⏳', {
             duration: 6000,
             style: {
@@ -439,7 +440,7 @@ function CustomerPageContent() {
     return item ? item.quantity : 0;
   };
 
-  const placeOrder = async (paymentMethod: 'cash' | 'online', utrNumber?: string, specialInstructions?: string) => {
+  const placeOrder = async (paymentMethod: 'COUNTER' | 'ONLINE', utr?: string, specialInstructions?: string) => {
     if (cart.length === 0) {
       toast.error('Your cart is empty');
       return;
@@ -478,8 +479,9 @@ function CustomerPageContent() {
           return total + (price * item.quantity);
         }, 0),
         paymentMethod,
-        utrNumber: utrNumber || undefined,
-        specialInstructions: specialInstructions || undefined
+        utr: utr || undefined,
+        specialInstructions: specialInstructions || undefined,
+        status: 'PLACED'
       };
 
       console.log('[DEBUG] Order data being sent:', orderData);

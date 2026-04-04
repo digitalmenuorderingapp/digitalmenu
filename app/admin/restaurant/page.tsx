@@ -18,11 +18,16 @@ import {
   FaTrash,
   FaExclamationTriangle,
   FaEnvelope,
-  FaCheckCircle,
   FaCamera,
-  FaImage
+  FaImage,
+  FaCopy,
+  FaCheck,
+  FaCrown,
+  FaWhatsapp,
+  FaCheckCircle
 } from 'react-icons/fa';
 import Image from 'next/image';
+import { TRANSLATIONS, Language } from '@/utils/translations';
 
 interface RestaurantFormData {
   restaurantName: string;
@@ -44,6 +49,8 @@ export default function RestaurantPage() {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [lang, setLang] = useState<Language>('hi');
   const [formData, setFormData] = useState<RestaurantFormData>({
     restaurantName: '',
     ownerName: '',
@@ -51,6 +58,14 @@ export default function RestaurantPage() {
     phone: '',
     description: ''
   });
+
+  // Persistence for language
+  useEffect(() => {
+    const saved = localStorage.getItem('digitalmenu_lang') as Language;
+    if (saved && TRANSLATIONS[saved]) {
+      setLang(saved);
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -186,6 +201,17 @@ export default function RestaurantPage() {
     }
   };
 
+  const handleCopyId = () => {
+    if (user?.shortId) {
+      navigator.clipboard.writeText(user.shortId);
+      setCopied(true);
+      toast.success('Restaurant ID copied!');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const t = TRANSLATIONS[lang] as any;
+
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
       <div className="mb-8">
@@ -200,71 +226,128 @@ export default function RestaurantPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Logo Section */}
-        <div className="p-6 border-b border-gray-100 bg-slate-50/50">
-          <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-            <div className="relative group">
-              <div className="w-32 h-32 rounded-2xl overflow-hidden bg-white border-2 border-gray-100 shadow-sm flex items-center justify-center">
-                {logoPreview ? (
-                  <img
-                    src={logoPreview}
-                    alt="Restaurant Logo"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <FaImage className="w-12 h-12 text-gray-300" />
-                )}
-                {isUploadingLogo && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <FaSpinner className="w-8 h-8 text-white animate-spin" />
-                  </div>
-                )}
+      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+        {/* Identity & Subscription Card */}
+        <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-indigo-100 p-6 flex flex-col justify-between overflow-hidden relative group">
+          <div className="absolute -top-6 -right-6 w-24 h-24 bg-indigo-50 rounded-full group-hover:scale-110 transition-transform duration-500" />
+          <div className="relative z-10">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-100">
+                <FaCrown className="w-5 h-5 text-white" />
               </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingLogo}
-                className="absolute -bottom-2 -right-2 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-              >
-                <FaCamera className="w-4 h-4" />
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleLogoUpload}
-                accept="image/*"
-                className="hidden"
-              />
+              <h2 className="text-lg font-bold text-gray-900">{t.sub_payment_manual}</h2>
             </div>
 
-            <div className="flex-1 text-center sm:text-left">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Restaurant Logo</h3>
-              <p className="text-sm text-gray-500 mb-3">
-                Upload your restaurant logo to personalize your digital menu.
-                Max size: 5MB. Formats: JPG, PNG, WEBP.
-              </p>
-              <div className="flex items-center justify-center sm:justify-start space-x-3">
+            <div className="mb-6">
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">{t.sub_rest_id}</label>
+              <div className="flex items-center space-x-2">
+                <div className="flex-1 bg-gray-50 border border-gray-100 rounded-lg px-4 py-3 font-mono font-black text-xl text-indigo-600 tracking-wider">
+                  {user?.shortId || 'N/A'}
+                </div>
                 <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                  onClick={handleCopyId}
+                  className="p-3 bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                  title={t.sub_copy_id}
                 >
-                  Change Logo
+                  {copied ? <FaCheck className="text-green-500" /> : <FaCopy />}
                 </button>
-                {logoPreview && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveLogo}
-                    className="text-sm font-medium text-red-600 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                <p className="text-sm font-bold text-indigo-900 leading-relaxed whitespace-pre-line">
+                  {t.sub_payment_desc}
+                </p>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => window.open('https://wa.me/919563401099', '_blank')}
+                  className="w-full flex items-center justify-center space-x-2 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg shadow-green-100"
+                >
+                  <FaWhatsapp />
+                  <span>{t.sub_contact_whatsapp}</span>
+                </button>
+                <button 
+                  onClick={() => window.location.href = 'mailto:sahin401099@gmail.com'}
+                  className="w-full flex items-center justify-center space-x-2 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
+                >
+                  <FaEnvelope className="text-gray-400" />
+                  <span>{t.sub_contact_email}</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Logo Card */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full translate-x-1/2 -translate-y-1/2 -z-10" />
+          <div className="relative group">
+            <div className="w-40 h-40 rounded-2xl overflow-hidden bg-white border-2 border-gray-100 shadow-xl flex items-center justify-center">
+              {logoPreview ? (
+                <img
+                  src={logoPreview}
+                  alt="Restaurant Logo"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <FaImage className="w-16 h-16 text-gray-200" />
+              )}
+              {isUploadingLogo && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <FaSpinner className="w-10 h-10 text-white animate-spin" />
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingLogo}
+              className="absolute -bottom-3 -right-3 w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-indigo-700 transition-all disabled:opacity-50"
+            >
+              <FaCamera className="w-5 h-5" />
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleLogoUpload}
+              accept="image/*"
+              className="hidden"
+            />
+          </div>
+
+          <div className="flex-1 text-center sm:text-left">
+            <h3 className="text-xl font-black text-gray-900 mb-2">Restaurant Logo</h3>
+            <p className="text-sm text-gray-500 font-medium mb-4 max-w-sm">
+              Your logo appears on the digital menu and customer receipts. 
+              Higher quality images build more trust with customers.
+            </p>
+            <div className="flex items-center justify-center sm:justify-start space-x-4">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 bg-white border border-gray-200 text-indigo-600 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all shadow-sm"
+              >
+                Change Logo
+              </button>
+              {logoPreview && (
+                <button
+                  type="button"
+                  onClick={handleRemoveLogo}
+                  className="px-4 py-2 text-red-600 text-sm font-bold hover:text-red-700 transition-all"
+                >
+                  Remove Logo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Removed redundant logo section here since we moved it above */}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid md:grid-cols-2 gap-6">

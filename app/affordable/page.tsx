@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  FaQrcode, FaArrowRight, FaShieldAlt, FaQuestionCircle,
-  FaWhatsapp, FaEnvelope, FaHeart, FaRocket, FaUsers
+  FaQrcode, FaArrowRight, FaShieldAlt,
+  FaHeart, FaRocket, FaUsers
 } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import { TRANSLATIONS, Language } from '../../utils/translations';
@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 type Lang = Language;
 
-export default function WhyFreePage() {
+export default function AffordablePage() {
   const { isLoading, isAuthenticated } = useAuth();
   const [lang, setLang] = useState<Lang>('hi');
 
@@ -30,7 +30,7 @@ export default function WhyFreePage() {
     localStorage.setItem('digitalmenu_lang', l);
   };
 
-  const t = TRANSLATIONS[lang];
+  const t = TRANSLATIONS[lang] as any;
 
   return (
     <div className={`min-h-screen bg-white text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden ${lang === 'hi' ? 'font-hindi' : lang === 'bn' ? 'font-bengali' : 'font-sans'}`}>
@@ -111,10 +111,10 @@ export default function WhyFreePage() {
           className="mb-14 text-center"
         >
           <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-6">
-            <FaHeart className="text-[10px]" /> {t.why_free_badge}
+            <FaHeart className="text-[10px]" /> {t.why_affordable_badge}
           </div>
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tighter text-gray-900 mb-6 leading-[0.9]">{t.why_free_title}</h1>
-          <p className="text-xl sm:text-2xl text-indigo-600 font-bold tracking-tight">{t.why_free_headline}</p>
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tighter text-gray-900 mb-6 leading-[0.9]">{t.why_affordable_title}</h1>
+          <p className="text-xl sm:text-2xl text-indigo-600 font-bold tracking-tight">{t.why_affordable_headline}</p>
         </motion.div>
 
         <section className="space-y-12">
@@ -128,7 +128,7 @@ export default function WhyFreePage() {
               <FaUsers className="text-3xl text-white" />
             </div>
             <p className="text-lg sm:text-xl text-gray-600 leading-relaxed font-medium">
-              {t.why_free_body1}
+              {t.why_affordable_body1}
             </p>
           </motion.div>
 
@@ -142,7 +142,7 @@ export default function WhyFreePage() {
               <FaRocket className="text-3xl text-white" />
             </div>
             <p className="text-lg sm:text-xl text-indigo-50 leading-relaxed font-medium">
-              {t.why_free_body2}
+              {t.why_affordable_body2}
             </p>
           </motion.div>
 
@@ -156,7 +156,7 @@ export default function WhyFreePage() {
               <FaShieldAlt className="text-3xl text-gray-400" />
             </div>
             <p className="text-lg sm:text-xl text-gray-500 leading-relaxed font-medium italic">
-              {t.why_free_body3}
+              {t.why_affordable_body3}
             </p>
           </motion.div>
         </section>

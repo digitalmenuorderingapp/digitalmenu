@@ -418,7 +418,7 @@ export default function MarketingHomeClient() {
                     {t.offer_cta}
                   </Link>
                 </div>
-                <Link href="/why-free" className="flex items-center justify-center space-x-3 text-sm font-bold text-gray-400 group cursor-pointer hover:text-indigo-600 transition-colors" role="button" aria-label="Learn more about our free offer">
+                <Link href="/affordable" className="flex items-center justify-center space-x-3 text-sm font-bold text-gray-400 group cursor-pointer hover:text-indigo-600 transition-colors" role="button" aria-label="Learn more about our affordable offer">
                   <span>{t.offer_learn}</span>
                   <FaArrowRight className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                 </Link>

@@ -9,7 +9,7 @@ const SOCKET_URL = getSocketUrl();
 
 class SocketService {
     private socket: Socket | null = null;
-    private currentRoom: string | null = null;
+    private rooms: Set<string> = new Set();
     private handlers: Map<string, Set<(data: any) => void>> = new Map();
 
     connect() {
@@ -26,10 +26,11 @@ class SocketService {
 
             this.socket.on('connect', () => {
                 console.log('Connected to socket server, id:', this.socket?.id);
-                // Re-join the room automatically after a reconnect
-                if (this.currentRoom) {
-                    this.socket?.emit('join', this.currentRoom);
-                }
+                // Re-join all rooms automatically after a reconnect
+                this.rooms.forEach(room => {
+                    this.socket?.emit('join', room);
+                    console.log(`[Socket] Re-joined room on connect: ${room}`);
+                });
             });
 
             this.socket.on('connect_error', (error) => {
@@ -44,7 +45,8 @@ class SocketService {
     }
 
     join(room: string) {
-        this.currentRoom = room; // Track current room for auto-rejoin on reconnect
+        if (!room) return;
+        this.rooms.add(room); // Track room for auto-rejoin on reconnect
 
         if (!this.socket) {
             console.warn('[SocketService] Attempted to join room before connection');
@@ -60,6 +62,14 @@ class SocketService {
                 this.socket?.emit('join', room);
                 console.log(`[Socket] Joined room on connect: ${room}`);
             });
+        }
+    }
+
+    leave(room: string) {
+        this.rooms.delete(room);
+        if (this.socket?.connected) {
+            this.socket.emit('leave', room);
+            console.log(`[Socket] Left room: ${room}`);
         }
     }
 
@@ -101,7 +111,7 @@ class SocketService {
 
     disconnect() {
         if (this.socket) {
-            this.currentRoom = null;
+            this.rooms.clear();
             // Clear all handlers
             this.handlers.forEach((handlers, event) => {
                 handlers.forEach((handler) => {

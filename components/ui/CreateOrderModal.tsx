@@ -62,7 +62,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     numberOfPersons: '1',
     orderType: 'dine-in' as 'dine-in' | 'takeaway' | 'delivery',
     specialInstructions: '',
-    paymentMethod: 'cash' as 'cash' | 'online'
+    paymentMethod: 'COUNTER' as 'COUNTER' | 'ONLINE'
   });
 
   useEffect(() => {
@@ -169,7 +169,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         totalAmount: calculateTotal(),
         deviceId: 'counter-order',
         sessionId: `counter-${Date.now()}`,
-        status: 'placed'
+        status: 'PLACED'
       };
 
       await api.post('/order', orderData);
@@ -184,7 +184,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         numberOfPersons: '1',
         orderType: 'dine-in',
         specialInstructions: '',
-        paymentMethod: 'cash'
+        paymentMethod: 'COUNTER'
       });
       
       onOrderCreated();
@@ -442,9 +442,9 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, paymentMethod: 'cash' })}
+                          onClick={() => setFormData({ ...formData, paymentMethod: 'COUNTER' })}
                           className={`p-2 rounded-lg border transition-all ${
-                            formData.paymentMethod === 'cash'
+                            formData.paymentMethod === 'COUNTER'
                               ? 'bg-indigo-600 text-white border-indigo-600'
                               : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300'
                           }`}
@@ -454,9 +454,9 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                         </button>
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, paymentMethod: 'online' })}
+                          onClick={() => setFormData({ ...formData, paymentMethod: 'ONLINE' })}
                           className={`p-2 rounded-lg border transition-all ${
-                            formData.paymentMethod === 'online'
+                            formData.paymentMethod === 'ONLINE'
                               ? 'bg-indigo-600 text-white border-indigo-600'
                               : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300'
                           }`}

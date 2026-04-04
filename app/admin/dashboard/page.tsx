@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { TRANSLATIONS, Language } from '@/utils/translations';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
 import { socketService } from '@/services/socket';
@@ -112,6 +113,17 @@ export default function DashboardPage() {
     phone: '',
     description: ''
   });
+  const [lang, setLang] = useState<Language>('en');
+
+  // Persistence for language
+  useEffect(() => {
+    const saved = localStorage.getItem('digitalmenu_lang') as Language;
+    if (saved && TRANSLATIONS[saved]) {
+      setLang(saved);
+    }
+  }, []);
+
+  const t = TRANSLATIONS[lang];
 
   useEffect(() => {
     if (user) {
@@ -221,6 +233,13 @@ export default function DashboardPage() {
     }
   };
 
+  const copyRestaurantId = () => {
+    if (user?._id) {
+      navigator.clipboard.writeText(user._id);
+      toast.success(t.sub_id_copied);
+    }
+  };
+
 
   const hasRestaurantDetails = user?.restaurantName || user?.ownerName || user?.address;
 
@@ -232,38 +251,55 @@ export default function DashboardPage() {
 
     const { type, status, expiryDate } = user.subscription;
 
-    // 1. Check for lifetime/free subscription first
+    // 1. Check for lifetime/free subscription (Legacy)
     if (type === 'free') {
       return { 
-        name: 'Premium (Free)', 
+        name: 'Premium (LIFETIME)', 
         daysLeft: null, 
         isExpired: false, 
-        color: 'text-purple-200' 
+        color: 'text-indigo-300' 
       };
     }
 
-    // 2. If not free, but no expiry date, default to basic
-    if (!expiryDate) {
-      return { 
-        name: 'Basic Plan', 
-        daysLeft: 0, 
-        isExpired: false, 
-        color: 'text-gray-400' 
+    // 2. Check for Trial
+    if (type === 'trial' && expiryDate) {
+      const today = new Date();
+      const expiry = new Date(expiryDate);
+      const diffTime = expiry.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const expired = diffDays <= 0 || status === 'expired';
+
+      return {
+        name: 'Free Trial',
+        daysLeft: Math.max(0, diffDays),
+        isExpired: expired,
+        expiryDate: expiry.toLocaleDateString(),
+        color: (diffDays < 7 || expired) ? 'text-red-400' : 'text-amber-300'
       };
     }
 
-    // 3. Normal expiry calculation
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const diffTime = expiry.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return {
-      name: 'Premium Plan',
-      daysLeft: Math.max(0, diffDays),
-      isExpired: diffDays < 0 || status === 'expired',
-      expiryDate: expiry.toLocaleDateString(),
-      color: (diffDays < 5 || status === 'expired') ? 'text-red-400' : 'text-purple-200'
+    // 3. Normal Paid Subscription
+    if (expiryDate) {
+      const today = new Date();
+      const expiry = new Date(expiryDate);
+      const diffTime = expiry.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return {
+        name: 'Premium Plan',
+        daysLeft: Math.max(0, diffDays),
+        isExpired: diffDays <= 0 || status === 'expired',
+        expiryDate: expiry.toLocaleDateString(),
+        color: (diffDays < 7 || status === 'expired') ? 'text-red-400' : 'text-green-300'
+      };
+    }
+
+    // Default Fallback
+    return { 
+      name: 'Basic Plan', 
+      daysLeft: 0, 
+      isExpired: false, 
+      color: 'text-gray-400' 
     };
   };
 
@@ -331,7 +367,18 @@ export default function DashboardPage() {
                         <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tighter text-white">
                            {user?.restaurantName || 'DigitalMenu Admin'}
                         </h1>
-                        <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-black text-indigo-300 rounded-lg tracking-widest uppercase mt-1 sm:mt-2">Premium</span>
+                        <div className="flex items-center gap-2">
+                           <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-black text-indigo-300 rounded-lg tracking-widest uppercase mt-0.5">Premium</span>
+                           <button 
+                             onClick={copyRestaurantId}
+                             className="px-2 py-0.5 bg-white/5 border border-white/10 text-[9px] font-medium text-purple-200/50 rounded-lg hover:bg-white/10 transition-all flex items-center gap-1.5 mt-0.5 group"
+                             title={t.sub_copy_id}
+                           >
+                             <span className="opacity-0 group-hover:opacity-100 transition-opacity">ID:</span>
+                             <code className="text-[10px]">{user?._id?.slice(-6).toUpperCase()}</code>
+                             <FaSyncAlt className="w-2 h-2" />
+                           </button>
+                        </div>
                       </div>
                       <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md mx-auto sm:mx-0 leading-relaxed">
                         Manage your digital menu, track orders, and grow your business with our state-of-the-art platform.
@@ -442,6 +489,72 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Subscription Alert & Support Section */}
+      {(subStatus.isExpired || subStatus.daysLeft !== null && subStatus.daysLeft < 10) && (
+        <div className="mb-8">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`rounded-2xl p-6 border-2 ${subStatus.isExpired ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} shadow-xl`}
+          >
+            <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+              <div className="flex-1 space-y-4 text-center lg:text-left">
+                <div className="flex items-center justify-center lg:justify-start gap-3">
+                  <div className={`p-3 rounded-xl ${subStatus.isExpired ? 'bg-red-500' : 'bg-amber-500'} text-white shadow-lg`}>
+                    <FaCrown className="w-6 h-6" />
+                  </div>
+                  <h2 className={`text-2xl font-black tracking-tight ${subStatus.isExpired ? 'text-red-900' : 'text-amber-900'}`}>
+                    {t.sub_payment_manual}
+                  </h2>
+                </div>
+                
+                <div className={`p-4 rounded-xl ${subStatus.isExpired ? 'bg-red-100/50' : 'bg-amber-100/50'} border ${subStatus.isExpired ? 'border-red-200' : 'border-amber-200'}`}>
+                  <p className={`whitespace-pre-line font-bold ${subStatus.isExpired ? 'text-red-800' : 'text-amber-800'}`}>
+                    {t.sub_payment_desc}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                   <a 
+                     href={`https://wa.me/918017401099?text=Hello, I want to subscribe for my restaurant ID: ${user?._id}`}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] text-white rounded-xl font-black shadow-lg hover:brightness-110 transition-all"
+                   >
+                     <FaPhone className="rotate-90" /> {t.sub_contact_whatsapp}
+                   </a>
+                   <a 
+                     href={`mailto:sahin401099@gmail.com?subject=Subscription Recognition&body=Hello, I have paid for my restaurant. My ID is: ${user?._id}. Attached is the screenshot.`}
+                     className="flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-xl font-black shadow-lg hover:bg-slate-800 transition-all"
+                   >
+                     <FaEnvelope /> {t.sub_contact_email}
+                   </a>
+                </div>
+              </div>
+
+              <div className="w-full lg:w-72 shrink-0">
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                  <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] block mb-3">{t.sub_rest_id}</span>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 group">
+                    <code className="text-xs font-black text-indigo-600 truncate">{user?._id}</code>
+                    <button 
+                      onClick={copyRestaurantId}
+                      className="ml-2 p-2 hover:bg-indigo-50 text-indigo-400 hover:text-indigo-600 rounded-lg transition-colors shrink-0"
+                      title={t.sub_copy_id}
+                    >
+                      <FaSyncAlt className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <p className="mt-4 text-[10px] text-gray-400 font-bold leading-tight">
+                    * {t.sub_copy_id} and send it along with your payment screenshot.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Ledger Section - Daily Summary */}
       <div className="mb-8">

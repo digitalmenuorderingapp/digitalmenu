@@ -12,7 +12,7 @@ interface CartTabProps {
   removeFromCart: (itemId: string) => void;
   getItemQuantity: (itemId: string) => number;
   session: any;
-  onPlaceOrder: (paymentMethod: 'cash' | 'online', utrNumber?: string, specialInstructions?: string) => void;
+  onPlaceOrder: (paymentMethod: 'COUNTER' | 'ONLINE', utr?: string, specialInstructions?: string) => void;
 }
 
 export default function CartTab({
@@ -24,8 +24,8 @@ export default function CartTab({
   onPlaceOrder
 }: CartTabProps) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash');
-  const [utrNumber, setUtrNumber] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'COUNTER' | 'ONLINE'>('COUNTER');
+  const [utr, setUtr] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const calculateTotal = () => {
@@ -37,10 +37,10 @@ export default function CartTab({
 
   const handlePlaceOrder = async () => {
     setIsSubmitting(true);
-    await onPlaceOrder(paymentMethod, utrNumber, specialInstructions);
+    await onPlaceOrder(paymentMethod, utr, specialInstructions);
     setIsSubmitting(false);
     setShowPaymentModal(false);
-    setUtrNumber('');
+    setUtr('');
     setSpecialInstructions('');
   };
 
@@ -198,8 +198,8 @@ export default function CartTab({
 
             <div className="space-y-3 mb-6">
               <button
-                onClick={() => setPaymentMethod('cash')}
-                className={`w-full flex items-center space-x-3 p-4 rounded-lg border-2 transition-colors ${paymentMethod === 'cash'
+                onClick={() => setPaymentMethod('COUNTER')}
+                className={`w-full flex items-center space-x-3 p-4 rounded-lg border-2 transition-colors ${paymentMethod === 'COUNTER'
                     ? 'border-indigo-600 bg-indigo-50'
                     : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -212,8 +212,8 @@ export default function CartTab({
               </button>
 
               <button
-                onClick={() => setPaymentMethod('online')}
-                className={`w-full flex items-center space-x-3 p-4 rounded-lg border-2 transition-colors ${paymentMethod === 'online'
+                onClick={() => setPaymentMethod('ONLINE')}
+                className={`w-full flex items-center space-x-3 p-4 rounded-lg border-2 transition-colors ${paymentMethod === 'ONLINE'
                     ? 'border-indigo-600 bg-indigo-50'
                     : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -226,15 +226,15 @@ export default function CartTab({
               </button>
             </div>
 
-            {paymentMethod === 'online' && (
+            {paymentMethod === 'ONLINE' && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Last 6 digits of UTR Number (Optional)
                 </label>
                 <input
                   type="text"
-                  value={utrNumber}
-                  onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  value={utr}
+                  onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter last 6 digits"
                   maxLength={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center tracking-widest font-mono"

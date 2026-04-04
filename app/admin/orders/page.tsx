@@ -50,16 +50,18 @@ interface Order {
   deviceId: string;
   items: Array<{ name: string; quantity: number; price: number }>;
   totalAmount: number;
-  status: 'placed' | 'preparing' | 'served' | 'rejected' | 'cancelled';
-  paymentMethod?: 'cash' | 'online';
-  paymentStatus: 'PENDING' | 'VERIFIED';
+  status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+  paymentMethod?: 'ONLINE' | 'COUNTER';
+  paymentStatus: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
+  paymentDueStatus?: 'CLEAR' | 'DUE';
+  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
   refund: {
-    status: 'none' | 'pending' | 'refunded';
-    method?: 'cash' | 'online';
+    status: 'NOT_REQUIRED' | 'PENDING' | 'COMPLETED';
+    method?: string;
     amount?: number;
     processedAt?: string;
   };
-  utrNumber?: string;
+  utr?: string;
   rejectionReason?: string;
   cancellationReason?: string;
   createdAt: string;
@@ -72,15 +74,7 @@ interface Order {
   transactions?: any[];
 }
 
-type OrderStatus = 'all' | 'placed' | 'preparing' | 'served' | 'rejected' | 'cancelled';
-
-interface RefundModalData {
-  orderId: string;
-  orderNumber?: string;
-  tableNumber: number;
-  totalAmount: number;
-  paymentMethod: 'cash' | 'online';
-}
+type OrderStatus = 'all' | 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -89,19 +83,13 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(() => getTodayISTDateString());
   const { user } = useAuth();
-  const [refundModalOpen, setRefundModalOpen] = useState(false);
-  const [refundModalData, setRefundModalData] = useState<RefundModalData | null>(null);
-  const [refundMethod, setRefundMethod] = useState<'cash' | 'online'>('cash');
-  const [refundAmount, setRefundAmount] = useState<string>('');
-  const [isProcessingRefund, setIsProcessingRefund] = useState(false);
+  
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [currentAction, setCurrentAction] = useState<{ id: string; type: string } | null>(null);
+  const [actionPayload, setActionPayload] = useState<any>({});
+  
   const [stats, setStats] = useState<any>(null);
-
   const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
-  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
-  const [selectedOrderForVerify, setSelectedOrderForVerify] = useState<Order | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [utrInput, setUtrInput] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
 
@@ -120,6 +108,16 @@ export default function OrdersPage() {
         playNotificationSound();
       };
 
+      const handleOrderRejected = (order: Order) => {
+        toast.error(`Order from Table #${order.tableNumber} was rejected`);
+        playNotificationSound();
+      };
+
+      const handlePaymentVerified = (order: Order) => {
+        toast.success(`Payment verified for order #${order.orderNumber || order._id.slice(-8)}!`);
+        playNotificationSound();
+      };
+
       const handleOrderUpdate = (updatedOrder: Order) => {
         setOrders(prevOrders => {
           const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
@@ -130,50 +128,28 @@ export default function OrdersPage() {
           }
           return [updatedOrder, ...prevOrders];
         });
-        
-        if (selectedOrder?._id === updatedOrder._id) {
-          setSelectedOrder(updatedOrder);
-        }
       };
 
       socketService.on('newOrder', handleNewOrder);
       socketService.on('orderCancelled', handleOrderCancelled);
+      socketService.on('orderRejected', handleOrderRejected);
+      socketService.on('paymentVerified', handlePaymentVerified);
       socketService.on('orderUpdate', handleOrderUpdate);
 
       return () => {
         socketService.off('newOrder', handleNewOrder);
         socketService.off('orderCancelled', handleOrderCancelled);
+        socketService.off('orderRejected', handleOrderRejected);
+        socketService.off('paymentVerified', handlePaymentVerified);
         socketService.off('orderUpdate', handleOrderUpdate);
       };
     }
-  }, [user?._id, selectedOrder?._id]);
-
-  const handleSendEmail = async () => {
-    setIsSendingEmail(true);
-    const loadingToast = toast.loading('Generating and sending your monthly report...');
-    try {
-      const response = await api.post('/order/report/email');
-      if (response.data.success) {
-        toast.success(response.data.message || 'Report sent successfully to your mail!', { id: loadingToast });
-      }
-    } catch (error: any) {
-      console.error('Failed to send report email:', error);
-      toast.error(error.response?.data?.message || 'Failed to send report. Please try again.', { id: loadingToast });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrders();
-  }, [searchQuery, selectedDate, activeTab]);
+  }, [user?._id]);
 
   const fetchOrders = async () => {
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
-
-      // Only append date if activeTab is 'today', otherwise send current month/year
       if (activeTab === 'today') {
         params.append('date', selectedDate);
       } else {
@@ -184,9 +160,7 @@ export default function OrdersPage() {
 
       const response = await api.get(`/order?${params.toString()}`);
       setOrders(response.data.data || []);
-      if (response.data.stats) {
-        setStats(response.data.stats);
-      }
+      if (response.data.stats) setStats(response.data.stats);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -194,130 +168,54 @@ export default function OrdersPage() {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  useEffect(() => {
+    fetchOrders();
+  }, [searchQuery, selectedDate, activeTab]);
+
+  const handleAction = async (orderId: string, action: string, payload: any = {}) => {
+    if (action === 'VERIFY_PAYMENT' && !payload.confirmed) {
+      const order = orders.find(o => o._id === orderId);
+      setCurrentAction({ id: orderId, type: 'VERIFY_PAYMENT' });
+      setActionPayload({ utr: order?.utr || '' });
+      setActionModalOpen(true);
+      return;
+    }
+
+    if (action === 'COLLECT_PAYMENT' && !payload.confirmed) {
+      setCurrentAction({ id: orderId, type: 'COLLECT_PAYMENT' });
+      setActionPayload({ method: 'CASH', utr: '' });
+      setActionModalOpen(true);
+      return;
+    }
+
+    if (action === 'REJECT_ORDER' && !payload.confirmed) {
+      setCurrentAction({ id: orderId, type: 'REJECT_ORDER' });
+      setActionPayload({ reason: '' });
+      setActionModalOpen(true);
+      return;
+    }
+
     try {
-      const response = await api.put(`/order/${orderId}/status`, { status });
-      const statusMessages: Record<string, string> = {
-        placed: 'Order placed and pending',
-        preparing: 'Order is now being prepared',
-        served: 'Order has been served'
-      };
-      toast.success(statusMessages[status] || `Order ${status}`);
-      if (selectedOrder?._id === orderId) {
-        setSelectedOrder(response.data.data);
-      }
+      const response = await api.post(`/order/${orderId}/action`, { action, payload });
+      toast.success(response.data.message || 'Action completed');
       fetchOrders();
-    } catch (error) {
-      toast.error('Failed to update order status');
+      setActionModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to complete action');
     }
   };
 
-  const verifyOnlinePayment = async () => {
-    if (!selectedOrderForVerify) {
-      toast.error('No order selected for verification');
-      return;
-    }
-    setIsVerifying(true);
+  const handleSendEmail = async () => {
+    setIsSendingEmail(true);
+    const loadingToast = toast.loading('Sending report...');
     try {
-      const response = await api.put(`/order/${selectedOrderForVerify._id}/verify-payment`, { utrNumber: utrInput });
-      toast.success('Payment verified successfully');
-      setVerifyModalOpen(false);
-      setUtrInput('');
-
-      if (selectedOrder?._id === selectedOrderForVerify._id) {
-        setSelectedOrder(response.data.data);
-      }
-
-      setSelectedOrderForVerify(null);
-      fetchOrders();
+      await api.post('/order/report/email');
+      toast.success('Report sent successfully!', { id: loadingToast });
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to verify payment');
+      toast.error('Failed to send report.', { id: loadingToast });
     } finally {
-      setIsVerifying(false);
+      setIsSendingEmail(false);
     }
-  };
-
-  const markCashCollected = async (orderId: string) => {
-    try {
-      const response = await api.put(`/order/${orderId}/collect-cash`);
-      toast.success('Cash marked as collected');
-      if (selectedOrder?._id === orderId) {
-        setSelectedOrder(response.data.data);
-      }
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to mark cash collected');
-    }
-  };
-
-  const rejectOrder = async (orderId: string, reason?: string) => {
-    try {
-      const response = await api.put(`/order/${orderId}/reject`, { reason });
-      toast.success('Order rejected');
-      if (selectedOrder?._id === orderId) {
-        setSelectedOrder(response.data.data);
-      }
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to reject order');
-    }
-  };
-
-  const handleRefundClick = (order: Order) => {
-    if (!isOrderPaid(order)) {
-      toast.error('Order was not paid, no refund needed');
-      return;
-    }
-    if (order.refund?.status === 'refunded') {
-      toast.error('This order has already been refunded');
-      return;
-    }
-    setRefundModalData({
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-      tableNumber: order.tableNumber,
-      totalAmount: order.totalAmount,
-      paymentMethod: order.paymentMethod || 'cash'
-    });
-    setRefundMethod(order.paymentMethod || 'cash');
-    setRefundAmount(order.totalAmount.toFixed(2));
-    setRefundModalOpen(true);
-  };
-
-  const processRefund = async () => {
-    if (!refundModalData) return;
-
-    const amount = parseFloat(refundAmount);
-    if (isNaN(amount) || amount <= 0 || amount > refundModalData.totalAmount) {
-      toast.error('Invalid refund amount');
-      return;
-    }
-
-    setIsProcessingRefund(true);
-    try {
-      await api.post(`/order/${refundModalData.orderId}/refund`, {
-        refundMethod,
-        refundAmount: amount
-      });
-      toast.success(`Refund of ₹${amount.toFixed(2)} processed successfully`);
-      setRefundModalOpen(false);
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to process refund');
-    } finally {
-      setIsProcessingRefund(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      placed: 'bg-amber-100 text-amber-700 border-amber-200',
-      preparing: 'bg-blue-100 text-blue-700 border-blue-200',
-      served: 'bg-green-100 text-green-700 border-green-200',
-      rejected: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      cancelled: 'bg-red-100 text-red-700 border-red-200',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700';
   };
 
   const filteredOrders = orderFilter === 'all'
@@ -326,214 +224,71 @@ export default function OrdersPage() {
 
   const orderCounts = {
     totalOrders: orders.length,
-    placed: orders.filter((o: Order) => o.status === 'placed').length,
-    preparing: orders.filter((o: Order) => o.status === 'preparing').length,
-    served: orders.filter((o: Order) => o.status === 'served').length,
-    rejected: orders.filter((o: Order) => o.status === 'rejected').length,
-    cancelled: orders.filter((o: Order) => o.status === 'cancelled').length,
+    PLACED: orders.filter((o: Order) => o.status === 'PLACED').length,
+    ACCEPTED: orders.filter((o: Order) => o.status === 'ACCEPTED').length,
+    COMPLETED: orders.filter((o: Order) => o.status === 'COMPLETED').length,
+    REJECTED: orders.filter((o: Order) => o.status === 'REJECTED').length,
+    CANCELLED: orders.filter((o: Order) => o.status === 'CANCELLED').length,
   };
 
   const refundStats = {
-    pending: orders.filter((o: Order) => 
-      (o.status === 'cancelled' || o.status === 'rejected') && 
-      o.paymentStatus === 'VERIFIED' && 
-      o.refund?.status === 'pending'
-    ).length,
-    refunded: orders.filter((o: Order) => 
-      (o.status === 'cancelled' || o.status === 'rejected') && 
-      o.paymentStatus === 'VERIFIED' && 
-      o.refund?.status === 'refunded'
-    ).length,
+    pending: orders.filter((o: Order) => o.refund?.status === 'PENDING').length,
   };
 
   const paymentStats = stats || {
     totalRevenue: orders
-      .filter(o => 
-        o.paymentStatus === 'VERIFIED' && 
-        o.refund?.status !== 'refunded' &&
-        o.status !== 'cancelled' && 
-        o.status !== 'rejected'
-      )
+      .filter(o => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
       .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
-    onlinePending: 0,
-    cashPending: 0,
-    totalRefunds: 0,
-    totalRefundAmount: 0,
-    cashGross: 0,
-    cashRefunded: 0,
-    onlineGross: 0,
-    onlineRefunded: 0
+    onlinePending: orders.filter(o => o.paymentMethod === 'ONLINE' && o.paymentStatus === 'PENDING').length,
+    cashPending: orders.filter(o => o.paymentDueStatus === 'DUE' && o.paymentStatus !== 'VERIFIED').length,
   };
-
-  // Remove full-page blocking loader
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      {/* Top Tabs & Header */}
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Orders & Payments</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage real-time orders and verify payments</p>
+            <h1 className="text-2xl font-bold text-gray-900">Orders & Analytics</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage state-based transitions and collection</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center bg-gray-100 p-1 rounded-xl w-fit">
               <button
                 onClick={() => setActiveTab('today')}
-                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'today'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'today' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Today
               </button>
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'all'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                All Orders
+                History
               </button>
             </div>
 
-            <Button
-              variant="primary"
-              onClick={() => setCreateOrderModalOpen(true)}
-              className="!py-2.5 !px-5 !rounded-xl shadow-sm hover:shadow-md"
-              leftIcon={<FaPlus className="text-white" />}
-            >
-              <span className="text-[10px] font-black uppercase tracking-widest">Create Counter Order</span>
+            <Button variant="primary" onClick={() => setCreateOrderModalOpen(true)} leftIcon={<FaPlus className="text-white" />}>
+              <span className="text-[10px] font-black uppercase tracking-widest">Add Order</span>
             </Button>
 
-            <Button
-              variant="secondary"
-              onClick={handleSendEmail}
-              isLoading={isSendingEmail}
-              className="!py-2.5 !px-5 !rounded-xl shadow-sm hover:shadow-md border border-gray-100"
-              leftIcon={<FaEnvelope className="text-indigo-500" />}
-            >
-              <span className="text-[10px] font-black uppercase tracking-widest">Send Order Report to Mail</span>
+            <Button variant="outline" onClick={handleSendEmail} isLoading={isSendingEmail} leftIcon={<FaEnvelope className="text-indigo-500" />}>
+              <span className="text-[10px] font-black uppercase tracking-widest">Email Report</span>
             </Button>
           </div>
         </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-          {isLoading ? (
-            Array(7).fill(0).map((_, i) => <StatsCardSkeleton key={i} />)
-          ) : (
-            <>
-              <StatsCard 
-                label="Total" 
-                value={orders.length} 
-                variant="indigo" 
-                icon={<FaClipboardList />} 
-                description={activeTab === 'today' ? "Today's" : "All-time"} 
-              />
-              <StatsCard 
-                label="Cancelled" 
-                value={orderCounts.cancelled} 
-                variant="red" 
-                icon={<FaTimes />} 
-              />
-              <StatsCard 
-                label="Rejected" 
-                value={orderCounts.rejected} 
-                variant="amber" 
-                icon={<FaExclamationCircle />} 
-              />
-              <StatsCard 
-                label="Refund Pending" 
-                value={refundStats.pending} 
-                variant="purple" 
-                icon={<FaUndo />} 
-                description="Requires action"
-              />
-              <StatsCard 
-                label="Online" 
-                value={paymentStats.onlinePending} 
-                variant="blue" 
-                icon={<FaCreditCard />} 
-                description="Verification pending"
-              />
-              <StatsCard 
-                label="Cash" 
-                value={paymentStats.cashPending} 
-                variant="amber" 
-                icon={<FaMoneyBillWave />} 
-                description="Collection pending"
-              />
-              <StatsCard 
-                label="Revenue" 
-                value={`₹${paymentStats.totalRevenue.toFixed(0)}`} 
-                variant="green" 
-                icon={<FaCheckCircle />} 
-                description={activeTab === 'today' ? 'From today' : 'From all'}
-              />
-            </>
-          )}
-        </div>
-
-        {/* Financial Summaries (Cash vs Online) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {/* Cash Summary Card */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
-            <div className="bg-amber-50/50 px-4 py-3 border-b border-amber-100/50 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <FaMoneyBillWave className="w-3.5 h-3.5 text-amber-600" />
-                </div>
-                <h3 className="text-sm font-black text-amber-900 uppercase tracking-tight">Cash Summary</h3>
-              </div>
-              <span className="text-[10px] font-black text-amber-600/50 uppercase tracking-widest">{activeTab === 'today' ? 'Today' : 'This Month'}</span>
-            </div>
-            <div className="p-4 grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Gross Received</p>
-                <p className="text-base font-black text-gray-900">₹{paymentStats.cashGross.toFixed(0)}</p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Total Refunded</p>
-                <p className="text-base font-black text-red-600">₹{paymentStats.cashRefunded.toFixed(0)}</p>
-              </div>
-              <div className="bg-amber-50/30 p-2 rounded-xl border border-amber-100/30">
-                <p className="text-[9px] font-black text-amber-600 uppercase mb-1 tracking-tighter">Net Cash</p>
-                <p className="text-lg font-black text-amber-700">₹{(paymentStats.cashGross - paymentStats.cashRefunded).toFixed(0)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Online Summary Card */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
-            <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100/50 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <FaCreditCard className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                <h3 className="text-sm font-black text-blue-900 uppercase tracking-tight">Online Summary</h3>
-              </div>
-              <span className="text-[10px] font-black text-blue-600/50 uppercase tracking-widest">{activeTab === 'today' ? 'Today' : 'This Month'}</span>
-            </div>
-            <div className="p-4 grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Gross Received</p>
-                <p className="text-base font-black text-gray-900">₹{paymentStats.onlineGross.toFixed(0)}</p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Total Refunded</p>
-                <p className="text-base font-black text-red-600">₹{paymentStats.onlineRefunded.toFixed(0)}</p>
-              </div>
-              <div className="bg-blue-50/30 p-2 rounded-xl border border-blue-100/30">
-                <p className="text-[9px] font-black text-blue-600 uppercase mb-1 tracking-tighter">Net Online</p>
-                <p className="text-lg font-black text-blue-700">₹{(paymentStats.onlineGross - paymentStats.onlineRefunded).toFixed(0)}</p>
-              </div>
-            </div>
-          </div>
+          <StatsCard label="Total" value={orderCounts.totalOrders} variant="indigo" icon={<FaClipboardList />} />
+          <StatsCard label="Cancelled" value={orderCounts.CANCELLED} variant="red" icon={<FaTimes />} />
+          <StatsCard label="Rejected" value={orderCounts.REJECTED} variant="amber" icon={<FaExclamationCircle />} />
+          <StatsCard label="Refunds" value={refundStats.pending} variant="purple" icon={<FaUndo />} description="Pending Action" />
+          <StatsCard label="Verify" value={paymentStats.onlinePending || 0} variant="blue" icon={<FaCreditCard />} description="Online Pending" />
+          <StatsCard label="Dues" value={paymentStats.cashPending || 0} variant="amber" icon={<FaMoneyBillWave />} description="Collection Due" />
+          <StatsCard label="Revenue" value={`₹${paymentStats.totalRevenue.toFixed(0)}`} variant="green" icon={<FaCheckCircle />} />
         </div>
       </div>
 
-      {/* Filters & Search */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="relative w-full md:w-64 lg:w-72 shrink-0">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -541,21 +296,18 @@ export default function OrdersPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search..."
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm shadow-sm transition-all placeholder:text-gray-400 font-medium"
+            placeholder="Order ID / Customer..."
+            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm"
           />
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center bg-gray-100/80 border border-gray-200/50 rounded-2xl p-1.5 shadow-inner overflow-x-auto no-scrollbar scroll-smooth">
-            {(['all', 'placed', 'preparing', 'served', 'rejected', 'cancelled'] as OrderStatus[]).map((status) => (
+          <div className="flex items-center bg-gray-100/80 border border-gray-200/50 rounded-2xl p-1.5 shadow-inner overflow-x-auto no-scrollbar">
+            {(['all', 'PLACED', 'ACCEPTED', 'COMPLETED', 'REJECTED', 'CANCELLED'] as OrderStatus[]).map((status) => (
               <button
                 key={status}
                 onClick={() => setOrderFilter(status)}
-                className={`px-5 py-2.5 rounded-xl text-[11px] font-black whitespace-nowrap transition-all duration-300 uppercase tracking-widest flex items-center space-x-2.5 ${orderFilter === status
-                  ? 'bg-white text-indigo-600 shadow-lg shadow-indigo-100 scale-[1.02] border border-indigo-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-white/40'
-                  }`}
+                className={`px-5 py-2.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-widest flex items-center space-x-2.5 ${orderFilter === status ? 'bg-white text-indigo-600 shadow-sm border border-indigo-50' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <span>{status}</span>
                 <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${orderFilter === status ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-200/50 text-gray-400'}`}>
@@ -565,23 +317,8 @@ export default function OrdersPage() {
             ))}
           </div>
         </div>
-
-        {activeTab === 'today' && (
-          <div className="w-full md:w-auto flex items-center space-x-3 bg-white border border-gray-100/50 px-4 py-3 rounded-2xl shadow-sm hover:shadow-md transition-all group shrink-0">
-            <FaCalendarDay className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`}
-              max={new Date().toISOString().split('T')[0]}
-              className="border-none focus:ring-0 p-0 text-xs font-black text-gray-700 uppercase tracking-widest bg-transparent cursor-pointer"
-            />
-          </div>
-        )}
       </div>
 
-      {/* Orders Grid */}
       <div className="flex-1 min-h-0 overflow-y-auto pr-2 no-scrollbar">
         <AnimatePresence mode="wait">
           {isLoading ? (
@@ -589,35 +326,17 @@ export default function OrdersPage() {
               {Array(6).fill(0).map((_, i) => <OrderCardSkeleton key={i} />)}
             </div>
           ) : filteredOrders.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="py-20 text-center"
-            >
+            <div className="py-20 text-center">
               <FaClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-4" />
               <p className="text-gray-400 font-medium">No orders found</p>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
-              layout
-              className={`grid gap-4 pb-10 ${activeTab === 'today'
-                ? 'grid-cols-1 lg:grid-cols-2'
-                : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
-                }`}
-            >
+            <motion.div layout className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
               {filteredOrders.map((order) => (
                 <OrderCard
-                  key={order._id}
-                  order={order as any}
-                  variant="today"
-                  onUpdateStatus={updateOrderStatus}
-                  onVerifyPayment={(o) => {
-                    setSelectedOrderForVerify(o as any);
-                    setVerifyModalOpen(true);
-                  }}
-                  onCollectCash={markCashCollected}
-                  onRefund={(o) => handleRefundClick(o as any)}
-                  onReject={(id) => rejectOrder(id)}
+                   key={order._id}
+                   order={order as any}
+                   onAction={handleAction}
                 />
               ))}
             </motion.div>
@@ -625,262 +344,89 @@ export default function OrdersPage() {
         </AnimatePresence>
       </div>
 
-      {/* Verify Payment Modal */}
       <AnimatePresence>
-        {
-          verifyModalOpen && selectedOrderForVerify && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-              onClick={() => !isVerifying && setVerifyModalOpen(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25 }}
-                className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="p-6 border-b border-gray-100 flex items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <FaCreditCard className="w-5 h-5 text-blue-600" />
+        {actionModalOpen && currentAction && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100">
+               <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-indigo-50/50">
+                  <h3 className="text-lg font-black text-indigo-900 uppercase tracking-tight">
+                    {currentAction.type.replace('_', ' ')}
+                  </h3>
+                  <button onClick={() => setActionModalOpen(false)}><FaTimes className="text-gray-400 hover:text-gray-600" /></button>
+               </div>
+
+               <div className="p-6 space-y-5">
+                  {currentAction.type === 'VERIFY_PAYMENT' && (
+                    <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase mb-2">Confirm Last 6 digits of UTR</label>
+                        <input
+                          autoFocus
+                          type="text"
+                          maxLength={6}
+                          value={actionPayload.utr}
+                          onChange={(e) => setActionPayload({ ...actionPayload, utr: e.target.value.replace(/\D/g, '') })}
+                          className="w-full px-4 py-4 border border-gray-200 rounded-2xl text-center text-2xl font-black font-mono tracking-widest focus:ring-4 focus:ring-indigo-50"
+                          placeholder="000000"
+                        />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900">
-                      Verify Online Payment
-                    </h2>
-                  </div>
-                  <button
-                    onClick={() => !isVerifying && setVerifyModalOpen(false)}
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <FaTimes className="w-5 h-5" />
-                  </button>
-                </div>
+                  )}
 
-                <div className="p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500">Order</p>
-                      <p className="text-lg font-bold text-gray-900">#{selectedOrderForVerify.orderNumber || selectedOrderForVerify._id.slice(-6)}</p>
+                  {currentAction.type === 'COLLECT_PAYMENT' && (
+                    <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-black text-gray-400 uppercase mb-2">Collection Method</label>
+                          <div className="grid grid-cols-2 gap-3">
+                              {['CASH', 'ONLINE'].map(m => (
+                                <button
+                                  key={m}
+                                  onClick={() => setActionPayload({ ...actionPayload, method: m })}
+                                  className={`py-3 rounded-xl border-2 font-black transition-all ${actionPayload.method === m ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-300'}`}
+                                >
+                                  {m}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                        {actionPayload.method === 'ONLINE' && (
+                           <div>
+                              <label className="block text-xs font-black text-gray-400 uppercase mb-2">Last 6 digits of UTR (Optional)</label>
+                              <input
+                                type="text"
+                                maxLength={6}
+                                value={actionPayload.utr}
+                                onChange={(e) => setActionPayload({ ...actionPayload, utr: e.target.value.replace(/\D/g, '') })}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-center font-mono font-bold tracking-widest focus:ring-4 focus:ring-indigo-50"
+                              />
+                           </div>
+                        )}
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500">Table</p>
-                      <p className="text-lg font-bold text-gray-900">#{selectedOrderForVerify.tableNumber}</p>
+                  )}
+
+                  {currentAction.type === 'REJECT_ORDER' && (
+                    <div>
+                       <label className="block text-xs font-black text-gray-400 uppercase mb-2">Rejection Reason</label>
+                       <textarea
+                          rows={3}
+                          value={actionPayload.reason}
+                          onChange={(e) => setActionPayload({ ...actionPayload, reason: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-red-50"
+                          placeholder="e.g. Items out of stock"
+                       />
                     </div>
-                  </div>
+                  )}
 
-                  <div className="bg-indigo-50 rounded-lg p-4">
-                    <p className="text-xs text-indigo-600 font-medium">Amount to Verify</p>
-                    <p className="text-2xl font-bold text-indigo-700">₹{selectedOrderForVerify.totalAmount.toFixed(2)}</p>
+                  <div className="flex gap-3 pt-2">
+                    <Button fullWidth variant="outline" onClick={() => setActionModalOpen(false)}>Cancel</Button>
+                    <Button fullWidth onClick={() => handleAction(currentAction.id, currentAction.type, { ...actionPayload, confirmed: true })}>
+                       Confirm Action
+                    </Button>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last 6 digits of UTR Number (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={utrInput}
-                      onChange={(e) => setUtrInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="Enter last 6 digits"
-                      maxLength={6}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center tracking-widest font-mono text-xl font-bold"
-                    />
-                    <p className="text-xs text-center text-gray-500 mt-2">
-                      Customer provided UTR: <span className="font-mono font-bold text-gray-700">{selectedOrderForVerify.utrNumber || 'None'}</span>
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setVerifyModalOpen(false)}
-                      disabled={isVerifying}
-                      className="w-full sm:flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors order-2 sm:order-1"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={verifyOnlinePayment}
-                      disabled={isVerifying}
-                      className="w-full sm:flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-blue-200 order-1 sm:order-2"
-                    >
-                      {isVerifying ? (
-                        <>
-                          <FaSpinner className="w-4 h-4 animate-spin" />
-                          <span>Verifying...</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaCheckCircle className="w-4 h-4" />
-                          <span>Verify Payment</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
+               </div>
             </motion.div>
-          )
-        }
-      </AnimatePresence >
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Refund Modal */}
-      <AnimatePresence>
-        {
-          refundModalOpen && refundModalData && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-              onClick={() => !isProcessingRefund && setRefundModalOpen(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Header */}
-                <div className="bg-purple-600 px-6 py-4 flex items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center space-x-3">
-                    <FaMoneyBillWave className="w-6 h-6 text-white" />
-                    <h2 className="text-xl font-bold text-white">Process Refund</h2>
-                  </div>
-                  <button
-                    onClick={() => !isProcessingRefund && setRefundModalOpen(false)}
-                    className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    <FaTimes className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 space-y-6">
-                  {/* Order Info */}
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Table</span>
-                      <span className="font-semibold text-gray-900">#{refundModalData.tableNumber}</span>
-                    </div>
-                    {refundModalData.orderNumber && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Order #</span>
-                        <span className="font-semibold text-gray-900">{refundModalData.orderNumber}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Original Amount</span>
-                      <span className="font-semibold text-gray-900">₹{refundModalData.totalAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Original Payment</span>
-                      <span className="font-semibold text-gray-900 capitalize">{refundModalData.paymentMethod}</span>
-                    </div>
-                  </div>
-
-                  {/* Refund Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Refund Amount (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={refundAmount}
-                      onChange={(e) => setRefundAmount(e.target.value)}
-                      max={refundModalData.totalAmount}
-                      step="0.01"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-lg font-semibold"
-                      placeholder="Enter amount"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Maximum refund: ₹{refundModalData.totalAmount.toFixed(2)}
-                    </p>
-                  </div>
-
-                  {/* Refund Method */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Refund Method
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setRefundMethod('cash')}
-                        className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl border-2 transition-all ${refundMethod === 'cash'
-                          ? 'border-purple-600 bg-purple-50 text-purple-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                          }`}
-                      >
-                        <span className="font-medium">Cash</span>
-                      </button>
-                      <button
-                        onClick={() => setRefundMethod('online')}
-                        className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl border-2 transition-all ${refundMethod === 'online'
-                          ? 'border-purple-600 bg-purple-50 text-purple-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                          }`}
-                      >
-                        <span className="font-medium">Online</span>
-                      </button>
-                    </div>
-                    {refundMethod === 'online' && (
-                      <p className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded-lg">
-                        Online refunds require UPI/Account details from customer
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Warning */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start space-x-3">
-                    <span className="text-amber-600 text-lg">⚠️</span>
-                    <p className="text-sm text-amber-800">
-                      This action will mark the order as refunded. Please ensure you have processed the actual refund to the customer.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={() => setRefundModalOpen(false)}
-                    disabled={isProcessingRefund}
-                    className="w-full sm:flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 order-2 sm:order-1"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={processRefund}
-                    disabled={isProcessingRefund}
-                    className="w-full sm:flex-1 px-4 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 order-1 sm:order-2"
-                  >
-                    {isProcessingRefund ? (
-                      <>
-                        <FaSpinner className="w-4 h-4 animate-spin" />
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FaUndo className="w-4 h-4" />
-                        <span>Confirm Refund</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )
-        }
-      </AnimatePresence >
-
-      {/* Create Order Modal */}
       <CreateOrderModal
         isOpen={createOrderModalOpen}
         onClose={() => setCreateOrderModalOpen(false)}
@@ -889,6 +435,6 @@ export default function OrdersPage() {
           setCreateOrderModalOpen(false);
         }}
       />
-    </div >
+    </div>
   );
 }

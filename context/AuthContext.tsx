@@ -15,8 +15,9 @@ export interface RestaurantAdmin {
   phone?: string;
   description?: string;
   logo?: string;
+  shortId?: string;
   subscription: {
-    type: 'free' | 'paid';
+    type: 'free' | 'paid' | 'trial';
     status: 'active' | 'inactive' | 'expired';
     startDate: string | Date;
     expiryDate: string | Date | null;

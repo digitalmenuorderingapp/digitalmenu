@@ -24,7 +24,7 @@ import Button from './Button';
 
 // Helper function to check if order is paid - exported for reuse
 export const isOrderPaid = (order: Order) => {
-  return order.transactions?.some(tx => tx.type === 'PAYMENT' && tx.status === 'VERIFIED') || order.paymentStatus === 'VERIFIED';
+  return order.paymentStatus === 'VERIFIED';
 };
 
 // Helper function to get payment status display - exported for reuse
@@ -32,23 +32,23 @@ export const getPaymentStatusDisplay = (order: Order) => {
   const paid = isOrderPaid(order);
 
   // For cancelled/rejected orders that were never paid
-  if ((order.status === 'cancelled' || order.status === 'rejected') && !paid) {
-    return { text: 'Payment not done', color: 'text-gray-500', bgColor: 'bg-gray-50' };
+  if ((order.status === 'CANCELLED' || order.status === 'REJECTED') && !paid) {
+    return { text: 'No Payment', color: 'text-gray-500', bgColor: 'bg-gray-50' };
   }
 
   // For refunded orders
-  if (order.refund?.status === 'refunded') {
+  if (order.refund?.status === 'COMPLETED') {
     return { 
-      text: `Refunded ${order.refund.method === 'online' ? '(Online)' : '(Cash)'}`, 
+      text: `Refunded`, 
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
     };
   }
 
   // For pending refunds
-  if (order.refund?.status === 'pending') {
+  if (order.refund?.status === 'PENDING') {
     return { 
-      text: 'Refund pending', 
+      text: 'Refund Pending', 
       color: 'text-orange-600',
       bgColor: 'bg-orange-50'
     };
@@ -57,15 +57,32 @@ export const getPaymentStatusDisplay = (order: Order) => {
   // For paid orders
   if (paid) {
     return {
-      text: order.paymentMethod === 'cash' ? 'Cash Collected' : `Paid ${order.paymentMethod === 'online' ? '(Online)' : '(Cash)'}`,
+      text: order.collectedVia === 'CASH' ? 'Cash Collected' : 'Online Verified',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     };
   }
 
+  // For retry state
+  if (order.paymentStatus === 'RETRY') {
+    return {
+      text: 'Retry Requested',
+      color: 'text-red-600',
+      bgColor: 'bg-red-50'
+    };
+  }
+
+  if (order.paymentDueStatus === 'DUE') {
+    return {
+       text: 'Payment Due',
+       color: 'text-red-700 font-black',
+       bgColor: 'bg-red-100'
+    };
+  }
+
   // Default pending
   return { 
-    text: 'Payment pending', 
+    text: 'Payment Pending', 
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50'
   };
@@ -87,12 +104,15 @@ interface Order {
   specialInstructions?: string;
   items: OrderItem[];
   totalAmount: number;
-  status: 'placed' | 'preparing' | 'served' | 'rejected' | 'cancelled';
-  paymentMethod?: 'cash' | 'online';
-  paymentStatus: 'PENDING' | 'VERIFIED';
+  status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+  paymentMethod?: 'ONLINE' | 'COUNTER';
+  paymentStatus: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
+  paymentDueStatus?: 'CLEAR' | 'DUE';
+  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
+  utr?: string;
   refund?: {
-    status: 'none' | 'pending' | 'refunded';
-    method?: 'cash' | 'online';
+    status: 'NOT_REQUIRED' | 'PENDING' | 'COMPLETED';
+    method?: string;
     amount?: number;
     processedAt?: string;
   };
@@ -110,24 +130,16 @@ interface Order {
 interface OrderCardProps {
   order: Order;
   variant?: 'today' | 'compact';
-  onUpdateStatus?: (orderId: string, status: string) => void;
-  onVerifyPayment?: (order: Order) => void;
-  onCollectCash?: (orderId: string) => void;
-  onRefund?: (order: Order) => void;
-  onReject?: (orderId: string) => void;
+  onAction?: (orderId: string, action: string, payload?: any) => void;
 }
 
 const OrderCard = ({
   order,
   variant = 'today',
-  onUpdateStatus,
-  onVerifyPayment,
-  onCollectCash,
-  onRefund,
-  onReject
+  onAction
 }: OrderCardProps) => {
   const paid = isOrderPaid(order);
-  const paymentStatus = getPaymentStatusDisplay(order);
+  const paymentStatusDisplay = getPaymentStatusDisplay(order);
 
   if (variant === 'compact') {
     return (
@@ -152,9 +164,10 @@ const OrderCard = ({
           <div className="text-right">
             <p className="font-black text-indigo-600 text-sm">₹{order.totalAmount}</p>
             <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
-              order.status === 'placed' ? 'bg-amber-100 text-amber-600' :
-              order.status === 'preparing' ? 'bg-blue-100 text-blue-600' :
-              order.status === 'served' ? 'bg-green-100 text-green-600' :
+              order.status === 'PLACED' ? 'bg-amber-100 text-amber-600' :
+              order.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-600' :
+              order.status === 'COMPLETED' ? 'bg-green-100 text-green-600' :
+              order.status === 'CANCELLED' ? 'bg-red-100 text-red-600' :
               'bg-gray-100 text-gray-500'
             }`}>
               {order.status}
@@ -163,9 +176,10 @@ const OrderCard = ({
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-gray-50">
           <div className="flex items-center space-x-1">
-            {order.paymentMethod === 'online' ? <FaCreditCard className="w-3 h-3 text-blue-500" /> : <FaMoneyBillWave className="w-3 h-3 text-amber-500" />}
-            <span className={`text-[10px] font-bold ${paid ? 'text-green-600' : 'text-gray-400'}`}>
-              {paid ? 'Paid' : 'Pending'}
+            {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-3 h-3 text-blue-500" /> : <FaMoneyBillWave className="w-3 h-3 text-amber-500" />}
+            <span className={`text-[10px] font-bold ${paid ? 'text-green-600' : 
+              order.paymentStatus === 'RETRY' ? 'text-red-500' : 'text-gray-400'}`}>
+              {paid ? 'Paid' : order.paymentStatus === 'RETRY' ? 'Retry' : 'Pending'}
             </span>
           </div>
           <FaArrowRight className="w-3 h-3 text-gray-300 group-hover:text-indigo-500 transition-colors" />
@@ -180,30 +194,30 @@ const OrderCard = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={`relative rounded-[2rem] border transition-all duration-300 overflow-hidden group/card shadow-sm hover:shadow-xl ${
-        order.status === 'placed' ? 'bg-amber-50/50 border-amber-100/50 hover:border-amber-200' :
-        order.status === 'preparing' ? 'bg-blue-50/50 border-blue-100/50 hover:border-blue-200' :
-        order.status === 'served' ? 'bg-green-50/50 border-green-100/50 hover:border-green-200' :
-        order.status === 'rejected' ? 'bg-yellow-50/50 border-yellow-100/50 hover:border-yellow-200' :
-        order.status === 'cancelled' ? 'bg-red-50/50 border-red-100/50 hover:border-red-200' :
+        order.status === 'PLACED' ? 'bg-amber-50/50 border-amber-100/50 hover:border-amber-200' :
+        order.status === 'ACCEPTED' ? 'bg-blue-50/50 border-blue-100/50 hover:border-blue-200' :
+        order.status === 'COMPLETED' ? 'bg-green-50/50 border-green-100/50 hover:border-green-200' :
+        order.status === 'REJECTED' ? 'bg-yellow-50/50 border-yellow-100/50 hover:border-yellow-200' :
+        order.status === 'CANCELLED' ? 'bg-red-50/50 border-red-100/50 hover:border-red-200' :
         'bg-white border-gray-100'
-      } ${!paid && order.paymentMethod === 'cash' ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}
+      } ${order.paymentDueStatus === 'DUE' ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}
     >
       {/* Header */}
       <div className={`p-5 border-b border-gray-100/50 flex items-center justify-between transition-colors duration-300 ${
-        order.status === 'placed' ? 'bg-gradient-to-br from-amber-50/80 to-white/40' :
-        order.status === 'preparing' ? 'bg-gradient-to-br from-blue-50/80 to-white/40' :
-        order.status === 'served' ? 'bg-gradient-to-br from-green-50/80 to-white/40' :
+        order.status === 'PLACED' ? 'bg-gradient-to-br from-amber-50/80 to-white/40' :
+        order.status === 'ACCEPTED' ? 'bg-gradient-to-br from-blue-50/80 to-white/40' :
+        order.status === 'COMPLETED' ? 'bg-gradient-to-br from-green-50/80 to-white/40' :
         'bg-gradient-to-br from-gray-50/80 to-white/40'
       }`}>
         <div className="flex items-center space-x-4">
           <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl shadow-xl transition-transform duration-300 group-hover/card:scale-110 ${
-            order.status === 'placed' ? 'bg-white text-amber-600 border border-amber-100' :
-            order.status === 'preparing' ? 'bg-white text-blue-600 border border-blue-100' :
-            order.status === 'served' ? 'bg-white text-green-600 border border-green-100' :
+            order.status === 'PLACED' ? 'bg-white text-amber-600 border border-amber-100' :
+            order.status === 'ACCEPTED' ? 'bg-white text-blue-600 border border-blue-100' :
+            order.status === 'COMPLETED' ? 'bg-white text-green-600 border border-green-100' :
             'bg-white text-gray-600 border border-gray-100'
           }`}>
             {order.tableNumber}
-            {order.status === 'placed' && (
+            {order.status === 'PLACED' && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
@@ -241,12 +255,12 @@ const OrderCard = ({
         <div className="text-right">
           <p className="text-2xl font-black text-indigo-600 tracking-tighter">₹{order.totalAmount}</p>
           <span className={`inline-flex items-center mt-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-            order.status === 'placed' ? 'bg-amber-100/50 text-amber-700' :
-            order.status === 'preparing' ? 'bg-blue-100/50 text-blue-700' :
-            order.status === 'served' ? 'bg-green-100/50 text-green-700' :
+            order.status === 'PLACED' ? 'bg-amber-100/50 text-amber-700' :
+            order.status === 'ACCEPTED' ? 'bg-blue-100/50 text-blue-700' :
+            order.status === 'COMPLETED' ? 'bg-green-100/50 text-green-700' :
             'bg-gray-100/50 text-gray-700'
           }`}>
-            {order.status === 'placed' && <FaSpinner className="animate-spin mr-1.5 w-2 h-2" />}
+            {order.status === 'PLACED' && <FaSpinner className="animate-spin mr-1.5 w-2 h-2" />}
             {order.status}
           </span>
         </div>
@@ -293,34 +307,28 @@ const OrderCard = ({
         {/* Financial Info */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className={`p-3 rounded-2xl border transition-all ${
-            order.refund?.status === 'refunded' ? 'bg-purple-50/30 border-purple-100/50' :
-            order.refund?.status === 'pending' ? 'bg-orange-50/30 border-orange-100/50' :
+            order.refund?.status === 'COMPLETED' ? 'bg-purple-50/30 border-purple-100/50' :
+            order.refund?.status === 'PENDING' ? 'bg-orange-50/30 border-orange-100/50' :
             paid ? 'bg-green-50/30 border-green-100/50' : 
+            order.paymentDueStatus === 'DUE' ? 'bg-red-50 border-red-200 shadow-inner' :
             'bg-amber-50/30 border-amber-100/50'
           }`}>
             <div className="flex items-center space-x-3">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                order.refund?.status === 'refunded' ? 'bg-white text-purple-600' :
-                order.refund?.status === 'pending' ? 'bg-white text-orange-600' :
+                order.refund?.status === 'COMPLETED' ? 'bg-white text-purple-600' :
+                order.refund?.status === 'PENDING' ? 'bg-white text-orange-600' :
                 paid ? 'bg-white text-green-600' : 
+                order.paymentStatus === 'RETRY' ? 'bg-white text-red-500' :
                 'bg-white text-amber-600'
               }`}>
-                {order.refund?.status === 'refunded' || order.refund?.status === 'pending' ? <FaUndo className="w-3.5 h-3.5" /> :
-                 order.paymentMethod === 'online' ? <FaCreditCard className="w-3.5 h-3.5" /> : 
+                {order.refund?.status === 'COMPLETED' || order.refund?.status === 'PENDING' ? <FaUndo className="w-3.5 h-3.5" /> :
+                 order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-3.5 h-3.5" /> : 
                  <FaMoneyBillWave className="w-3.5 h-3.5" />}
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">PAYMENT</p>
-                <p className={`text-[11px] font-black truncate ${
-                  order.refund?.status === 'refunded' ? 'text-purple-600' :
-                  order.refund?.status === 'pending' ? 'text-orange-600' :
-                  paid ? 'text-green-600' : 
-                  'text-amber-600'
-                }`}>
-                  {order.refund?.status === 'refunded' ? `Refunded ₹${order.refund.amount}` :
-                   order.refund?.status === 'pending' ? 'Refund Pending' :
-                   paid ? 'Collected' : 
-                   'Pending'}
+                <p className={`text-[11px] font-black truncate ${paymentStatusDisplay.color}`}>
+                  {paymentStatusDisplay.text}
                 </p>
               </div>
             </div>
@@ -336,111 +344,55 @@ const OrderCard = ({
           </div>
         </div>
 
-        {/* Cancellation Reason */}
-        {order.status === 'cancelled' && order.cancellationReason && (
-          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
-            <div className="flex items-start space-x-2">
-              <FaTimes className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Cancellation Reason</p>
-                <p className="text-sm font-medium text-red-900">{order.cancellationReason}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Rejection Reason */}
-        {order.status === 'rejected' && order.rejectionReason && (
-          <div className="mb-4 p-3 rounded-2xl bg-yellow-50/50 border border-yellow-100">
-            <div className="flex items-start space-x-2">
-              <FaTimes className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Rejection Reason</p>
-                <p className="text-sm font-medium text-yellow-900">{order.rejectionReason}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Customer Feedback */}
-        {order.feedback?.rating && (
-          <div className="mb-4 p-3 rounded-2xl bg-green-50/50 border border-green-100">
-            <div className="flex items-start space-x-2">
-              <FaStar className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Customer Feedback</p>
-                <div className="flex items-center space-x-1 mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar
-                      key={i}
-                      className={`w-4 h-4 ${i < order.feedback!.rating! ? 'text-yellow-400' : 'text-gray-300'}`}
-                    />
-                  ))}
-                </div>
-                {order.feedback?.comment && (
-                  <p className="text-sm font-medium text-green-900 italic">"{order.feedback.comment}"</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Status Info */}
-        <div className="mb-4 p-3 rounded-2xl bg-gray-50/50 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                order.status === 'placed' ? 'bg-amber-100 text-amber-700' :
-                order.status === 'preparing' ? 'bg-blue-100 text-blue-700' :
-                order.status === 'served' ? 'bg-green-100 text-green-700' :
-                order.status === 'rejected' ? 'bg-yellow-100 text-yellow-700' :
-                order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {order.status === 'placed' && <FaSpinner className="animate-spin mr-1.5 w-2 h-2" />}
-                {order.status === 'served' && <FaCheck className="mr-1.5 w-2 h-2" />}
-                {order.status === 'rejected' && <FaTimes className="mr-1.5 w-2 h-2" />}
-                {order.status === 'cancelled' && <FaTimes className="mr-1.5 w-2 h-2" />}
-                {order.status}
-              </span>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-gray-400 font-medium">
-                {order.paymentMethod === 'online' ? 'Online Payment' : 'Cash Payment'}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3 pt-3">
-          {order.status === 'placed' && (
-            <Button onClick={() => onUpdateStatus?.(order._id, 'preparing')} leftIcon={<FaUtensils className="w-4 h-4" />}>
+        <div className="flex flex-wrap gap-2.5 pt-3">
+          {/* Status Transitions */}
+          {order.status === 'PLACED' && (
+            <Button size="sm" onClick={() => onAction?.(order._id, 'ACCEPT_ORDER')} leftIcon={<FaUtensils className="w-4 h-4" />}>
               Prepare
             </Button>
           )}
-          {order.status === 'preparing' && (
-            <Button variant="success" onClick={() => onUpdateStatus?.(order._id, 'served')} leftIcon={<FaCheck className="w-4 h-4" />}>
+          {order.status === 'ACCEPTED' && (
+            <Button size="sm" variant="success" onClick={() => onAction?.(order._id, 'COMPLETE_ORDER')} leftIcon={<FaCheck className="w-4 h-4" />}>
               Serve
             </Button>
           )}
-          {!paid && order.paymentMethod === 'online' && !['rejected', 'cancelled'].includes(order.status) && (
-            <Button variant="amber" onClick={() => onVerifyPayment?.(order)} leftIcon={<FaCheckCircle className="w-4 h-4" />}>
-              Verify Payment
-            </Button>
+
+          {/* Payment Actions */}
+          {order.paymentMethod === 'ONLINE' && order.paymentStatus === 'PENDING' && (
+            <>
+              <Button size="sm" variant="primary" onClick={() => onAction?.(order._id, 'VERIFY_PAYMENT')} leftIcon={<FaCheckCircle className="w-4 h-4" />}>
+                Verify
+              </Button>
+              <Button size="sm" variant="amber" onClick={() => onAction?.(order._id, 'REQUEST_RETRY')} leftIcon={<FaSpinner className="w-4 h-4" />}>
+                Retry
+              </Button>
+            </>
           )}
-          {!paid && order.paymentMethod === 'cash' && order.status === 'served' && (
-            <Button variant="success" onClick={() => onCollectCash?.(order._id)} leftIcon={<FaMoneyBillWave className="w-4 h-4" />}>
-              Collect Cash
-            </Button>
+
+          {/* Counter Collection */}
+          {order.paymentStatus !== 'VERIFIED' && (order.status === 'COMPLETED' || order.paymentDueStatus === 'DUE') && (
+               <Button size="sm" variant="success" onClick={() => onAction?.(order._id, 'COLLECT_PAYMENT')} leftIcon={<FaMoneyBillWave className="w-4 h-4" />}>
+               Collect
+             </Button>
           )}
-          {paid && order.status !== 'served' && order.refund?.status !== 'refunded' && (
-             <Button variant="amber" onClick={() => onRefund?.(order)} leftIcon={<FaUndo className="w-4 h-4" />}>
-              Refund
-            </Button>
+
+          {/* Unpaid / Reject */}
+          {!paid && order.paymentStatus !== 'UNPAID' && (
+             <Button size="sm" variant="danger" onClick={() => onAction?.(order._id, 'MARK_UNPAID')} leftIcon={<FaTimes className="w-4 h-4" />}>
+               Unpaid
+             </Button>
           )}
-          {(order.status === 'placed' || order.status === 'preparing') && (
-            <Button variant="danger" onClick={() => onReject?.(order._id)} leftIcon={<FaTimes className="w-4 h-4" />}>
+
+          {/* Refund */}
+          {order.refund?.status === 'PENDING' && (
+             <Button size="sm" variant="secondary" onClick={() => onAction?.(order._id, 'COMPLETE_REFUND')} leftIcon={<FaUndo className="w-4 h-4" />}>
+               Complete Refund
+             </Button>
+          )}
+
+          {(order.status === 'PLACED' || order.status === 'ACCEPTED') && (
+            <Button size="sm" variant="danger" onClick={() => onAction?.(order._id, 'REJECT_ORDER')} leftIcon={<FaTimes className="w-4 h-4" />}>
               Reject
             </Button>
           )}

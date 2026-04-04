@@ -30,7 +30,7 @@ export async function GET() {
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>${baseUrl}/why-free</loc>
+    <loc>${baseUrl}/affordable</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>

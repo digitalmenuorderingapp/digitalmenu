@@ -262,14 +262,14 @@ export default function MenuTab({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedItem(null)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110]"
+              className="fixed inset-0 bg-black/60 z-[110]"
             />
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 max-w-2xl mx-auto bg-white rounded-t-[3rem] z-[120] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+              transition={{ type: 'spring', damping: 28, stiffness: 250 }}
+              className="fixed bottom-0 left-0 right-0 max-w-2xl mx-auto bg-white rounded-t-[3rem] z-[120] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden will-change-transform"
             >
               <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-4 shrink-0" />
               
@@ -377,15 +377,15 @@ export default function MenuTab({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsFilterModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-black/50 z-[100]"
             />
             
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] z-[101] shadow-2xl p-8 max-h-[85vh] overflow-y-auto"
+              transition={{ type: 'spring', damping: 28, stiffness: 250 }}
+              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] z-[101] shadow-2xl p-8 max-h-[85vh] overflow-y-auto will-change-transform"
             >
               <div className="flex items-center justify-between mb-8">
                  <div>

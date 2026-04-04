@@ -75,27 +75,90 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
   );
 }
 
+function RetryForm({ order }: { order: Order }) {
+  const [utr, setUtr] = useState('');
+  const [method, setMethod] = useState<'ONLINE' | 'COUNTER'>(order.paymentMethod || 'COUNTER');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRetry = async () => {
+    if (method === 'ONLINE' && (!utr || utr.length < 6)) {
+      toast.error('Please enter last 6 digits of UTR');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await api.post('/order/action', {
+        orderId: order._id,
+        action: 'RETRY_PAYMENT',
+        payload: { method, utr }
+      });
+      toast.success('Payment details updated! Pending verification.');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update payment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => setMethod('COUNTER')}
+          className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
+            method === 'COUNTER' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'
+          }`}
+        >
+          Pay at Counter
+        </button>
+        <button
+          onClick={() => setMethod('ONLINE')}
+          className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
+            method === 'ONLINE' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'
+          }`}
+        >
+          Pay Online Again
+        </button>
+      </div>
+
+      {method === 'ONLINE' && (
+        <input
+          type="text"
+          value={utr}
+          onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          placeholder="New UTR (last 6 digits)"
+          className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500"
+        />
+      )}
+
+      <button
+        onClick={handleRetry}
+        disabled={isSubmitting}
+        className="w-full py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 disabled:opacity-50 shadow-sm"
+      >
+        {isSubmitting ? 'Updating...' : 'Resubmit Payment Details'}
+      </button>
+    </div>
+  );
+}
+
 export default function OrdersTab({ orders, session }: OrdersTabProps) {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
+    switch (status) {
+      case 'PLACED':
         return <FaClock className="w-5 h-5 text-yellow-500" />;
-      case 'confirmed':
-        return <FaCheckCircle className="w-5 h-5 text-blue-500" />;
-      case 'preparing':
-        return <FaClipboardList className="w-5 h-5 text-orange-500" />;
-      case 'ready':
-        return <FaCheckCircle className="w-5 h-5 text-green-500" />;
-      case 'served':
-      case 'completed':
+      case 'ACCEPTED':
+        return <FaClipboardList className="w-5 h-5 text-blue-500" />;
+      case 'COMPLETED':
         return <FaCheckCircle className="w-5 h-5 text-green-600" />;
-      case 'cancelled':
+      case 'CANCELLED':
         return <FaTimesCircle className="w-5 h-5 text-red-500" />;
-      case 'rejected':
+      case 'REJECTED':
         return <FaTimesCircle className="w-5 h-5 text-red-600" />;
       default:
         return <FaClock className="w-5 h-5 text-gray-500" />;
@@ -103,21 +166,16 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
+    switch (status) {
+      case 'PLACED':
         return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
+      case 'ACCEPTED':
         return 'bg-blue-100 text-blue-800';
-      case 'preparing':
-        return 'bg-orange-100 text-orange-800';
-      case 'ready':
+      case 'COMPLETED':
         return 'bg-green-100 text-green-800';
-      case 'served':
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
+      case 'CANCELLED':
         return 'bg-red-100 text-red-800';
-      case 'rejected':
+      case 'REJECTED':
         return 'bg-red-100 text-red-900';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -138,10 +196,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
   };
 
   const isOrderPaid = (order: Order) => {
-    if (!order.transactions || order.transactions.length === 0) return false;
-    return order.transactions.some(tx => 
-      tx.type === 'PAYMENT' && tx.status === 'VERIFIED'
-    );
+    return order.paymentStatus === 'VERIFIED';
   };
 
   const cancelOrder = async () => {
@@ -195,10 +250,10 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
             {orders.map((order) => (
               <div key={order._id} className="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
                 {/* Order Header */}
-                <div className={`bg-gradient-to-r ${order.status === 'rejected' ? 'from-red-50 to-red-100' :
-                  order.status === 'cancelled' ? 'from-orange-50 to-orange-100' :
-                    order.status === 'served' ? 'from-green-50 to-green-100' :
-                      order.status === 'preparing' ? 'from-blue-50 to-blue-100' :
+                <div className={`bg-gradient-to-r ${order.status === 'REJECTED' ? 'from-red-50 to-red-100' :
+                  order.status === 'CANCELLED' ? 'from-orange-50 to-orange-100' :
+                    order.status === 'COMPLETED' ? 'from-green-50 to-green-100' :
+                      order.status === 'ACCEPTED' ? 'from-blue-50 to-blue-100' :
                         'from-indigo-50 to-indigo-100'
                   } px-6 py-4 border-b border-gray-200`}>
                   <div className="flex items-start justify-between">
@@ -266,7 +321,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                   )}
 
                   {/* Rejection Reason */}
-                  {order.status === 'rejected' && order.rejectionReason && (
+                  {order.status === 'REJECTED' && order.rejectionReason && (
                     <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                       <p className="text-sm font-medium text-red-800 mb-1">Rejection Reason:</p>
                       <p className="text-sm text-red-700">{order.rejectionReason}</p>
@@ -274,7 +329,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                   )}
 
                   {/* Cancellation Reason */}
-                  {order.status === 'cancelled' && order.cancellationReason && (
+                  {order.status === 'CANCELLED' && order.cancellationReason && (
                     <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                       <p className="text-sm font-medium text-orange-800 mb-1">Cancellation Reason:</p>
                       <p className="text-sm text-orange-700">{order.cancellationReason}</p>
@@ -290,13 +345,16 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                       <div className="flex items-center space-x-4">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${isOrderPaid(order) ? 'bg-white text-green-600' : 'bg-white text-amber-600'
                           }`}>
-                          {order.paymentMethod === 'online' ? <FaCreditCard className="w-6 h-6" /> : <FaMoneyBillWave className="w-6 h-6" />}
+                          {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-6 h-6" /> : <FaMoneyBillWave className="w-6 h-6" />}
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Payment Status</p>
-                          <h4 className={`text-base font-bold flex items-center ${isOrderPaid(order) ? 'text-green-700' : 'text-amber-700'}`}>
+                          <h4 className={`text-base font-bold flex items-center ${isOrderPaid(order) ? 'text-green-700' :
+                              order.paymentStatus === 'RETRY' ? 'text-red-700' : 'text-amber-700'}`}>
                             {isOrderPaid(order) ? (
-                              <><FaCheckCircle className="mr-1.5 w-4 h-4" /> Paid {order.paymentMethod === 'online' ? '(Online)' : '(Cash)'}</>
+                              <><FaCheckCircle className="mr-1.5 w-4 h-4" /> Paid {order.paymentMethod === 'ONLINE' ? '(Online)' : '(Cash)'}</>
+                            ) : order.paymentStatus === 'RETRY' ? (
+                              <><FaTimesCircle className="mr-1.5 w-4 h-4" /> Payment Failed (Retry)</>
                             ) : (
                               <><FaClock className="mr-1.5 w-4 h-4" /> Payment Pending</>
                             )}
@@ -312,54 +370,68 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                         <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-200">
                           Verified
                         </div>
+                      ) : order.paymentStatus === 'RETRY' ? (
+                        <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-200 animate-bounce">
+                          Retry
+                        </div>
                       ) : (
                         <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200 animate-pulse">
                           Pending
                         </div>
                       )}
                     </div>
+
+                    {/* Retry Form */}
+                    {order.paymentStatus === 'RETRY' && (
+                      <div className="mt-4 bg-red-50 p-4 rounded-xl border border-red-200 shadow-inner">
+                        <p className="text-xs font-bold text-red-600 mb-3 uppercase tracking-wider flex items-center gap-2">
+                          <FaClock className="w-3 h-3" /> Action Required: Verification Failed
+                        </p>
+                        <RetryForm order={order} />
+                      </div>
+                    )}
                   </div>
 
-                  {/* REFUND BLOCK - Only for rejected/cancelled orders with payment */}
-                  {(order.status === 'cancelled' || order.status === 'rejected') && isOrderPaid(order) && (
-                    <div className={`p-4 rounded-2xl border transition-all duration-300 ${order.refund?.status === 'refunded'
+                  {/* REFUND BLOCK - Only for REJECTED/CANCELLED orders with payment */}
+                  {(order.status === 'CANCELLED' || order.status === 'REJECTED') && isOrderPaid(order) && (
+                    <div className={`p-4 rounded-2xl border transition-all duration-300 ${order.refund?.status === 'COMPLETED'
                       ? 'bg-purple-50 border-purple-100'
                       : 'bg-orange-50 border-orange-100'
                       }`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${order.refund?.status === 'refunded' ? 'bg-white text-purple-600' : 'bg-white text-orange-600'
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${order.refund?.status === 'COMPLETED' ? 'bg-white text-purple-600' : 'bg-white text-orange-600'
                             }`}>
-                            <FaSpinner className={`w-6 h-6 ${order.refund?.status === 'refunded' ? '' : 'animate-spin'}`} />
+                            <FaSpinner className={`w-6 h-6 ${order.refund?.status === 'COMPLETED' ? '' : 'animate-spin'}`} />
                           </div>
                           <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Refund Status</p>
-                            <h4 className={`text-base font-bold flex items-center ${order.refund?.status === 'refunded' ? 'text-purple-700' : 'text-orange-700'}`}>
-                              {order.refund?.status === 'refunded' ? (
+                            <h4 className={`text-base font-bold flex items-center ${order.refund?.status === 'COMPLETED' ? 'text-purple-700' : 'text-orange-700'}`}>
+                              {order.refund?.status === 'COMPLETED' ? (
                                 <><FaCheckCircle className="mr-1.5 w-4 h-4" /> Refund Completed</>
                               ) : (
                                 <><FaSpinner className="mr-1.5 w-4 h-4 animate-spin" /> Refund Processing</>
                               )}
                             </h4>
                             <p className="text-[11px] text-gray-500 font-medium mt-0.5">
-                              {order.refund?.status === 'refunded'
+                              {order.refund?.status === 'COMPLETED'
                                 ? `₹${(order.refund?.amount || order.totalAmount).toFixed(2)} refunded via ${order.refund?.method || 'original method'} at ${formatDate(order.refund?.processedAt || order.updatedAt)}`
                                 : `Your refund of ₹${order.totalAmount.toFixed(2)} is being processed by the restaurant.`}
                             </p>
                           </div>
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.refund?.status === 'refunded'
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.refund?.status === 'COMPLETED'
                           ? 'bg-purple-100 text-purple-700 border-purple-200'
                           : 'bg-orange-100 text-orange-700 border-orange-200'
                           }`}>
-                          {order.refund?.status === 'refunded' ? 'Refunded' : 'Processing'}
+                          {order.refund?.status === 'COMPLETED' ? 'Refunded' : 'Processing'}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Feedback Section - Show for completed/served orders without feedback */}
-                  {(order.status === 'completed' || order.status === 'served') && !order.feedback?.rating && (
+                  {/* Feedback Section - Show for COMPLETED orders without feedback */}
+                  {order.status === 'COMPLETED' && !order.feedback?.rating && (
                     <div className="bg-green-50 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                         <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
@@ -398,7 +470,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                   )}
 
                   {/* Cancel Button */}
-                  {order.status === 'placed' && (
+                  {order.status === 'PLACED' && (
                     <div className="mt-4">
                       <button
                         onClick={() => openCancelModal(order._id)}

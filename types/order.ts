@@ -33,12 +33,18 @@ export interface Order {
     numberOfPersons?: number;
     items: OrderItem[];
     totalAmount: number;
-    status: 'placed' | 'preparing' | 'served' | 'rejected' | 'cancelled' | 'completed' | 'ready' | 'pending' | 'confirmed';
-    paymentMethod?: 'cash' | 'online';
-    paymentStatus?: 'PENDING' | 'VERIFIED' | 'FAILED';
+    status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+    paymentMethod?: 'ONLINE' | 'COUNTER';
+    paymentStatus?: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
+    paymentDueStatus?: 'CLEAR' | 'DUE';
+    collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
+    utr?: string;
+    retryCount?: number;
+    collectedAt?: string;
+    collectedBy?: string;
     refund?: {
-        status: 'none' | 'pending' | 'refunded';
-        method?: 'cash' | 'online';
+        status: 'NOT_REQUIRED' | 'PENDING' | 'COMPLETED';
+        method?: string;
         amount?: number;
         processedAt?: string;
     };
