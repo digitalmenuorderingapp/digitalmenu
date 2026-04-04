@@ -49,6 +49,7 @@ export default function RestaurantPage() {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [copied, setCopied] = useState(false);
   const [lang, setLang] = useState<Language>('hi');
   const [formData, setFormData] = useState<RestaurantFormData>({
@@ -98,6 +99,7 @@ export default function RestaurantPage() {
   };
 
   const requestDeleteOtp = async () => {
+    setIsSendingOtp(true);
     try {
       const response = await api.post('/auth/delete-account-otp');
       if (response.data.success && response.data.emailSent) {
@@ -109,6 +111,8 @@ export default function RestaurantPage() {
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to send OTP. Please try again.';
       toast.error(message);
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -270,7 +274,7 @@ export default function RestaurantPage() {
                   <span>{t.sub_contact_whatsapp}</span>
                 </button>
                 <button 
-                  onClick={() => window.location.href = 'mailto:sahin401099@gmail.com'}
+                  onClick={() => window.location.href = 'mailto:digitalmenu.orderingapp@zohomail.in'}
                   className="w-full flex items-center justify-center space-x-2 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
                 >
                   <FaEnvelope className="text-gray-400" />
@@ -528,10 +532,20 @@ export default function RestaurantPage() {
                       </button>
                       <button
                         onClick={requestDeleteOtp}
-                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                        disabled={isSendingOtp}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                       >
-                        <FaEnvelope className="w-4 h-4" />
-                        <span>Send OTP</span>
+                        {isSendingOtp ? (
+                          <>
+                            <FaSpinner className="w-4 h-4 animate-spin" />
+                            <span>Sending...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaEnvelope className="w-4 h-4" />
+                            <span>Send OTP</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </>
@@ -577,9 +591,10 @@ export default function RestaurantPage() {
                     </div>
                     <button
                       onClick={requestDeleteOtp}
-                      className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 underline w-full text-center"
+                      disabled={isSendingOtp}
+                      className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 underline w-full text-center disabled:text-gray-400 disabled:no-underline"
                     >
-                      Resend OTP
+                      {isSendingOtp ? 'Sending OTP...' : 'Resend OTP'}
                     </button>
                   </>
                 )}

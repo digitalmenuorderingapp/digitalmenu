@@ -644,7 +644,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Email Support</p>
-                        <p className="text-sm font-bold text-indigo-900">sahin401099@gmail.com</p>
+                        <p className="text-sm font-bold text-indigo-900">digitalmenu.orderingapp@zohomail.in</p>
                       </div>
                     </div>
                   </div>

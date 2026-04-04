@@ -108,7 +108,7 @@ const content = {
         title: '12. Contact',
         body: [
           'Questions? We\'re happy to help:',
-          '• Email: sahin401099@gmail.com',
+          '• Email: digitalmenu.orderingapp@zohomail.in',
           '• WhatsApp: +91 9563401099',
         ],
       },
@@ -201,7 +201,7 @@ const content = {
       {
         title: '11. कोई सवाल हो तो',
         body: [
-          '• ईमेल: sahin401099@gmail.com',
+          '• ईमेल: digitalmenu.orderingapp@zohomail.in',
           '• WhatsApp: +91 9563401099',
         ],
       },
@@ -295,7 +295,7 @@ const content = {
         title: '১১. যোগাযোগ',
         body: [
           'কোনো প্রশ্ন থাকলে আমাদের সাথে কথা বলুন:',
-          '• ইমেইল: sahin401099@gmail.com',
+          '• ইমেইল: digitalmenu.orderingapp@zohomail.in',
           '• WhatsApp: +91 9563401099',
         ],
       },

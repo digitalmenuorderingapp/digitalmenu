@@ -94,8 +94,7 @@ const content = {
       {
         title: '8. Contact',
         body: [
-          'Any privacy questions? Reach us:',
-          '• Email: sahin401099@gmail.com',
+          '• Email: digitalmenu.orderingapp@zohomail.in',
           '• WhatsApp: +91 9563401099',
         ],
       },
@@ -171,8 +170,7 @@ const content = {
       {
         title: '7. संपर्क करें',
         body: [
-          'कोई सवाल हो तो हमसे बात करें:',
-          '• ईमेल: sahin401099@gmail.com',
+          '• ईमेल: digitalmenu.orderingapp@zohomail.in',
           '• WhatsApp: +91 9563401099',
         ],
       },
@@ -248,8 +246,7 @@ const content = {
       {
         title: '৭. যোগাযোগ',
         body: [
-          'কোনো প্রশ্ন থাকলে আমাদের সাথে কথা বলুন:',
-          '• ইমেইল: sahin401099@gmail.com',
+          '• ইমেইল: digitalmenu.orderingapp@zohomail.in',
           '• WhatsApp: +91 9563401099',
         ],
       },
