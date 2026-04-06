@@ -65,6 +65,7 @@ interface Ledger {
     received: number;
     refunded: number;
     netBalance: number;
+    totalRevenue: number;
   };
   counts: {
     totalOrders: number;
@@ -91,7 +92,7 @@ interface RestaurantFormData {
   ownerName: string;
   address: string;
   phone: string;
-  description: string;
+  motto: string;
 }
 
 export default function DashboardPage() {
@@ -111,7 +112,7 @@ export default function DashboardPage() {
     ownerName: '',
     address: '',
     phone: '',
-    description: ''
+    motto: ''
   });
   const [lang, setLang] = useState<Language>('en');
 
@@ -319,6 +320,7 @@ export default function DashboardPage() {
     acc.counterBalance += ledger.counter?.balance || 0;
     acc.onlineBalance += ledger.online?.balance || 0;
     acc.netBalance += ledger.total?.netBalance || 0;
+    acc.totalRevenue += ledger.total?.totalRevenue || 0;
     acc.totalRefunded += (ledger.counter?.refunded || 0) + (ledger.online?.refunded || 0);
     return acc;
   }, {
@@ -327,6 +329,7 @@ export default function DashboardPage() {
     counterBalance: 0,
     onlineBalance: 0,
     netBalance: 0,
+    totalRevenue: 0,
     totalRefunded: 0
   });
 
@@ -380,8 +383,8 @@ export default function DashboardPage() {
                            </button>
                         </div>
                       </div>
-                      <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md mx-auto sm:mx-0 leading-relaxed">
-                        Manage your digital menu, track orders, and grow your business with our state-of-the-art platform.
+                      <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md mx-auto sm:mx-0 leading-relaxed italic">
+                        {user?.motto ? `"${user.motto}"` : 'Manage your digital menu, track orders, and grow your business with our state-of-the-art platform.'}
                       </p>
                     </div>
                   </div>
@@ -630,18 +633,18 @@ export default function DashboardPage() {
                   description={ledger.online.refunded > 0 ? `Ref: ₹${ledger.online.refunded}` : undefined}
                 />
                 <StatsCard 
-                  label="Today Net Balance" 
-                  value={`₹${Math.round(ledger.total.netBalance)}`} 
+                  label="Today Revenue" 
+                  value={`₹${Math.round(ledger.total.totalRevenue)}`} 
                   variant="purple" 
                   icon={<FaChartLine />} 
-                  description={ledger.total.refunded > 0 ? `Ref: ₹${ledger.total.refunded}` : undefined}
+                  description="Earned Income"
                 />
                 <StatsCard 
-                  label={`${new Date().toLocaleDateString('en-IN', { month: 'long' })}'s Overall`} 
-                  value={`₹${Math.round(monthToDateStats.netBalance)}`} 
+                  label="Settled Balance" 
+                  value={`₹${Math.round(ledger.total.netBalance)}`} 
                   variant="emerald" 
-                  icon={<FaCalendarDay />} 
-                  description={`${monthToDateStats.totalOrders} orders`}
+                  icon={<FaMoneyBillWave />} 
+                  description={`${new Date().toLocaleDateString('en-IN', { month: 'short' })}: ₹${Math.round(monthToDateStats.netBalance)}`}
                 />
               </div>
 
@@ -662,7 +665,7 @@ export default function DashboardPage() {
                       <span className="font-medium">₹{Math.round(ledger.counter.refunded)}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1 font-semibold">
-                      <span>Net Counter</span>
+                      <span>In Hand (Net)</span>
                       <span className="text-amber-700">₹{Math.round(ledger.counter.balance)}</span>
                     </div>
                   </div>
@@ -683,7 +686,7 @@ export default function DashboardPage() {
                       <span className="font-medium">₹{Math.round(ledger.online.refunded)}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1 font-semibold">
-                      <span>Net Online</span>
+                      <span>Settled Online</span>
                       <span className="text-blue-700">₹{Math.round(ledger.online.balance)}</span>
                     </div>
                   </div>

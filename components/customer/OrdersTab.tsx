@@ -75,25 +75,25 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
   );
 }
 
-function RetryForm({ order }: { order: Order }) {
+function RetryForm({ order, session }: { order: Order; session: any }) {
   const [utr, setUtr] = useState('');
   const [method, setMethod] = useState<'ONLINE' | 'COUNTER'>(order.paymentMethod || 'COUNTER');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRetry = async () => {
     if (method === 'ONLINE' && (!utr || utr.length < 6)) {
-      toast.error('Please enter last 6 digits of UTR');
+      toast.error('Valid 6-digit UTR is mandatory for Online');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await api.post('/order/action', {
-        orderId: order._id,
-        action: 'RETRY_PAYMENT',
-        payload: { method, utr }
+      await api.put(`/order/${order._id}/retry-payment`, {
+        paymentMethod: method,
+        utr,
+        deviceId: session.deviceId
       });
-      toast.success('Payment details updated! Pending verification.');
+      toast.success('Payment details updated! Verification pending.');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update payment');
     } finally {
@@ -103,41 +103,50 @@ function RetryForm({ order }: { order: Order }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => setMethod('COUNTER')}
-          className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
-            method === 'COUNTER' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'
+          className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all ${
+            method === 'COUNTER' ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200'
           }`}
         >
           Pay at Counter
         </button>
         <button
           onClick={() => setMethod('ONLINE')}
-          className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
-            method === 'ONLINE' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'
+          className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all ${
+            method === 'ONLINE' ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200'
           }`}
         >
-          Pay Online Again
+          Pay Online
         </button>
       </div>
 
       {method === 'ONLINE' && (
-        <input
-          type="text"
-          value={utr}
-          onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          placeholder="New UTR (last 6 digits)"
-          className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500"
-        />
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Last 6 Digits of UTR *</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={utr}
+            onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="000000"
+            className="w-full px-4 py-3.5 bg-white border-2 border-indigo-50 rounded-xl text-center text-xl font-black font-mono tracking-widest focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
+          />
+        </div>
       )}
 
       <button
         onClick={handleRetry}
         disabled={isSubmitting}
-        className="w-full py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 disabled:opacity-50 shadow-sm"
+        className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-50 shadow-xl shadow-gray-200"
       >
-        {isSubmitting ? 'Updating...' : 'Resubmit Payment Details'}
+        {isSubmitting ? (
+          <div className="flex items-center justify-center gap-2">
+            <FaSpinner className="animate-spin" />
+            Updating...
+          </div>
+        ) : 'Update Payment Details'}
       </button>
     </div>
   );
@@ -387,7 +396,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                         <p className="text-xs font-bold text-red-600 mb-3 uppercase tracking-wider flex items-center gap-2">
                           <FaClock className="w-3 h-3" /> Action Required: Verification Failed
                         </p>
-                        <RetryForm order={order} />
+                        <RetryForm order={order} session={session} />
                       </div>
                     )}
                   </div>

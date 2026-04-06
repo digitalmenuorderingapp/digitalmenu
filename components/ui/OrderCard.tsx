@@ -202,10 +202,9 @@ const OrderCard = ({
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-[2rem] border transition-all duration-300 overflow-hidden group/card shadow-sm hover:shadow-xl ${
+      className={`relative rounded-3xl border transition-all duration-300 overflow-hidden group/card shadow-sm hover:shadow-xl ${
         order.status === 'PLACED' ? 'bg-amber-50/50 border-amber-100/50 hover:border-amber-200' :
         order.status === 'ACCEPTED' ? 'bg-blue-50/50 border-blue-100/50 hover:border-blue-200' :
         order.status === 'COMPLETED' ? 'bg-green-50/50 border-green-100/50 hover:border-green-200' :
@@ -214,14 +213,14 @@ const OrderCard = ({
       } ${order.paymentDueStatus === 'DUE' ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}
     >
       {/* Header */}
-      <div className={`p-5 border-b border-gray-100/50 flex items-center justify-between transition-colors duration-300 ${
+      <div className={`p-4 sm:p-5 border-b border-gray-100/50 flex flex-wrap items-center justify-between gap-3 transition-colors duration-300 ${
         order.status === 'PLACED' ? 'bg-gradient-to-br from-amber-50/80 to-white/40' :
         order.status === 'ACCEPTED' ? 'bg-gradient-to-br from-blue-50/80 to-white/40' :
         order.status === 'COMPLETED' ? 'bg-gradient-to-br from-green-50/80 to-white/40' :
         'bg-gradient-to-br from-gray-50/80 to-white/40'
       }`}>
-        <div className="flex items-center space-x-4">
-          <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm transition-transform duration-300 group-hover/card:scale-110 ${
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl shadow-sm transition-transform duration-300 group-hover/card:scale-105 ${
             order.status === 'PLACED' ? 'bg-white text-amber-600 border border-amber-100' :
             order.status === 'ACCEPTED' ? 'bg-white text-blue-600 border border-blue-100' :
             order.status === 'COMPLETED' ? 'bg-white text-green-600 border border-green-100' :
@@ -229,60 +228,60 @@ const OrderCard = ({
           }`}>
             {order.tableNumber}
             {order.status === 'PLACED' && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
               </span>
             )}
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="font-bold text-gray-900 text-lg leading-tight uppercase tracking-tight transition-colors">
+              <h3 className="font-bold text-gray-900 text-base sm:text-lg leading-tight uppercase tracking-tight transition-colors">
                 {order.customerName}
               </h3>
               {order.numberOfPersons && (
-                <span className="flex items-center space-x-1 px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-black text-gray-500">
+                <span className="hidden sm:flex items-center space-x-1 px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-black text-gray-500">
                   <FaUsers className="w-2.5 h-2.5" />
                   <span>{order.numberOfPersons}</span>
                 </span>
               )}
             </div>
-            <div className="flex items-center mt-1 space-x-2">
+            <div className="flex flex-wrap items-center mt-1 gap-1.5 sm:gap-2">
               {order.customerPhone && (
-                <span className="text-sm font-bold text-gray-600 flex items-center bg-white/60 px-2.5 py-1 rounded-xl border border-gray-100 shadow-sm">
-                  <FaPhone className="mr-2 text-green-500 w-3 h-3" />
+                <span className="text-[11px] sm:text-sm font-bold text-gray-600 flex items-center bg-white/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm">
+                  <FaPhone className="mr-1.5 text-green-500 w-2.5 h-2.5" />
                   {order.customerPhone}
                 </span>
               )}
-              <span className="text-sm font-black text-gray-600 flex items-center bg-white/60 px-2.5 py-1 rounded-xl border border-gray-100 shadow-sm">
-                <FaClock className="mr-2 text-indigo-500 w-3.5 h-3.5" />
+              <span className="text-[11px] sm:text-sm font-black text-gray-600 flex items-center bg-white/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm">
+                <FaClock className="mr-1.5 text-indigo-500 w-3 h-3" />
                 {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-black text-indigo-600 tracking-tighter">₹{order.totalAmount}</p>
-          <span className={`inline-flex items-center mt-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+          <p className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter">₹{order.totalAmount}</p>
+          <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${
             order.status === 'PLACED' ? 'bg-amber-100/50 text-amber-700' :
             order.status === 'ACCEPTED' ? 'bg-blue-100/50 text-blue-700' :
             order.status === 'COMPLETED' ? 'bg-green-100/50 text-green-700' :
             order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100/50 text-red-700' :
             'bg-gray-100/50 text-gray-700'
           }`}>
-            {order.status === 'PLACED' && <FaSpinner className="animate-spin mr-1.5 w-2 h-2" />}
+            {order.status === 'PLACED' && <FaSpinner className="animate-spin mr-1 w-2 h-2" />}
             {order.status}
           </span>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-5 flex-1 flex flex-col min-h-0 bg-white/40">
-        <div className="flex-1 min-h-0 mb-4">
-          <div className="flex justify-between items-center text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">
+      <div className="p-4 sm:p-5 flex-1 flex flex-col min-h-0 bg-white/40">
+        <div className="flex-1 min-h-0 mb-3 sm:mb-4">
+          <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 sm:mb-3">
             <span>ITEMS ({order.items.length})</span>
-            <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg border border-indigo-100/50">
-              {order.items.reduce((sum, item) => sum + item.quantity, 0)} Total
+            <span className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-lg border border-indigo-100/50 text-[9px] sm:text-[10px]">
+              {order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} Total
             </span>
           </div>
           <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
@@ -312,27 +311,27 @@ const OrderCard = ({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className={`p-3 rounded-2xl border transition-all ${paymentStatusDisplay.bgColor} ${paid ? 'border-green-100' : 'border-gray-100'}`}>
-            <div className="flex items-center space-x-3">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white shadow-sm font-bold ${paymentStatusDisplay.color}`}>
-                {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-3.5 h-3.5" /> : <FaMoneyBillWave className="w-3.5 h-3.5" />}
+        <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className={`p-2 sm:p-3 rounded-2xl border transition-all ${paymentStatusDisplay.bgColor} ${paid ? 'border-green-100' : 'border-gray-100'}`}>
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center bg-white shadow-sm font-bold ${paymentStatusDisplay.color}`}>
+                {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-4 h-4" /> : <FaMoneyBillWave className="w-4 h-4" />}
               </div>
               <div className="min-w-0">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">PAYMENT</p>
-                <p className={`text-[11px] font-black truncate ${paymentStatusDisplay.color}`}>
+                <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">PAYMENT</p>
+                <p className={`text-xs sm:text-sm font-black truncate leading-tight ${paymentStatusDisplay.color}`}>
                   {paymentStatusDisplay.text}
                 </p>
               </div>
             </div>
           </div>
-          <div className="bg-indigo-50/30 border border-indigo-100/50 p-3 rounded-2xl flex items-center space-x-3">
-            <div className="w-8 h-8 bg-white text-indigo-600 rounded-xl shadow-sm flex items-center justify-center">
-              <FaHashtag className="w-3.5 h-3.5" />
+          <div className="bg-indigo-50/30 border border-indigo-100/50 p-2 sm:p-3 rounded-2xl flex items-center space-x-2 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white text-indigo-600 rounded-lg sm:rounded-xl shadow-sm flex items-center justify-center">
+              <FaHashtag className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">ORDER ID</p>
-              <p className="text-[11px] font-black text-indigo-700 truncate">#{order.orderNumber || order._id.slice(-6)}</p>
+              <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">ORDER ID</p>
+              <p className="text-xs sm:text-sm font-black text-indigo-700 truncate leading-tight">#{order.orderNumber || order._id.slice(-6)}</p>
             </div>
           </div>
         </div>
@@ -418,7 +417,7 @@ const OrderCard = ({
                 disabled={isAnyLoading}
                 leftIcon={<FaMoneyBillWave className="w-4 h-4" />}
               >
-                Collect Payment
+                {order.paymentDueStatus === 'DUE' ? 'Clear Due' : 'Collect Payment'}
               </Button>
               <Button 
                 size="md" 

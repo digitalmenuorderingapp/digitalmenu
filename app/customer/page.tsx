@@ -30,7 +30,7 @@ function CustomerPageContent() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; id: string; logo?: string } | null>(null);
+  const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; id: string; logo?: string; motto?: string } | null>(null);
   const [showCustomerInfoModal, setShowCustomerInfoModal] = useState(false);
   const [customerFormData, setCustomerFormData] = useState({
     customerName: '',
@@ -80,13 +80,15 @@ function CustomerPageContent() {
                 restaurantName: restaurantName,
                 restaurantId: qrData.restaurantId,
                 tableNumber: tableStr,
-                logo: restaurantData.logo
+                logo: restaurantData.logo,
+                motto: restaurantData.motto
               });
 
               setRestaurantInfo({
                 name: restaurantName,
                 id: qrData.restaurantId,
-                logo: restaurantData.logo
+                logo: restaurantData.logo,
+                motto: restaurantData.motto
               });
               toast.success(`Welcome to ${restaurantName}!`);
             } catch (error) {
@@ -637,19 +639,47 @@ function CustomerPageContent() {
         </div>
       </header>
 
-      <AnimatePresence mode="popLayout">
-        <motion.div
-          key={activeTab}
-          variants={tabVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="w-full"
-        >
-          {renderTabContent()}
-        </motion.div>
-      </AnimatePresence>
+      <div className="w-full">
+        <div className={activeTab === 'menu' ? 'block' : 'hidden'}>
+          <MenuTab
+            menuItems={menuItems}
+            cart={cart}
+            addToCart={addToCart}
+            removeFromCart={removeFromCart}
+            getItemQuantity={getItemQuantity}
+            restaurantInfo={restaurantInfo}
+            session={session}
+            onGoToCart={() => handleTabChange('cart')}
+          />
+        </div>
+        
+        <div className={activeTab === 'cart' ? 'block' : 'hidden'}>
+          <CartTab
+            cart={cart}
+            addToCart={addToCart}
+            removeFromCart={removeFromCart}
+            getItemQuantity={getItemQuantity}
+            session={session}
+            onPlaceOrder={placeOrder}
+          />
+        </div>
+
+        <div className={activeTab === 'orders' ? 'block' : 'hidden'}>
+          <OrdersTab
+            orders={orders}
+            session={session}
+          />
+        </div>
+
+        <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
+          <ProfileTab
+            session={session}
+            onUpdateSession={(updates) => {
+              updateSession(updates);
+            }}
+          />
+        </div>
+      </div>
 
       <BottomNav
         cartCount={cart.reduce((total, item) => total + item.quantity, 0)}

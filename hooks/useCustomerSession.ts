@@ -12,6 +12,7 @@ interface CustomerSession {
   deviceId?: string;
   sessionId?: string;
   logo?: string;
+  motto?: string;
 }
 
 interface RestaurantDetails {
@@ -21,7 +22,7 @@ interface RestaurantDetails {
   email: string;
   address?: string;
   phone?: string;
-  description?: string;
+  motto?: string;
   tableCapacity?: number;
 }
 

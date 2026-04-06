@@ -4,12 +4,13 @@ export interface MenuItem {
     price: number;
     foodType?: string;
     description?: string;
+    images?: string[];
     image?: string;
     isAvailable: boolean;
     offerPrice?: number;
     discountPercentage?: number;
-    ingredients?: string;
-    preparationMethod?: string;
+    isVeg?: boolean;
+    isBestSeller?: boolean;
 }
 
 export interface CartItem extends MenuItem {

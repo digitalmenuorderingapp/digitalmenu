@@ -13,7 +13,7 @@ export interface RestaurantAdmin {
   ownerName?: string;
   address?: string;
   phone?: string;
-  description?: string;
+  motto?: string;
   logo?: string;
   shortId?: string;
   subscription: {
@@ -21,6 +21,7 @@ export interface RestaurantAdmin {
     status: 'active' | 'inactive' | 'expired';
     startDate: string | Date;
     expiryDate: string | Date | null;
+    daysLeft?: number;
   };
 }
 

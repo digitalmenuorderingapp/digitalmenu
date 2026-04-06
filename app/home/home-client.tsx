@@ -220,6 +220,9 @@ export default function MarketingHomeClient() {
                 <NavItem href="#platform" label={t.nav_platform} />
                 <NavItem href="#features" label={t.nav_features} />
                 <NavItem href="#trust" label={t.nav_trust} />
+                <Link href="/guide" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">
+                  {lang === 'hi' ? 'यूज़र गाइड' : lang === 'bn' ? 'ইউজার গাইড' : 'User Guide'}
+                </Link>
                 <NavItem href="#pricing" label={t.nav_pricing} />
               </div>
 

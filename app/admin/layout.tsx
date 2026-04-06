@@ -36,6 +36,7 @@ import {
 } from 'react-icons/fa';
 import api from '@/services/api';
 import { UserProfileSkeleton } from '@/components/ui/Skeleton';
+import SubscriptionModal from '@/components/ui/SubscriptionModal';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -571,104 +572,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </div>
 
-      {/* Global Account Restriction Overlay */}
-      <AnimatePresence>
-        {isRestricted && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-xl p-4 overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-transparent to-slate-900/30 pointer-events-none"></div>
-            
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative"
-            >
-              <div className="h-2 w-full bg-gradient-to-r from-red-500 via-orange-500 to-amber-500"></div>
-              
-              <div className="p-10">
-                <div className="flex justify-center mb-8">
-                  <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center border-4 border-white shadow-xl">
-                    <FaLock className="w-10 h-10 text-red-500" />
-                  </div>
-                </div>
-                
-                <div className="text-center mb-10">
-                  <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">Access Restricted</h2>
-                  <p className="text-gray-500 text-lg leading-relaxed max-w-sm mx-auto">
-                    {user?.subscription?.status === "inactive" 
-                      ? "Your account has been deactivated by the system administrator. Please contact superadmin for reactivation."
-                      : "Your subscription has expired. Please subscribe to continue the convenience of digital menu. Contact superadmin."
-                    }
-                  </p>
-                </div>
-
-                {/* Technical Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-                  <div className="bg-gray-50 rounded-3xl p-5 border border-gray-100">
-                    <div className="flex items-center gap-3 mb-3">
-                      <FaShieldAlt className="w-4 h-4 text-indigo-500" />
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Account Status</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <FaCircle className={`w-2 h-2 ${user?.subscription?.status === 'active' ? 'text-green-500' : 'text-red-500'}`} />
-                       <span className="font-bold text-gray-900">{user?.subscription?.status === 'active' ? 'Active' : 'Deactivated'}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-3xl p-5 border border-gray-100">
-                    <div className="flex items-center gap-3 mb-3">
-                      <FaClock className="w-4 h-4 text-emerald-500" />
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Validity Details</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-900 text-sm">Valid Until: {subStatus.expiryDate || 'N/A'}</span>
-                      {subStatus.isExpired ? (
-                        <span className="text-[8px] font-black text-red-500 bg-red-100 px-2 py-0.5 rounded-full uppercase">Expired</span>
-                      ) : (
-                        <span className="text-[8px] font-black text-emerald-500 bg-emerald-100 px-2 py-0.5 rounded-full uppercase truncate">Active</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Area */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-2xl border border-indigo-100 group transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                        <FaEnvelope className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Email Support</p>
-                        <p className="text-sm font-bold text-indigo-900">digitalmenu.orderingapp@zohomail.in</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => window.location.reload()}
-                      className="py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-2xl transition-all active:scale-[0.98] shadow-xl shadow-black/10"
-                    >
-                      Refresh
-                    </button>
-                    <button 
-                      onClick={handleLogout}
-                      className="py-4 bg-white hover:bg-gray-50 text-gray-600 font-bold rounded-2xl border border-gray-200 transition-all active:scale-[0.98]"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Global Account Restriction Modal */}
+      <SubscriptionModal isOpen={isRestricted} />
 
       {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal 

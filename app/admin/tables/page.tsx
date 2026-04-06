@@ -133,7 +133,9 @@ const QRSticker = ({
               <h2 className="text-base font-black text-slate-900 truncate uppercase tracking-tight leading-tight">
                 {user?.restaurantName || 'Digital Menu'}
               </h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Premium Experience</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[150px]">
+                {user?.motto || 'Premium Experience'}
+              </p>
             </div>
           </div>
           <div className="flex flex-col items-end shrink-0">

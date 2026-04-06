@@ -40,7 +40,7 @@ interface RestaurantFormData {
   ownerName: string;
   address: string;
   phone: string;
-  description: string;
+  motto: string;
 }
 
 export default function RestaurantPage() {
@@ -65,7 +65,7 @@ export default function RestaurantPage() {
     ownerName: '',
     address: '',
     phone: '',
-    description: ''
+    motto: ''
   });
 
   // Persistence for language
@@ -83,7 +83,7 @@ export default function RestaurantPage() {
         ownerName: user.ownerName || '',
         address: user.address || '',
         phone: user.phone || '',
-        description: user.description || ''
+        motto: user.motto || ''
       });
       setLogoPreview(user.logo || null);
     }
@@ -260,11 +260,27 @@ export default function RestaurantPage() {
   const t = TRANSLATIONS[lang] as any;
 
   // Subscription status calculation
-  const getSubscriptionStatus = () => {
+  interface SubscriptionStatus {
+    name: string;
+    daysLeft: number | null;
+    totalDays?: number;
+    isExpired: boolean;
+    isTrial: boolean;
+    status: string;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    iconColor: string;
+    expiryDate?: string;
+  }
+
+  // Subscription status calculation
+  const getSubscriptionStatus = (): SubscriptionStatus => {
     if (!user?.subscription) {
       return { 
         name: 'Free Trial', 
         daysLeft: 14, 
+        totalDays: 14,
         isExpired: false, 
         isTrial: true,
         status: 'trial',
@@ -275,7 +291,7 @@ export default function RestaurantPage() {
       };
     }
 
-    const { type, status, expiryDate, startDate } = user.subscription;
+    const { type, status, expiryDate, startDate, daysLeft: backendDaysLeft } = user.subscription;
 
     // Lifetime/Free plan (legacy)
     if (type === 'free') {
@@ -297,20 +313,25 @@ export default function RestaurantPage() {
       const today = new Date();
       const expiry = new Date(expiryDate);
       const diffTime = expiry.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = backendDaysLeft !== undefined ? backendDaysLeft : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const expired = diffDays <= 0 || status === 'expired';
+      
+      const totalDays = (startDate && expiryDate) 
+        ? Math.ceil((new Date(expiryDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
+        : 90;
 
       return {
         name: 'Free Trial',
         daysLeft: Math.max(0, diffDays),
+        totalDays: totalDays,
         isExpired: expired,
         isTrial: true,
         status: expired ? 'expired' : 'trial',
         expiryDate: expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        color: expired ? 'text-red-600' : (diffDays < 3 ? 'text-orange-600' : 'text-amber-600'),
-        bgColor: expired ? 'bg-red-50' : (diffDays < 3 ? 'bg-orange-50' : 'bg-amber-50'),
-        borderColor: expired ? 'border-red-200' : (diffDays < 3 ? 'border-orange-200' : 'border-amber-200'),
-        iconColor: expired ? 'text-red-500' : (diffDays < 3 ? 'text-orange-500' : 'text-amber-500')
+        color: expired ? 'text-red-600' : (diffDays < 7 ? 'text-orange-600' : 'text-amber-600'),
+        bgColor: expired ? 'bg-red-50' : (diffDays < 7 ? 'bg-orange-50' : 'bg-amber-50'),
+        borderColor: expired ? 'border-red-200' : (diffDays < 7 ? 'border-orange-200' : 'border-amber-200'),
+        iconColor: expired ? 'text-red-500' : (diffDays < 7 ? 'text-orange-500' : 'text-amber-500')
       };
     }
 
@@ -319,26 +340,32 @@ export default function RestaurantPage() {
       const today = new Date();
       const expiry = new Date(expiryDate);
       const diffTime = expiry.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = backendDaysLeft !== undefined ? backendDaysLeft : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const isExpired = diffDays <= 0 || status === 'expired';
+
+      const totalDays = (startDate && expiryDate) 
+        ? Math.ceil((new Date(expiryDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
+        : 365;
 
       return {
         name: 'Premium Plan',
         daysLeft: Math.max(0, diffDays),
+        totalDays: totalDays,
         isExpired: isExpired,
         isTrial: false,
         status: isExpired ? 'expired' : 'active',
         expiryDate: expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        color: isExpired ? 'text-red-600' : (diffDays < 7 ? 'text-orange-600' : 'text-green-600'),
-        bgColor: isExpired ? 'bg-red-50' : (diffDays < 7 ? 'bg-orange-50' : 'bg-green-50'),
-        borderColor: isExpired ? 'border-red-200' : (diffDays < 7 ? 'border-orange-200' : 'border-green-200'),
-        iconColor: isExpired ? 'text-red-500' : (diffDays < 7 ? 'text-orange-500' : 'text-green-500')
+        color: isExpired ? 'text-red-600' : (diffDays < 15 ? 'text-orange-600' : 'text-green-600'),
+        bgColor: isExpired ? 'bg-red-50' : (diffDays < 15 ? 'bg-orange-50' : 'bg-green-50'),
+        borderColor: isExpired ? 'border-red-200' : (diffDays < 15 ? 'border-orange-200' : 'border-green-200'),
+        iconColor: isExpired ? 'text-red-500' : (diffDays < 15 ? 'text-orange-500' : 'text-green-500')
       };
     }
 
     return { 
       name: 'Free Trial', 
       daysLeft: 14, 
+      totalDays: 14,
       isExpired: false, 
       isTrial: true,
       status: 'trial',
@@ -399,10 +426,10 @@ export default function RestaurantPage() {
               <div className="mb-6 p-4 bg-white rounded-xl border shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-600">Trial ends in</span>
-                  <FaClock className={`w-4 h-4 ${subStatus.daysLeft && subStatus.daysLeft < 3 ? 'text-red-500' : 'text-amber-500'}`} />
+                  <FaClock className={`w-4 h-4 ${(subStatus.daysLeft || 0) < 7 ? 'text-red-500' : 'text-amber-500'}`} />
                 </div>
                 <div className="flex items-baseline space-x-1">
-                  <span className={`text-3xl font-black ${subStatus.daysLeft && subStatus.daysLeft < 3 ? 'text-red-600' : 'text-amber-600'}`}>
+                  <span className={`text-3xl font-black ${(subStatus.daysLeft || 0) < 7 ? 'text-red-600' : 'text-amber-600'}`}>
                     {subStatus.daysLeft}
                   </span>
                   <span className="text-sm font-medium text-gray-500">days left</span>
@@ -414,8 +441,8 @@ export default function RestaurantPage() {
                 {/* Progress bar */}
                 <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full rounded-full transition-all duration-500 ${subStatus.daysLeft && subStatus.daysLeft < 3 ? 'bg-red-500' : 'bg-amber-500'}`}
-                    style={{ width: `${Math.min(100, ((subStatus.daysLeft || 0) / 14) * 100)}%` }}
+                    className={`h-full rounded-full transition-all duration-500 ${(subStatus.daysLeft || 0) < 7 ? 'bg-red-500' : 'bg-amber-500'}`}
+                    style={{ width: `${Math.min(100, ((subStatus.daysLeft || 0) / (subStatus.totalDays || 90)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -740,17 +767,17 @@ export default function RestaurantPage() {
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
-              Description
+              Restaurant Motto
             </label>
             <textarea
-              name="description"
-              rows={4}
-              value={formData.description}
+              name="motto"
+              rows={2}
+              value={formData.motto}
               onChange={handleInputChange}
               className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none"
-              placeholder="Brief description of your restaurant, cuisine type, specialties, etc. (optional)"
+              placeholder="e.g., 'Taste the Tradition' or 'Good Food, Good Mood'"
             />
-            <p className="text-xs text-gray-500 text-right">{formData.description?.length || 0}/500 characters</p>
+            <p className="text-xs text-gray-500 text-right">{formData.motto?.length || 0}/100 characters</p>
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-gray-100">
@@ -802,7 +829,7 @@ export default function RestaurantPage() {
               </div>
             </div>
             <span className="transition group-open:rotate-180">
-              <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
             </span>
           </summary>
           <div className="mt-4 p-4 bg-red-50/50 rounded-xl border border-red-100">

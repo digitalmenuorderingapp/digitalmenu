@@ -74,7 +74,7 @@ interface Order {
   transactions?: any[];
 }
 
-type OrderStatus = 'all' | 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+type OrderStatus = 'all' | 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'DUES';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -220,7 +220,9 @@ export default function OrdersPage() {
 
   const filteredOrders = orderFilter === 'all'
     ? orders
-    : orders.filter((o: Order) => o.status === orderFilter);
+    : orderFilter === 'DUES'
+      ? orders.filter((o: Order) => o.paymentDueStatus === 'DUE')
+      : orders.filter((o: Order) => o.status === orderFilter);
 
   const orderCounts = {
     totalOrders: orders.length,
@@ -229,6 +231,7 @@ export default function OrdersPage() {
     COMPLETED: orders.filter((o: Order) => o.status === 'COMPLETED').length,
     REJECTED: orders.filter((o: Order) => o.status === 'REJECTED').length,
     CANCELLED: orders.filter((o: Order) => o.status === 'CANCELLED').length,
+    DUES: orders.filter((o: Order) => o.paymentDueStatus === 'DUE').length,
   };
 
   const refundStats = {
@@ -239,9 +242,12 @@ export default function OrdersPage() {
     totalRevenue: orders
       .filter(o => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
       .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
-    onlinePending: orders.filter(o => o.paymentMethod === 'ONLINE' && o.paymentStatus === 'PENDING').length,
-    counterPending: orders.filter(o => o.paymentMethod === 'COUNTER' && o.paymentStatus === 'PENDING' && o.status !== 'COMPLETED').length,
-    duesPending: orders.filter(o => o.paymentDueStatus === 'DUE' && o.paymentStatus === 'PENDING').length,
+    onlinePending: stats?.onlinePending || 0,
+    onlinePendingAmount: stats?.onlinePendingAmount || 0,
+    counterPending: stats?.counterPending || 0,
+    counterPendingAmount: stats?.counterPendingAmount || 0,
+    duesPending: stats?.duesPending || orders.filter(o => o.paymentDueStatus === 'DUE').length,
+    unpaidDuesAmount: stats?.unpaidDuesAmount || orders.filter(o => o.paymentDueStatus === 'DUE').reduce((s, o) => s + (o.totalAmount || 0), 0),
   };
 
   return (
@@ -282,7 +288,8 @@ export default function OrdersPage() {
             <h3 className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-3 flex items-center px-1">
               <FaExclamationCircle className="mr-2" /> Pending Actions
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+              <StatsCard isMini label="Serving" value={paymentStats.servingPending || 0} variant="indigo" icon={<FaUtensils />} />
               <StatsCard isMini label="Online" value={paymentStats.onlinePending || 0} variant="blue" icon={<FaCreditCard />} />
               <StatsCard isMini label="Refunds" value={refundStats.pending} variant="purple" icon={<FaUndo />} />
               <StatsCard isMini label="Counter" value={paymentStats.counterPending || 0} variant="amber" icon={<FaMoneyBillWave />} />
@@ -291,16 +298,16 @@ export default function OrdersPage() {
           </div>
 
           {/* Overview Section - Business Health */}
-          <div className="flex-[2] bg-gray-50/50 border border-gray-100 rounded-2xl p-3">
+          <div className="flex-[1.2] bg-gray-50/50 border border-gray-100 rounded-2xl p-3">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center px-1">
               Business Overview
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
               <StatsCard isMini label="Revenue" value={`₹${paymentStats.totalRevenue.toFixed(0)}`} variant="green" icon={<FaCheckCircle />} />
+              <StatsCard isMini label="Dues Amount" value={`₹${Math.round(paymentStats.unpaidDuesAmount || 0)}`} variant="red" icon={<FaExclamationCircle />} />
               <StatsCard isMini label="Total" value={orderCounts.totalOrders} variant="indigo" icon={<FaClipboardList />} />
               <StatsCard isMini label="Served" value={orderCounts.COMPLETED} variant="emerald" icon={<FaCheck />} />
               <StatsCard isMini label="Cancelled" value={orderCounts.CANCELLED} variant="red" icon={<FaTimes />} />
-              <StatsCard isMini label="Rejected" value={orderCounts.REJECTED} variant="amber" icon={<FaExclamationCircle />} />
             </div>
           </div>
         </div>
@@ -320,7 +327,7 @@ export default function OrdersPage() {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center bg-gray-100/80 border border-gray-200/50 rounded-2xl p-1.5 shadow-inner overflow-x-auto no-scrollbar">
-            {(['all', 'PLACED', 'ACCEPTED', 'COMPLETED', 'REJECTED', 'CANCELLED'] as OrderStatus[]).map((status) => (
+            {(['all', 'PLACED', 'ACCEPTED', 'COMPLETED', 'DUES', 'REJECTED', 'CANCELLED'] as OrderStatus[]).map((status) => (
               <button
                 key={status}
                 onClick={() => setOrderFilter(status)}
@@ -348,7 +355,7 @@ export default function OrdersPage() {
               <p className="text-gray-400 font-medium">No orders found</p>
             </div>
           ) : (
-            <motion.div layout className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
               {filteredOrders.map((order) => (
                 <OrderCard
                    key={order._id}

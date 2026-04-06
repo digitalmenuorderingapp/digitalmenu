@@ -24,9 +24,8 @@ interface MenuItem {
   _id: string;
   name: string;
   description?: string;
-  ingredients?: string;
-  preparationMethod?: string;
-  image?: string;
+  images?: string[];
+  image?: string; // Keep for backward compatibility if needed in UI
   price: number;
   offerPrice?: number;
   discountPercentage: number;
@@ -34,6 +33,8 @@ interface MenuItem {
   category?: string;
   foodType?: string;
   restaurantId?: string;
+  isVeg?: boolean;
+  isBestSeller?: boolean;
 }
 
 export default function MenuManagementPage() {
@@ -49,15 +50,17 @@ export default function MenuManagementPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    ingredients: '',
-    preparationMethod: '',
     price: '',
     offerPrice: '',
     isActive: true,
     foodType: 'Main Course',
+    isVeg: true,
+    isBestSeller: false,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [removedImages, setRemovedImages] = useState<string[]>([]);
 
   useEffect(() => {
     fetchMenuItems();
@@ -78,15 +81,17 @@ export default function MenuManagementPage() {
     setFormData({
       name: '',
       description: '',
-      ingredients: '',
-      preparationMethod: '',
       price: '',
       offerPrice: '',
       isActive: true,
       foodType: 'Main Course',
+      isVeg: true,
+      isBestSeller: false,
     });
-    setImageFile(null);
-    setImagePreview('');
+    setImageFiles([]);
+    setImagePreviews([]);
+    setExistingImages([]);
+    setRemovedImages([]);
     setEditingItem(null);
   };
 
@@ -96,14 +101,14 @@ export default function MenuManagementPage() {
       setFormData({
         name: item.name,
         description: item.description || '',
-        ingredients: item.ingredients || '',
-        preparationMethod: item.preparationMethod || '',
         price: item.price.toString(),
         offerPrice: item.offerPrice?.toString() || '',
         isActive: item.isActive,
         foodType: item.foodType || 'Main Course',
+        isVeg: item.isVeg ?? true,
+        isBestSeller: item.isBestSeller ?? false,
       });
-      setImagePreview(item.image || '');
+      setExistingImages(item.images || (item.image ? [item.image] : []));
     } else {
       resetForm();
     }
@@ -116,19 +121,41 @@ export default function MenuManagementPage() {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image must be less than 5MB');
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const validFiles = files.filter(file => {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} is larger than 5MB`);
+          return false;
+        }
+        return true;
+      });
+
+      if (imageFiles.length + existingImages.length + validFiles.length > 5) {
+        toast.error('Maximum 5 images allowed');
         return;
       }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+
+      setImageFiles(prev => [...prev, ...validFiles]);
+      
+      validFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
+  };
+
+  const removeNewImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (url: string) => {
+    setExistingImages(prev => prev.filter(img => img !== url));
+    setRemovedImages(prev => [...prev, url]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,13 +165,22 @@ export default function MenuManagementPage() {
     const data = new FormData();
     data.append('name', formData.name);
     data.append('description', formData.description);
-    data.append('ingredients', formData.ingredients);
-    data.append('preparationMethod', formData.preparationMethod);
     data.append('price', formData.price);
     if (formData.offerPrice) data.append('offerPrice', formData.offerPrice);
     data.append('isActive', formData.isActive.toString());
     data.append('foodType', formData.foodType);
-    if (imageFile) data.append('image', imageFile);
+    data.append('isVeg', formData.isVeg.toString());
+    data.append('isBestSeller', formData.isBestSeller.toString());
+    
+    // Add multiple images
+    imageFiles.forEach(file => {
+      data.append('images', file);
+    });
+
+    // Add removed images for backend cleanup
+    removedImages.forEach(url => {
+      data.append('removedImages', url);
+    });
 
     try {
       if (editingItem) {
@@ -237,16 +273,14 @@ export default function MenuManagementPage() {
           Array(6).fill(0).map((_, i) => <MenuItemSkeleton key={i} />)
         ) : (
           menuItems.map((item) => (
-          <div
-            key={item._id}
-            className={`bg-white rounded-xl shadow-sm border overflow-hidden ${
+            <div className={`bg-white rounded-xl shadow-sm border overflow-hidden ${
               item.isActive ? 'border-gray-100' : 'border-gray-200 opacity-75'
             }`}
           >
             <div className="relative h-48 bg-gray-100">
-              {item.image ? (
+              {(item.images?.length || 0) > 0 || item.image ? (
                 <Image
-                  src={item.image}
+                  src={item.images?.[0] || item.image || ''}
                   alt={item.name}
                   fill
                   className="object-cover"
@@ -262,15 +296,23 @@ export default function MenuManagementPage() {
                 </div>
               )}
               {item.offerPrice && item.discountPercentage > 0 && (
-                <div className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white text-xs rounded font-semibold">
+                <div className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg shadow-lg">
                   -{item.discountPercentage}%
+                </div>
+              )}
+              {item.isBestSeller && (
+                <div className="absolute bottom-2 left-2 px-3 py-1 bg-amber-500 text-white text-[10px] font-black rounded-full shadow-lg flex items-center gap-1 border border-amber-400">
+                  <span className="animate-pulse">⭐</span> BEST SELLER
                 </div>
               )}
             </div>
             <div className="p-4">
-              <div className="flex items-center justify-end mb-2">
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${item.isVeg ? 'border-green-600' : 'border-red-600'}`}>
+                  <div className={`w-2 h-2 rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`} />
+                </div>
                 {item.foodType && (
-                  <span className="inline-flex items-center px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded">
+                  <span className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-md">
                     {item.foodType}
                   </span>
                 )}
@@ -400,50 +442,71 @@ export default function MenuManagementPage() {
 
               <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
                 {/* Image Upload Section */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start">
-                  <div className="relative shrink-0">
-                    {imagePreview ? (
-                      <div className="relative w-28 h-28 sm:w-32 sm:h-32 group">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Item Images ({existingImages.length + imageFiles.length}/5)
+                    </label>
+                    <span className="text-[10px] text-gray-400">PNG, JPG up to 5MB</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {/* Existing Images */}
+                    {existingImages.map((url, index) => (
+                      <div key={`existing-${index}`} className="relative aspect-square group">
                         <Image
-                          src={imagePreview}
-                          alt="Preview"
+                          src={url}
+                          alt={`Existing ${index}`}
                           fill
-                          className="object-cover rounded-2xl shadow-md"
+                          className="object-cover rounded-xl shadow-sm border border-gray-100"
                         />
                         <button
                           type="button"
-                          onClick={() => { setImageFile(null); setImagePreview(''); }}
-                          className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                          onClick={() => removeExistingImage(url)}
+                          className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all transform hover:scale-110"
                         >
-                          <FaTimes className="w-3 h-3" />
+                          <FaTimes className="w-2.5 h-2.5" />
                         </button>
                       </div>
-                    ) : (
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-gray-300">
-                        <FaImage className="w-8 h-8 text-gray-400 mb-2" />
-                        <span className="text-xs text-gray-500">No image</span>
+                    ))}
+
+                    {/* New Previews */}
+                    {imagePreviews.map((preview, index) => (
+                      <div key={`new-${index}`} className="relative aspect-square group animate-in fade-in zoom-in-0 duration-200">
+                        <Image
+                          src={preview}
+                          alt={`New preview ${index}`}
+                          fill
+                          className="object-cover rounded-xl shadow-sm border border-gray-100 ring-2 ring-indigo-500/20"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all transform hover:scale-110"
+                        >
+                          <FaTimes className="w-2.5 h-2.5" />
+                        </button>
+                        <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-md">NEW</div>
                       </div>
+                    ))}
+
+                    {/* Upload Trigger */}
+                    {(existingImages.length + imageFiles.length) < 5 && (
+                      <label className="relative aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group overflow-hidden">
+                        <div className="flex flex-col items-center text-center p-2">
+                          <FaCloudUploadAlt className="w-6 h-6 text-gray-400 group-hover:text-indigo-500 mb-1 transition-colors" />
+                          <span className="text-[10px] font-bold text-gray-500 group-hover:text-indigo-600">Add More</span>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          className="hidden"
+                          disabled={(existingImages.length + imageFiles.length) >= 5}
+                        />
+                      </label>
                     )}
-                  </div>
-                  <div className="flex-1 w-full">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Item Image
-                    </label>
-                    <label className="flex flex-col items-center justify-center w-full h-20 sm:h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group">
-                      <div className="flex flex-col items-center">
-                        <FaCloudUploadAlt className="w-6 h-6 text-gray-400 group-hover:text-indigo-500 mb-1 transition-colors" />
-                        <span className="text-xs text-gray-500 group-hover:text-indigo-600 font-medium">
-                          {imagePreview ? 'Change Image' : 'Click to upload image'}
-                        </span>
-                        <span className="text-[10px] text-gray-400 mt-0.5">PNG, JPG up to 5MB</span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                    </label>
                   </div>
                 </div>
 
@@ -465,11 +528,11 @@ export default function MenuManagementPage() {
 
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Description
+                      Product Description
                     </label>
                     <textarea
-                      rows={2}
-                      placeholder="Brief description of the dish..."
+                      rows={5}
+                      placeholder="Give your dish a tempting description. Ingredients, special prep, or origin story—it all sells better!"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all resize-none"
@@ -562,36 +625,37 @@ export default function MenuManagementPage() {
                       )}
                     </label>
                   </div>
-                </div>
 
-                {/* Additional Details */}
-                <div className="space-y-4 pt-2 border-t border-gray-100">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Additional Details</h3>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Ingredients
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Chicken, Cream, Butter, Spices"
-                      value={formData.ingredients}
-                      onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
-                    />
-                  </div>
+                  <div className="sm:col-span-2">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <label className="flex-1 flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
+                        <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${formData.isVeg ? 'border-green-600' : 'border-red-600'}`}>
+                          <div className={`w-2.5 h-2.5 rounded-full ${formData.isVeg ? 'bg-green-600' : 'bg-red-600'}`} />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700">
+                          {formData.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={formData.isVeg}
+                          onChange={(e) => setFormData({ ...formData, isVeg: e.target.checked })}
+                          className="ml-auto w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                        />
+                      </label>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Preparation Method
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Marinated for 4 hours, grilled in tandoor"
-                      value={formData.preparationMethod}
-                      onChange={(e) => setFormData({ ...formData, preparationMethod: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
-                    />
+                      <label className={`flex-1 flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${formData.isBestSeller ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
+                        <span className="text-lg">⭐</span>
+                        <span className={`text-sm font-semibold ${formData.isBestSeller ? 'text-amber-700' : 'text-gray-700'}`}>
+                          Best Seller Tag
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={formData.isBestSeller}
+                          onChange={(e) => setFormData({ ...formData, isBestSeller: e.target.checked })}
+                          className="ml-auto w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
 

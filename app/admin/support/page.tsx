@@ -131,6 +131,37 @@ export default function SupportPage() {
         </motion.div>
       </div>
 
+      {/* Data & Report Policy */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileHover={{ y: -5 }}
+        className="bg-gradient-to-br from-amber-50/50 via-white to-orange-50/50 p-8 rounded-[2.5rem] shadow-xl shadow-amber-600/10 border border-amber-100 relative overflow-hidden group"
+      >
+        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+          <FaChartLine size={100} />
+        </div>
+        <div className="flex flex-col md:flex-row md:items-center gap-8 relative z-10">
+          <div className="w-24 h-24 bg-amber-100 rounded-[2rem] flex items-center justify-center shrink-0 border-4 border-white shadow-lg">
+            <FaChartLine className="text-amber-600 text-4xl" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">{t.support_report_policy_title}</h3>
+              <span className="px-3 py-1 bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-amber-200">
+                Action Required
+              </span>
+            </div>
+            <p className="text-gray-700 font-semibold leading-relaxed max-w-3xl text-base whitespace-pre-line">
+              {t.support_report_policy_desc}
+            </p>
+            <div className="flex items-center gap-3 text-red-700 bg-red-50 px-5 py-3 rounded-2xl italic font-bold text-sm border border-red-100 w-fit shadow-sm">
+              <FaClock className="w-5 h-5 animate-pulse text-red-500" />
+              <span>{t.support_report_policy_warning}</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Security Section */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
