@@ -30,12 +30,12 @@ const content = {
       {
         title: '2. What This Platform Does',
         body: [
-          'Digital Menu Order helps restaurant owners run their business digitally — for free. You can:',
+          'Digital Menu Order helps restaurant owners run their business digitally — at an affordable price. You can:',
           '• Create a QR-based digital menu customers can scan at the table.',
           '• Receive and manage real-time orders.',
           '• Track your daily and monthly sales.',
           '• Export order reports to your email.',
-          'It\'s free to use during the current period.',
+          'It\'s affordable to use with a minimal annual subscription after the trial period.',
         ],
       },
       {

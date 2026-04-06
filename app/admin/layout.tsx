@@ -120,7 +120,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const { type, status, expiryDate } = user.subscription;
 
     if (type === 'free') {
-       return { name: 'Premium (Free)', daysLeft: null, isExpired: false, status: 'Active', expiryDate: 'Lifetime' };
+        return { name: 'Premium (Free)', daysLeft: null, isExpired: false, status: 'Active', expiryDate: 'Lifetime' };
+     }
+
+    if (type === 'trial') {
+       const expiry = expiryDate ? new Date(expiryDate) : null;
+       const diffDays = expiry ? Math.ceil((expiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+       return { 
+          name: 'Free Trial', 
+          daysLeft: expiry ? Math.max(0, diffDays) : null, 
+          isExpired: (expiry && diffDays <= 0) || status === 'expired', 
+          status: status || 'Active', 
+          expiryDate: expiry ? expiry.toLocaleDateString() : 'Continuous' 
+       };
     }
 
     if (!expiryDate) {

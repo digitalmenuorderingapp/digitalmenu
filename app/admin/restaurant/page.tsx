@@ -195,9 +195,7 @@ export default function RestaurantPage() {
     formData.append('logo', file);
 
     try {
-      const response = await api.put('/auth/restaurant/logo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await api.put('/auth/restaurant/logo', formData);
       if (response.data.success) {
         await refreshUser();
         setLogoPreview(response.data.logo);
@@ -277,11 +275,11 @@ export default function RestaurantPage() {
   // Subscription status calculation
   const getSubscriptionStatus = (): SubscriptionStatus => {
     if (!user?.subscription) {
-      return { 
-        name: 'Free Trial', 
-        daysLeft: 14, 
+      return {
+        name: 'Free Trial',
+        daysLeft: 14,
         totalDays: 14,
-        isExpired: false, 
+        isExpired: false,
         isTrial: true,
         status: 'trial',
         color: 'text-amber-600',
@@ -292,8 +290,9 @@ export default function RestaurantPage() {
     }
 
     const { type, status, expiryDate, startDate, daysLeft: backendDaysLeft } = user.subscription;
+    const today = new Date();
 
-    // Lifetime/Free plan (legacy)
+    // 1. Lifetime Free Plan
     if (type === 'free') {
       return { 
         name: 'Premium (Lifetime)', 
@@ -304,19 +303,18 @@ export default function RestaurantPage() {
         color: 'text-purple-600',
         bgColor: 'bg-purple-50',
         borderColor: 'border-purple-200',
-        iconColor: 'text-purple-500'
+        iconColor: 'text-purple-500',
+        expiryDate: 'Never'
       };
     }
 
-    // Trial subscription
-    if (type === 'trial' && expiryDate) {
-      const today = new Date();
-      const expiry = new Date(expiryDate);
-      const diffTime = expiry.getTime() - today.getTime();
-      const diffDays = backendDaysLeft !== undefined ? backendDaysLeft : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const expired = diffDays <= 0 || status === 'expired';
-      
-      const totalDays = (startDate && expiryDate) 
+    // 2. Free Trial Plan
+    if (type === 'trial') {
+      const expiry = expiryDate ? new Date(expiryDate) : null;
+      const diffDays = expiry ? Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : (backendDaysLeft || 0);
+      const expired = (expiry && diffDays <= 0) || status === 'expired';
+
+      const totalDays = (startDate && expiryDate)
         ? Math.ceil((new Date(expiryDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
         : 90;
 
@@ -327,7 +325,7 @@ export default function RestaurantPage() {
         isExpired: expired,
         isTrial: true,
         status: expired ? 'expired' : 'trial',
-        expiryDate: expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        expiryDate: expiry ? expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Continuous',
         color: expired ? 'text-red-600' : (diffDays < 7 ? 'text-orange-600' : 'text-amber-600'),
         bgColor: expired ? 'bg-red-50' : (diffDays < 7 ? 'bg-orange-50' : 'bg-amber-50'),
         borderColor: expired ? 'border-red-200' : (diffDays < 7 ? 'border-orange-200' : 'border-amber-200'),
@@ -335,15 +333,14 @@ export default function RestaurantPage() {
       };
     }
 
-    // Paid subscription
+    // 3. Paid Subscription
     if (expiryDate) {
-      const today = new Date();
       const expiry = new Date(expiryDate);
       const diffTime = expiry.getTime() - today.getTime();
       const diffDays = backendDaysLeft !== undefined ? backendDaysLeft : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const isExpired = diffDays <= 0 || status === 'expired';
 
-      const totalDays = (startDate && expiryDate) 
+      const totalDays = (startDate && expiryDate)
         ? Math.ceil((new Date(expiryDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
         : 365;
 
@@ -362,11 +359,12 @@ export default function RestaurantPage() {
       };
     }
 
-    return { 
-      name: 'Free Trial', 
-      daysLeft: 14, 
+    // Fallback
+    return {
+      name: 'Free Trial',
+      daysLeft: 14,
       totalDays: 14,
-      isExpired: false, 
+      isExpired: false,
       isTrial: true,
       status: 'trial',
       color: 'text-amber-600',
@@ -380,7 +378,7 @@ export default function RestaurantPage() {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
@@ -398,7 +396,7 @@ export default function RestaurantPage() {
 
       <div className="grid lg:grid-cols-2 gap-6 mb-8">
         {/* Subscription Status Card */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
@@ -406,7 +404,7 @@ export default function RestaurantPage() {
           className={`rounded-3xl shadow-sm border p-6 flex flex-col justify-between overflow-hidden relative group transition-all duration-500 ${subStatus.bgColor} ${subStatus.borderColor} hover:shadow-xl`}
         >
           <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-20 ${subStatus.bgColor.replace('50', '200')} group-hover:scale-110 transition-transform duration-500`} />
-          
+
           <div className="relative z-10">
             {/* Header */}
             <div className="flex items-center space-x-3 mb-6">
@@ -437,10 +435,10 @@ export default function RestaurantPage() {
                 {subStatus.expiryDate && (
                   <p className="text-xs text-gray-400 mt-1">Expires on {subStatus.expiryDate}</p>
                 )}
-                
+
                 {/* Progress bar */}
                 <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={`h-full rounded-full transition-all duration-500 ${(subStatus.daysLeft || 0) < 7 ? 'bg-red-500' : 'bg-amber-500'}`}
                     style={{ width: `${Math.min(100, ((subStatus.daysLeft || 0) / (subStatus.totalDays || 90)) * 100)}%` }}
                   />
@@ -529,21 +527,21 @@ export default function RestaurantPage() {
 
             {/* Contact Buttons */}
             <div className="flex flex-col gap-2">
-              <button 
+              <button
                 onClick={() => window.open('https://wa.me/919563401099', '_blank')}
                 className="w-full flex items-center justify-center space-x-2 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg shadow-green-100"
               >
                 <FaWhatsapp />
                 <span>Subscribe via WhatsApp</span>
               </button>
-              <button 
+              <button
                 onClick={() => window.location.href = 'mailto:digitalmenu.orderingapp@zohomail.in?subject=Subscription Request - Restaurant ID: ' + user?.shortId}
                 className="w-full flex items-center justify-center space-x-2 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
               >
                 <FaEnvelope className="text-gray-400" />
                 <span>Subscribe via Email</span>
               </button>
-              <button 
+              <button
                 onClick={handleExportReport}
                 disabled={isExportingReport}
                 className="w-full flex items-center justify-center space-x-2 py-3 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
@@ -560,27 +558,25 @@ export default function RestaurantPage() {
         </motion.div>
 
         {/* Logo Card - Integrated Drag & Drop */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
           whileHover={{ y: -4 }}
-          className={`rounded-3xl shadow-sm border p-8 flex flex-col items-center justify-center space-y-6 relative overflow-hidden transition-all duration-300 ${
-            isDragging 
-              ? 'border-indigo-500 bg-indigo-50 ring-4 ring-indigo-500/10' 
+          className={`rounded-3xl shadow-sm border p-8 flex flex-col items-center justify-center space-y-6 relative overflow-hidden transition-all duration-300 ${isDragging
+              ? 'border-indigo-500 bg-indigo-50 ring-4 ring-indigo-500/10'
               : 'bg-white border-gray-100 shadow-sm hover:shadow-xl'
-          }`}
+            }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           {/* Background Decorative Element */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full translate-x-1/3 -translate-y-1/3 -z-10 opacity-60" />
-          
+
           <div className="relative group">
-            <div className={`w-48 h-48 rounded-3xl overflow-hidden bg-white border-4 p-1 shadow-2xl flex items-center justify-center transition-all duration-300 ${
-              isDragging ? 'border-indigo-400 scale-105' : 'border-gray-50'
-            }`}>
+            <div className={`w-48 h-48 rounded-3xl overflow-hidden bg-white border-4 p-1 shadow-2xl flex items-center justify-center transition-all duration-300 ${isDragging ? 'border-indigo-400 scale-105' : 'border-gray-50'
+              }`}>
               {logoPreview ? (
                 <img
                   src={logoPreview}
@@ -608,7 +604,7 @@ export default function RestaurantPage() {
                 </div>
               )}
             </div>
-            
+
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -617,7 +613,7 @@ export default function RestaurantPage() {
             >
               <FaCamera className="w-6 h-6" />
             </button>
-            
+
             <input
               type="file"
               ref={fileInputRef}
@@ -634,7 +630,7 @@ export default function RestaurantPage() {
                 Your logo is the first thing customers see. Drop an image here or click the camera to update your brand identity.
               </p>
             </div>
-            
+
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               <button
                 type="button"
@@ -661,7 +657,7 @@ export default function RestaurantPage() {
         </motion.div>
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -669,154 +665,154 @@ export default function RestaurantPage() {
       >
         {/* Restaurant Details Form */}
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-100 border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500">
-        <div className="p-8 border-b border-gray-100 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full translate-x-1/2 -translate-y-1/2 -z-10 opacity-50" />
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-emerald-600">
-              <FaStore className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-gray-900 tracking-tight">Restaurant Profile</h3>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Public Information</p>
+          <div className="p-8 border-b border-gray-100 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full translate-x-1/2 -translate-y-1/2 -z-10 opacity-50" />
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-emerald-600">
+                <FaStore className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Restaurant Profile</h3>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Public Information</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Restaurant Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUtensils className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    name="restaurantName"
+                    required
+                    value={formData.restaurantName}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
+                    placeholder="Enter restaurant name"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">This will be displayed on your digital menu</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Owner Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUser className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    name="ownerName"
+                    required
+                    value={formData.ownerName}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
+                    placeholder="Enter owner name"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">
-                Restaurant Name <span className="text-red-500">*</span>
+                Phone Number
               </label>
-              <div className="relative group">
+              <div className="relative group max-w-md">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUtensils className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                  <FaPhone className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 </div>
                 <input
-                  type="text"
-                  name="restaurantName"
-                  required
-                  value={formData.restaurantName}
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
-                  placeholder="Enter restaurant name"
+                  placeholder="Enter phone number"
                 />
               </div>
-              <p className="text-xs text-gray-500">This will be displayed on your digital menu</p>
             </div>
 
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">
-                Owner Name <span className="text-red-500">*</span>
+                Address <span className="text-red-500">*</span>
               </label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUser className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <FaMapMarkerAlt className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 </div>
-                <input
-                  type="text"
-                  name="ownerName"
+                <textarea
+                  name="address"
                   required
-                  value={formData.ownerName}
+                  rows={3}
+                  value={formData.address}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
-                  placeholder="Enter owner name"
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none"
+                  placeholder="Enter restaurant address"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Phone Number
-            </label>
-            <div className="relative group max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaPhone className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-              </div>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
-                placeholder="Enter phone number"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Address <span className="text-red-500">*</span>
-            </label>
-            <div className="relative group">
-              <div className="absolute top-3 left-3 pointer-events-none">
-                <FaMapMarkerAlt className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-              </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Restaurant Motto
+              </label>
               <textarea
-                name="address"
-                required
-                rows={3}
-                value={formData.address}
+                name="motto"
+                rows={2}
+                value={formData.motto}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none"
-                placeholder="Enter restaurant address"
+                className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none"
+                placeholder="e.g., 'Taste the Tradition' or 'Good Food, Good Mood'"
               />
+              <p className="text-xs text-gray-500 text-right">{formData.motto?.length || 0}/100 characters</p>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Restaurant Motto
-            </label>
-            <textarea
-              name="motto"
-              rows={2}
-              value={formData.motto}
-              onChange={handleInputChange}
-              className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none"
-              placeholder="e.g., 'Taste the Tradition' or 'Good Food, Good Mood'"
-            />
-            <p className="text-xs text-gray-500 text-right">{formData.motto?.length || 0}/100 characters</p>
-          </div>
-
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <p className="text-sm text-gray-500">
-              <span className="text-red-500">*</span> Required fields
-            </p>
-            <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={() => router.push('/admin')}
-                className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center space-x-2 font-medium shadow-lg shadow-indigo-200"
-              >
-                {isSaving ? (
-                  <>
-                    <FaSpinner className="w-4 h-4 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <FaSave className="w-4 h-4" />
-                    <span>Save Changes</span>
-                  </>
-                )}
-              </button>
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <p className="text-sm text-gray-500">
+                <span className="text-red-500">*</span> Required fields
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => router.push('/admin')}
+                  className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center space-x-2 font-medium shadow-lg shadow-indigo-200"
+                >
+                  {isSaving ? (
+                    <>
+                      <FaSpinner className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaSave className="w-4 h-4" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
-      </div>
-    </motion.div>
+          </form>
+        </div>
+      </motion.div>
 
-    {/* Delete Account Section - Collapsed by default */}
-    <div className="mt-12 pt-8 border-t border-gray-100 mb-20">
+      {/* Delete Account Section - Collapsed by default */}
+      <div className="mt-12 pt-8 border-t border-gray-100 mb-20">
         <details className="group">
           <summary className="flex items-center justify-between cursor-pointer list-none">
             <div className="flex items-center space-x-3">
@@ -838,7 +834,7 @@ export default function RestaurantPage() {
               <div>
                 <h4 className="font-semibold text-red-800 text-sm">Warning: This action cannot be undone</h4>
                 <p className="text-xs text-red-600 mt-1">
-                  All your restaurant data including menu items, orders, and ledger history will be permanently deleted. 
+                  All your restaurant data including menu items, orders, and ledger history will be permanently deleted.
                   Before deletion, we will send you an Excel export of all your data via email.
                 </p>
               </div>

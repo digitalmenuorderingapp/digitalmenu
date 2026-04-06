@@ -219,11 +219,11 @@ export default function DashboardPage() {
     try {
       // Recalculate both transactions and analytical summary
       await api.post('/ledger/recalculate', { date: selectedDate });
-      
+
       // Re-fetch unified ledger data
       await fetchLedger(selectedDate);
       await fetchMonthlyLedgers();
-      
+
       toast.success('Dashboard metrics refreshed successfully!');
       fetchStats();
     } catch (error: any) {
@@ -247,12 +247,13 @@ export default function DashboardPage() {
   // Subscription calculation
   const getSubscriptionStatus = () => {
     if (!user?.subscription) {
-       return { name: 'Basic', daysLeft: 0, isExpired: false, color: 'text-gray-400' };
+      return { name: 'Basic', daysLeft: 0, isExpired: false, color: 'text-gray-400' };
     }
 
     const { type, status, expiryDate } = user.subscription;
+    const today = new Date();
 
-    // 1. Check for lifetime/free subscription (Legacy)
+    // 1. Handle Lifetime Free (Legacy)
     if (type === 'free') {
       return { 
         name: 'Premium (LIFETIME)', 
@@ -262,26 +263,23 @@ export default function DashboardPage() {
       };
     }
 
-    // 2. Check for Trial
-    if (type === 'trial' && expiryDate) {
-      const today = new Date();
-      const expiry = new Date(expiryDate);
-      const diffTime = expiry.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const expired = diffDays <= 0 || status === 'expired';
+    // 2. Handle Free Trial
+    if (type === 'trial') {
+      const expiry = expiryDate ? new Date(expiryDate) : null;
+      const diffDays = expiry ? Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      const expired = (expiry && diffDays <= 0) || status === 'expired';
 
       return {
         name: 'Free Trial',
-        daysLeft: Math.max(0, diffDays),
+        daysLeft: expiry ? Math.max(0, diffDays) : null,
         isExpired: expired,
-        expiryDate: expiry.toLocaleDateString(),
-        color: (diffDays < 7 || expired) ? 'text-red-400' : 'text-amber-300'
+        expiryDate: expiry ? expiry.toLocaleDateString() : 'Continuous',
+        color: (expiry && diffDays < 7 || expired) ? 'text-red-400' : 'text-amber-300'
       };
     }
 
     // 3. Normal Paid Subscription
     if (expiryDate) {
-      const today = new Date();
       const expiry = new Date(expiryDate);
       const diffTime = expiry.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -296,11 +294,11 @@ export default function DashboardPage() {
     }
 
     // Default Fallback
-    return { 
-      name: 'Basic Plan', 
-      daysLeft: 0, 
-      isExpired: false, 
-      color: 'text-gray-400' 
+    return {
+      name: 'Basic Plan',
+      daysLeft: 0,
+      isExpired: false,
+      color: 'text-gray-400'
     };
   };
 
@@ -345,49 +343,49 @@ export default function DashboardPage() {
               backgroundSize: '20px 20px'
             }}></div>
           </div>
-          
+
           <div className="relative z-10">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <div className="flex-1">
                 {/* Admin Badge */}
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-4 text-center sm:text-left">
-                    {user?.logo ? (
-                      <div className="relative group p-0.5 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl shadow-2xl shrink-0">
-                        <img 
-                          src={user.logo} 
-                          alt="Restaurant Logo" 
-                          className="w-20 h-20 lg:w-24 lg:h-24 rounded-[1.25rem] object-cover border-4 border-slate-900 group-hover:scale-[1.02] transition-transform duration-500"
-                        />
-                        <div className="absolute -bottom-2 -right-2 sm:-bottom-2 sm:-right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-slate-900 shadow-lg animate-pulse" title="System Online"></div>
-                      </div>
-                    ) : (
-                      <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center border-2 border-white/10 shadow-3xl shrink-0">
-                        <FaUtensils className="w-10 h-10 text-indigo-300 opacity-50" />
-                      </div>
-                    )}
-                    <div className="flex-1 flex flex-col items-center sm:items-start">
-                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 mb-2 sm:mb-1">
-                        <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tighter text-white">
-                           {user?.restaurantName || 'DigitalMenu Admin'}
-                        </h1>
-                        <div className="flex items-center gap-2">
-                           <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-black text-indigo-300 rounded-lg tracking-widest uppercase mt-0.5">Premium</span>
-                           <button 
-                             onClick={copyRestaurantId}
-                             className="px-2 py-0.5 bg-white/5 border border-white/10 text-[9px] font-medium text-purple-200/50 rounded-lg hover:bg-white/10 transition-all flex items-center gap-1.5 mt-0.5 group"
-                             title={t.sub_copy_id}
-                           >
-                             <span className="opacity-0 group-hover:opacity-100 transition-opacity">ID:</span>
-                             <code className="text-[10px]">{user?._id?.slice(-6).toUpperCase()}</code>
-                             <FaSyncAlt className="w-2 h-2" />
-                           </button>
-                        </div>
-                      </div>
-                      <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md mx-auto sm:mx-0 leading-relaxed italic">
-                        {user?.motto ? `"${user.motto}"` : 'Manage your digital menu, track orders, and grow your business with our state-of-the-art platform.'}
-                      </p>
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-4 text-center sm:text-left">
+                  {user?.logo ? (
+                    <div className="relative group p-0.5 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl shadow-2xl shrink-0">
+                      <img
+                        src={user.logo}
+                        alt="Restaurant Logo"
+                        className="w-20 h-20 lg:w-24 lg:h-24 rounded-[1.25rem] object-cover border-4 border-slate-900 group-hover:scale-[1.02] transition-transform duration-500"
+                      />
+                      <div className="absolute -bottom-2 -right-2 sm:-bottom-2 sm:-right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-slate-900 shadow-lg animate-pulse" title="System Online"></div>
                     </div>
+                  ) : (
+                    <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center border-2 border-white/10 shadow-3xl shrink-0">
+                      <FaUtensils className="w-10 h-10 text-indigo-300 opacity-50" />
+                    </div>
+                  )}
+                  <div className="flex-1 flex flex-col items-center sm:items-start">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 mb-2 sm:mb-1">
+                      <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tighter text-white">
+                        {user?.restaurantName || 'DigitalMenu Admin'}
+                      </h1>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 text-[10px] font-black text-indigo-300 rounded-lg tracking-widest uppercase mt-0.5">Premium</span>
+                        <button
+                          onClick={copyRestaurantId}
+                          className="px-2 py-0.5 bg-white/5 border border-white/10 text-[9px] font-medium text-purple-200/50 rounded-lg hover:bg-white/10 transition-all flex items-center gap-1.5 mt-0.5 group"
+                          title={t.sub_copy_id}
+                        >
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity">ID:</span>
+                          <code className="text-[10px]">{user?._id?.slice(-6).toUpperCase()}</code>
+                          <FaSyncAlt className="w-2 h-2" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-purple-200/70 text-sm lg:text-base font-medium max-w-md mx-auto sm:mx-0 leading-relaxed italic">
+                      {user?.motto ? `"${user.motto}"` : 'Manage your digital menu, track orders, and grow your business with our state-of-the-art platform.'}
+                    </p>
                   </div>
+                </div>
 
                 {/* Restaurant Info Cards */}
                 {isLoading ? (
@@ -496,7 +494,7 @@ export default function DashboardPage() {
       {/* Subscription Alert & Support Section */}
       {(subStatus.isExpired || subStatus.daysLeft !== null && subStatus.daysLeft < 10) && (
         <div className="mb-8">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className={`rounded-2xl p-6 border-2 ${subStatus.isExpired ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} shadow-xl`}
@@ -511,7 +509,7 @@ export default function DashboardPage() {
                     {t.sub_payment_manual}
                   </h2>
                 </div>
-                
+
                 <div className={`p-4 rounded-xl ${subStatus.isExpired ? 'bg-red-100/50' : 'bg-amber-100/50'} border ${subStatus.isExpired ? 'border-red-200' : 'border-amber-200'}`}>
                   <p className={`whitespace-pre-line font-bold ${subStatus.isExpired ? 'text-red-800' : 'text-amber-800'}`}>
                     {t.sub_payment_desc}
@@ -519,20 +517,20 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                   <a 
-                     href={`https://wa.me/918017401099?text=Hello, I want to subscribe for my restaurant ID: ${user?._id}`}
-                     target="_blank"
-                     rel="noopener noreferrer"
-                     className="flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] text-white rounded-xl font-black shadow-lg hover:brightness-110 transition-all"
-                   >
-                     <FaPhone className="rotate-90" /> {t.sub_contact_whatsapp}
-                   </a>
-                   <a 
-                     href={`mailto:sahin401099@gmail.com?subject=Subscription Recognition&body=Hello, I have paid for my restaurant. My ID is: ${user?._id}. Attached is the screenshot.`}
-                     className="flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-xl font-black shadow-lg hover:bg-slate-800 transition-all"
-                   >
-                     <FaEnvelope /> {t.sub_contact_email}
-                   </a>
+                  <a
+                    href={`https://wa.me/918017401099?text=Hello, I want to subscribe for my restaurant ID: ${user?._id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] text-white rounded-xl font-black shadow-lg hover:brightness-110 transition-all"
+                  >
+                    <FaPhone className="rotate-90" /> {t.sub_contact_whatsapp}
+                  </a>
+                  <a
+                    href={`mailto:sahin401099@gmail.com?subject=Subscription Recognition&body=Hello, I have paid for my restaurant. My ID is: ${user?._id}. Attached is the screenshot.`}
+                    className="flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-xl font-black shadow-lg hover:bg-slate-800 transition-all"
+                  >
+                    <FaEnvelope /> {t.sub_contact_email}
+                  </a>
                 </div>
               </div>
 
@@ -541,7 +539,7 @@ export default function DashboardPage() {
                   <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] block mb-3">{t.sub_rest_id}</span>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 group">
                     <code className="text-xs font-black text-indigo-600 truncate">{user?._id}</code>
-                    <button 
+                    <button
                       onClick={copyRestaurantId}
                       className="ml-2 p-2 hover:bg-indigo-50 text-indigo-400 hover:text-indigo-600 rounded-lg transition-colors shrink-0"
                       title={t.sub_copy_id}
@@ -606,44 +604,44 @@ export default function DashboardPage() {
             <div className="p-6">
               {/* Summary Cards - Daily + Month-to-Date */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                <StatsCard 
-                  label="Total Orders" 
-                  value={ledger.counts.totalOrders} 
-                  variant="indigo" 
-                  icon={<FaClipboardList />} 
+                <StatsCard
+                  label="Total Orders"
+                  value={ledger.counts.totalOrders}
+                  variant="indigo"
+                  icon={<FaClipboardList />}
                 />
-                <StatsCard 
-                  label="Served Orders" 
-                  value={ledger.counts.servedOrders} 
-                  variant="green" 
-                  icon={<FaCheckCircle />} 
+                <StatsCard
+                  label="Served Orders"
+                  value={ledger.counts.servedOrders}
+                  variant="green"
+                  icon={<FaCheckCircle />}
                 />
-                <StatsCard 
-                  label="Counter Balance" 
-                  value={`₹${Math.round(ledger.counter.balance)}`} 
-                  variant="amber" 
-                  icon={<FaMoneyBillWave />} 
+                <StatsCard
+                  label="Counter Balance"
+                  value={`₹${Math.round(ledger.counter.balance)}`}
+                  variant="amber"
+                  icon={<FaMoneyBillWave />}
                   description={ledger.counter.refunded > 0 ? `Ref: ₹${ledger.counter.refunded}` : undefined}
                 />
-                <StatsCard 
-                  label="Online Balance" 
-                  value={`₹${Math.round(ledger.online.balance)}`} 
-                  variant="blue" 
-                  icon={<FaCreditCard />} 
+                <StatsCard
+                  label="Online Balance"
+                  value={`₹${Math.round(ledger.online.balance)}`}
+                  variant="blue"
+                  icon={<FaCreditCard />}
                   description={ledger.online.refunded > 0 ? `Ref: ₹${ledger.online.refunded}` : undefined}
                 />
-                <StatsCard 
-                  label="Today Revenue" 
-                  value={`₹${Math.round(ledger.total.totalRevenue)}`} 
-                  variant="purple" 
-                  icon={<FaChartLine />} 
+                <StatsCard
+                  label="Today Revenue"
+                  value={`₹${Math.round(ledger.total.totalRevenue)}`}
+                  variant="purple"
+                  icon={<FaChartLine />}
                   description="Earned Income"
                 />
-                <StatsCard 
-                  label="Settled Balance" 
-                  value={`₹${Math.round(ledger.total.netBalance)}`} 
-                  variant="emerald" 
-                  icon={<FaMoneyBillWave />} 
+                <StatsCard
+                  label="Settled Balance"
+                  value={`₹${Math.round(ledger.total.netBalance)}`}
+                  variant="emerald"
+                  icon={<FaMoneyBillWave />}
                   description={`${new Date().toLocaleDateString('en-IN', { month: 'short' })}: ₹${Math.round(monthToDateStats.netBalance)}`}
                 />
               </div>
@@ -726,15 +724,15 @@ export default function DashboardPage() {
 
       {/* Performance Chart - Date-wise Orders */}
       <div className="mt-8">
-        <DailyOrdersChart 
-          data={monthlyLedgers.length > 0 ? monthlyLedgers.map(l => ({ 
-            date: l.date, 
-            orders: l.counts.totalOrders, 
-            revenue: l.total.netBalance 
+        <DailyOrdersChart
+          data={monthlyLedgers.length > 0 ? monthlyLedgers.map(l => ({
+            date: l.date,
+            orders: l.counts.totalOrders,
+            revenue: l.total.netBalance
           })).reverse() : [
             { date: new Date().toISOString().split('T')[0], orders: 0, revenue: 0 }
-          ]} 
-          isLoading={isLoadingMonthly} 
+          ]}
+          isLoading={isLoadingMonthly}
           mode="daily"
         />
       </div>

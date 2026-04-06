@@ -607,8 +607,8 @@ export default function MarketingHomeClient() {
                         {lang === 'bn' ? 'আপনার সব অর্ডার ও রিপোর্ট ইনস্ট্যান্টলি পাঠানো হবে।' : lang === 'hi' ? 'अपने सभी ऑर्डर और रिपोर्ट तुरंत प्राप्त करें।' : 'All orders & reports sent to your inbox instantly.'}
                       </div>
                     </div>
-                    <span className="ml-auto text-[10px] font-black text-green-600 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full whitespace-nowrap self-start">
-                      {lang === 'bn' ? 'বিনামূল্যে' : 'FREE'}
+                    <span className="ml-auto text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full whitespace-nowrap self-start">
+                      {lang === 'bn' ? 'অন্তর্ভুক্ত' : lang === 'hi' ? 'शामिल' : 'INCLUDED'}
                     </span>
                   </div>
 
@@ -753,10 +753,10 @@ export default function MarketingHomeClient() {
                 </div>
                 <p className={`text-slate-400 text-sm leading-relaxed mb-7 max-w-xs ${lang !== 'en' ? 'indic-spacing' : ''}`}>
                   {lang === 'bn'
-                    ? 'আপনার রেস্তোরাঁর জন্য ডিজিটাল মেনু ও অর্ডার ম্যানেজমেন্ট — সম্পূর্ণ বিনামূল্যে।'
+                    ? 'আপনার রেস্তোরাঁর জন্য ডিজিটাল মেনু ও অর্ডার ম্যানেজমেন্ট — সাশ্রয়ী বার্ষিক সাবস্ক্রিপশন।'
                     : lang === 'hi'
-                      ? 'आपके रेस्तरां के लिए डिजिटल मेनू और ऑर्डर मैनेजमेंट — बिल्कुल मुफ्त।'
-                      : 'Digital menu & order management for your restaurant — completely free.'}
+                      ? 'आपके रेस्तरां के लिए डिजिटल मेनू और ऑर्डर मैनेजमेंट — किफायती वार्षिक सदस्यता।'
+                      : 'Digital menu & order management for your restaurant — affordable subscription per year.'}
                 </p>
                 {/* Contact buttons */}
                 <div className="flex flex-col gap-3">

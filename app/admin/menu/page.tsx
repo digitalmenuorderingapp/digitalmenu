@@ -184,16 +184,12 @@ export default function MenuManagementPage() {
 
     try {
       if (editingItem) {
-        await api.put(`/menu/${editingItem._id}`, data, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await api.put(`/menu/${editingItem._id}`, data);
         toast.success('Menu item updated');
         // Emit socket event to notify customers
         socketService.emit('menuUpdated', { restaurantId: editingItem.restaurantId });
       } else {
-        const response = await api.post('/menu', data, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const response = await api.post('/menu', data);
         toast.success('Menu item created');
         // Emit socket event to notify customers
         socketService.emit('menuUpdated', { restaurantId: response.data.data?.restaurantId });
