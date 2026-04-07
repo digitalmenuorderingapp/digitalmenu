@@ -407,19 +407,19 @@ export default function MenuTab({
 
               <div className="flex justify-between items-start mb-6">
                   <div className="flex-1 pr-6">
-                    <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight">
                       {selectedItem.name}
                     </h2>
                   </div>
-                  <div className="flex flex-col items-end bg-gray-900 text-white p-4 rounded-[2rem] shadow-xl">
+                  <div className="flex flex-col items-end bg-gray-900 text-white p-3 sm:p-4 rounded-xl sm:rounded-[2rem] shadow-xl">
                     {selectedItem.offerPrice ? (
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-3xl font-black leading-none">₹{selectedItem.offerPrice}</span>
-                        <span className="text-lg text-gray-400 line-through">₹{selectedItem.price}</span>
-                        <span className="text-base font-bold text-emerald-400">{Math.round(((selectedItem.price - selectedItem.offerPrice) / selectedItem.price) * 100)}% off</span>
+                      <div className="flex items-baseline gap-1.5 sm:gap-3 flex-wrap justify-end">
+                        <span className="text-xl sm:text-2xl md:text-3xl font-black leading-none">₹{selectedItem.offerPrice}</span>
+                        <span className="text-sm sm:text-base text-gray-400 line-through">₹{selectedItem.price}</span>
+                        <span className="text-xs sm:text-sm font-bold text-emerald-400">{Math.round(((selectedItem.price - selectedItem.offerPrice) / selectedItem.price) * 100)}% off</span>
                       </div>
                     ) : (
-                      <span className="text-3xl font-black leading-none">₹{selectedItem.price}</span>
+                      <span className="text-xl sm:text-2xl md:text-3xl font-black leading-none">₹{selectedItem.price}</span>
                     )}
                   </div>
                 </div>
@@ -441,19 +441,20 @@ export default function MenuTab({
                       {getItemQuantity(selectedItem._id) === 0 ? (
                         <button 
                           onClick={() => addToCart(selectedItem)}
-                          className="w-full h-14 bg-gray-900 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:bg-black transition-all"
+                          className="w-full h-12 sm:h-14 bg-gray-900 text-white text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest rounded-xl sm:rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:bg-black transition-all"
                         >
                           <FaPlus className="w-3 h-3 text-indigo-400" />
-                          Add to Order
+                          <span className="hidden sm:inline">Add to Order</span>
+                          <span className="sm:hidden">Add</span>
                         </button>
                       ) : (
-                        <div className="h-14 bg-indigo-600 rounded-2xl flex items-center p-1 shadow-xl">
-                          <button onClick={() => removeFromCart(selectedItem._id)} className="w-12 h-12 flex items-center justify-center text-white"><FaMinus /></button>
+                        <div className="h-12 sm:h-14 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center p-1 shadow-xl">
+                          <button onClick={() => removeFromCart(selectedItem._id)} className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-white"><FaMinus className="w-3 h-3 sm:w-4 sm:h-4" /></button>
                           <div className="flex-1 text-center">
                             <p className="text-sm font-black text-white">{getItemQuantity(selectedItem._id)}</p>
-                            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-tighter">In Cart</p>
+                            <p className="text-[7px] sm:text-[8px] font-black text-indigo-200 uppercase tracking-tighter hidden sm:block">In Cart</p>
                           </div>
-                          <button onClick={() => addToCart(selectedItem)} className="w-12 h-12 flex items-center justify-center text-white"><FaPlus /></button>
+                          <button onClick={() => addToCart(selectedItem)} className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-white"><FaPlus className="w-3 h-3 sm:w-4 sm:h-4" /></button>
                         </div>
                       )}
                     </div>
@@ -464,10 +465,10 @@ export default function MenuTab({
                         setSelectedItem(null);
                         onGoToCart?.();
                       }}
-                      className="relative w-14 h-14 bg-orange-500 text-white rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200"
+                      className="relative w-12 h-12 sm:w-14 sm:h-14 bg-orange-500 text-white rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200"
                       title="Go to Cart"
                     >
-                      <FaShoppingCart className="w-5 h-5" />
+                      <FaShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                       {totalCartCount > 0 && (
                         <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm tabular-nums">
                           {totalCartCount}
