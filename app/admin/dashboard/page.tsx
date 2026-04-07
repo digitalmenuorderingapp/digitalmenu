@@ -8,7 +8,7 @@ import { TRANSLATIONS, Language } from '@/utils/translations';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
 import { socketService } from '@/services/socket';
-import { playNotificationSound } from '@/utils/notifications';
+import { playNewOrderSound } from '@/utils/notifications';
 import { getTodayISTDateString } from '@/utils/date';
 import {
   FaUtensils,
@@ -51,19 +51,17 @@ interface Stats {
 interface Ledger {
   _id: string;
   date: string;
-  counter: {
+  cash: {
     received: number;
-    refunded: number;
     balance: number;
   };
   online: {
     received: number;
-    refunded: number;
+    verified: number;
     balance: number;
   };
   total: {
     received: number;
-    refunded: number;
     netBalance: number;
     totalRevenue: number;
   };
@@ -141,7 +139,7 @@ export default function DashboardPage() {
 
       const handleNewOrder = (order: any) => {
         toast.success(`New order from Table #${order.tableNumber}!`);
-        playNotificationSound();
+        playNewOrderSound();
         fetchStats();
         fetchLedger(selectedDate);
       };
@@ -315,20 +313,18 @@ export default function DashboardPage() {
   const monthToDateStats = monthlyLedgers.reduce((acc, ledger) => {
     acc.totalOrders += ledger.counts?.totalOrders || 0;
     acc.servedOrders += ledger.counts?.servedOrders || 0;
-    acc.counterBalance += ledger.counter?.balance || 0;
+    acc.cashBalance += ledger.cash?.balance || 0;
     acc.onlineBalance += ledger.online?.balance || 0;
     acc.netBalance += ledger.total?.netBalance || 0;
     acc.totalRevenue += ledger.total?.totalRevenue || 0;
-    acc.totalRefunded += (ledger.counter?.refunded || 0) + (ledger.online?.refunded || 0);
     return acc;
   }, {
     totalOrders: 0,
     servedOrders: 0,
-    counterBalance: 0,
+    cashBalance: 0,
     onlineBalance: 0,
     netBalance: 0,
-    totalRevenue: 0,
-    totalRefunded: 0
+    totalRevenue: 0
   });
 
   return (
@@ -617,18 +613,16 @@ export default function DashboardPage() {
                   icon={<FaCheckCircle />}
                 />
                 <StatsCard
-                  label="Counter Balance"
-                  value={`₹${Math.round(ledger.counter.balance)}`}
+                  label="Cash Balance"
+                  value={`₹${Math.round(ledger.cash?.balance || 0)}`}
                   variant="amber"
                   icon={<FaMoneyBillWave />}
-                  description={ledger.counter.refunded > 0 ? `Ref: ₹${ledger.counter.refunded}` : undefined}
                 />
                 <StatsCard
                   label="Online Balance"
                   value={`₹${Math.round(ledger.online.balance)}`}
                   variant="blue"
                   icon={<FaCreditCard />}
-                  description={ledger.online.refunded > 0 ? `Ref: ₹${ledger.online.refunded}` : undefined}
                 />
                 <StatsCard
                   label="Today Revenue"
@@ -651,20 +645,12 @@ export default function DashboardPage() {
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
                     <FaMoneyBillWave className="w-4 h-4 text-amber-600" />
-                    <span>Counter Summary</span>
+                    <span>Cash Summary</span>
                   </h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Gross Received</span>
-                      <span className="font-medium">₹{Math.round(ledger.counter.received)}</span>
-                    </div>
-                    <div className="flex justify-between text-red-600">
-                      <span>Total Refunded</span>
-                      <span className="font-medium">₹{Math.round(ledger.counter.refunded)}</span>
-                    </div>
                     <div className="flex justify-between border-t pt-1 font-semibold">
                       <span>In Hand (Net)</span>
-                      <span className="text-amber-700">₹{Math.round(ledger.counter.balance)}</span>
+                      <span className="text-amber-700">₹{Math.round(ledger.cash?.balance || 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -675,14 +661,6 @@ export default function DashboardPage() {
                     <span>Online Summary</span>
                   </h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Gross Received</span>
-                      <span className="font-medium">₹{Math.round(ledger.online.received)}</span>
-                    </div>
-                    <div className="flex justify-between text-red-600">
-                      <span>Total Refunded</span>
-                      <span className="font-medium">₹{Math.round(ledger.online.refunded)}</span>
-                    </div>
                     <div className="flex justify-between border-t pt-1 font-semibold">
                       <span>Settled Online</span>
                       <span className="text-blue-700">₹{Math.round(ledger.online.balance)}</span>

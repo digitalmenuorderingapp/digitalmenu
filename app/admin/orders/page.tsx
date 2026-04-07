@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
@@ -19,7 +19,6 @@ import {
   FaUsers,
   FaMoneyBillWave,
   FaTimes,
-  FaUndo,
   FaCreditCard,
   FaUtensils,
   FaCheck,
@@ -30,7 +29,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import { socketService } from '@/services/socket';
-import { playNotificationSound } from '@/utils/notifications';
+import { playNewOrderSound, playPaymentVerifiedSound, playCancelledSound } from '@/utils/notifications';
 import { getTodayISTDateString } from '@/utils/date';
 import Button from '@/components/ui/Button';
 import OrderCard, { isOrderPaid, getPaymentStatusDisplay } from '@/components/ui/OrderCard';
@@ -48,19 +47,14 @@ interface Order {
   specialInstructions?: string;
   orderType?: 'dine-in' | 'takeaway' | 'delivery';
   deviceId: string;
+  adminId?: string;
   items: Array<{ name: string; quantity: number; price: number }>;
   totalAmount: number;
   status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
-  paymentMethod?: 'ONLINE' | 'COUNTER';
+  paymentMethod?: 'ONLINE' | 'CASH';
   paymentStatus: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
   paymentDueStatus?: 'CLEAR' | 'DUE';
-  collectedVia?: 'COUNTER' | 'ONLINE' | 'NOT_COLLECTED';
-  refund: {
-    status: 'NOT_REQUIRED' | 'PENDING' | 'COMPLETED';
-    method?: string;
-    amount?: number;
-    processedAt?: string;
-  };
+  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
   utr?: string;
   rejectionReason?: string;
   cancellationReason?: string;
@@ -84,14 +78,14 @@ export default function OrdersPage() {
   const [selectedDate, setSelectedDate] = useState(() => getTodayISTDateString());
   const { user } = useAuth();
   
-  const [actionModalOpen, setActionModalOpen] = useState(false);
-  const [currentAction, setCurrentAction] = useState<{ id: string; type: string } | null>(null);
-  const [actionPayload, setActionPayload] = useState<any>({});
   
   const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
+  const fetchOrdersRef = useRef<() => Promise<void>>();
+  // Track orders received via socket to ensure they persist after fetch
+  const socketOrdersRef = useRef<Map<string, Order>>(new Map());
 
   useEffect(() => {
     if (user?._id) {
@@ -99,33 +93,75 @@ export default function OrdersPage() {
       socketService.join(user._id);
 
       const handleNewOrder = (order: Order) => {
-        toast.success(`New order from Table #${order.tableNumber}!`);
-        playNotificationSound();
+        // Only process orders for this admin
+        if (order.deviceId !== user._id && order.adminId !== user._id) return;
+        
+        toast.success(`New order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber}!`);
+        playNewOrderSound();
+        
+        // Store in socket orders ref to ensure it persists after fetch
+        socketOrdersRef.current.set(order._id, order);
+        
+        // Add new order to the top of the list immediately for better UX
+        setOrders(prevOrders => {
+          // Check if order already exists
+          if (prevOrders.find(o => o._id === order._id)) {
+            return prevOrders;
+          }
+          // Add new order at the top
+          return [order, ...prevOrders];
+        });
+        
+        // Refresh to get complete data - fetchOrders will merge socket orders
+        fetchOrdersRef.current?.();
       };
 
       const handleOrderCancelled = (order: Order) => {
-        toast.error(`Order from Table #${order.tableNumber} was cancelled`);
-        playNotificationSound();
+        // Only process orders for this admin
+        if (order.deviceId !== user._id && order.adminId !== user._id) return;
+        toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was cancelled`);
+        playCancelledSound();
+        // Remove from socket orders ref
+        socketOrdersRef.current.delete(order._id);
+        fetchOrdersRef.current?.();
       };
 
       const handleOrderRejected = (order: Order) => {
-        toast.error(`Order from Table #${order.tableNumber} was rejected`);
-        playNotificationSound();
+        // Only process orders for this admin
+        if (order.deviceId !== user._id && order.adminId !== user._id) return;
+        toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was rejected`);
+        playCancelledSound();
+        // Remove from socket orders ref
+        socketOrdersRef.current.delete(order._id);
+        fetchOrdersRef.current?.();
       };
 
       const handlePaymentVerified = (order: Order) => {
+        // Only process orders for this admin
+        if (order.deviceId !== user._id && order.adminId !== user._id) return;
         toast.success(`Payment verified for order #${order.orderNumber || order._id.slice(-8)}!`);
-        playNotificationSound();
+        playPaymentVerifiedSound();
+        fetchOrdersRef.current?.();
       };
 
       const handleOrderUpdate = (updatedOrder: Order) => {
+        // Only process orders for this admin
+        if (updatedOrder.deviceId !== user._id && updatedOrder.adminId !== user._id) return;
+        
+        // Update in socket orders ref if exists
+        if (socketOrdersRef.current.has(updatedOrder._id)) {
+          socketOrdersRef.current.set(updatedOrder._id, updatedOrder);
+        }
+        
         setOrders(prevOrders => {
           const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
           if (index !== -1) {
+            // Update existing order in place
             const newOrders = [...prevOrders];
             newOrders[index] = updatedOrder;
             return newOrders;
           }
+          // If order not in list, add it at the top (new order via update)
           return [updatedOrder, ...prevOrders];
         });
       };
@@ -159,7 +195,22 @@ export default function OrdersPage() {
       }
 
       const response = await api.get(`/order?${params.toString()}`);
-      setOrders(response.data.data || []);
+      const fetchedOrders = response.data.data || [];
+      
+      // Merge any socket-received orders that might be missing from API response
+      // (e.g., due to timing or date filtering issues)
+      const fetchedIds = new Set(fetchedOrders.map((o: Order) => o._id));
+      const missingSocketOrders = Array.from(socketOrdersRef.current.values())
+        .filter(o => !fetchedIds.has(o._id));
+      
+      // Clean up socketOrdersRef for orders that are now in the fetched list
+      fetchedOrders.forEach((o: Order) => socketOrdersRef.current.delete(o._id));
+      
+      // Combine: socket orders first (they're newer), then fetched orders
+      setOrders(missingSocketOrders.length > 0 
+        ? [...missingSocketOrders, ...fetchedOrders] 
+        : fetchedOrders);
+      
       if (response.data.stats) setStats(response.data.stats);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -168,38 +219,19 @@ export default function OrdersPage() {
     }
   };
 
+  // Keep the ref updated with the latest fetchOrders function
+  fetchOrdersRef.current = fetchOrders;
+
   useEffect(() => {
     fetchOrders();
   }, [searchQuery, selectedDate, activeTab]);
 
   const handleAction = async (orderId: string, action: string, payload: any = {}) => {
-    if (action === 'VERIFY_PAYMENT' && !payload.confirmed) {
-      const order = orders.find(o => o._id === orderId);
-      setCurrentAction({ id: orderId, type: 'VERIFY_PAYMENT' });
-      setActionPayload({ utr: order?.utr || '' });
-      setActionModalOpen(true);
-      return;
-    }
-
-    if (action === 'COLLECT_PAYMENT' && !payload.confirmed) {
-      setCurrentAction({ id: orderId, type: 'COLLECT_PAYMENT' });
-      setActionPayload({ method: 'COUNTER', utr: '' });
-      setActionModalOpen(true);
-      return;
-    }
-
-    if (action === 'REJECT_ORDER' && !payload.confirmed) {
-      setCurrentAction({ id: orderId, type: 'REJECT_ORDER' });
-      setActionPayload({ reason: '' });
-      setActionModalOpen(true);
-      return;
-    }
-
     try {
-      const response = await api.post(`/order/${orderId}/action`, { action, payload });
+      const finalAction = payload?.actionOverride || action;
+      const response = await api.post(`/order/${orderId}/action`, { action: finalAction, payload });
       toast.success(response.data.message || 'Action completed');
       fetchOrders();
-      setActionModalOpen(false);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to complete action');
     }
@@ -222,32 +254,48 @@ export default function OrdersPage() {
     ? orders
     : orderFilter === 'DUES'
       ? orders.filter((o: Order) => o.paymentDueStatus === 'DUE')
-      : orders.filter((o: Order) => o.status === orderFilter);
+      : orders.filter((o: Order) => o.status?.toUpperCase() === orderFilter);
 
   const orderCounts = {
     totalOrders: orders.length,
-    PLACED: orders.filter((o: Order) => o.status === 'PLACED').length,
-    ACCEPTED: orders.filter((o: Order) => o.status === 'ACCEPTED').length,
-    COMPLETED: orders.filter((o: Order) => o.status === 'COMPLETED').length,
-    REJECTED: orders.filter((o: Order) => o.status === 'REJECTED').length,
-    CANCELLED: orders.filter((o: Order) => o.status === 'CANCELLED').length,
+    PLACED: orders.filter((o: Order) => o.status?.toUpperCase() === 'PLACED').length,
+    ACCEPTED: orders.filter((o: Order) => o.status?.toUpperCase() === 'ACCEPTED').length,
+    COMPLETED: orders.filter((o: Order) => o.status?.toUpperCase() === 'COMPLETED').length,
+    REJECTED: orders.filter((o: Order) => o.status?.toUpperCase() === 'REJECTED').length,
+    CANCELLED: orders.filter((o: Order) => o.status?.toUpperCase() === 'CANCELLED').length,
     DUES: orders.filter((o: Order) => o.paymentDueStatus === 'DUE').length,
   };
 
-  const refundStats = {
-    pending: orders.filter((o: Order) => o.refund?.status === 'PENDING').length,
-  };
 
-  const paymentStats = stats || {
+  const paymentStats = {
     totalRevenue: orders
       .filter(o => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
       .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
-    onlinePending: stats?.onlinePending || 0,
-    onlinePendingAmount: stats?.onlinePendingAmount || 0,
-    counterPending: stats?.counterPending || 0,
-    counterPendingAmount: stats?.counterPendingAmount || 0,
-    duesPending: stats?.duesPending || orders.filter(o => o.paymentDueStatus === 'DUE').length,
-    unpaidDuesAmount: stats?.unpaidDuesAmount || orders.filter(o => o.paymentDueStatus === 'DUE').reduce((s, o) => s + (o.totalAmount || 0), 0),
+    // Serving = ACCEPTED status (orders being prepared/served)
+    servingPending: orders.filter(o => o.status === 'ACCEPTED').length,
+    // Online = ONLINE payment method + PENDING payment status
+    onlinePending: orders.filter(o => 
+      o.paymentMethod === 'ONLINE' && 
+      o.paymentStatus === 'PENDING' && 
+      o.status !== 'CANCELLED' && 
+      o.status !== 'REJECTED'
+    ).length,
+    onlinePendingAmount: orders
+      .filter(o => o.paymentMethod === 'ONLINE' && o.paymentStatus === 'PENDING' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+    // Cash = CASH payment method + PENDING payment status  
+    cashPending: orders.filter(o => 
+      o.paymentMethod === 'CASH' && 
+      o.paymentStatus === 'PENDING' && 
+      o.status !== 'CANCELLED' && 
+      o.status !== 'REJECTED'
+    ).length,
+    cashPendingAmount: orders
+      .filter(o => o.paymentMethod === 'CASH' && o.paymentStatus === 'PENDING' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+    // Dues
+    duesPending: orders.filter(o => o.paymentDueStatus === 'DUE').length,
+    unpaidDuesAmount: orders.filter(o => o.paymentDueStatus === 'DUE').reduce((s, o) => s + (o.totalAmount || 0), 0),
   };
 
   return (
@@ -288,25 +336,25 @@ export default function OrdersPage() {
             <h3 className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-3 flex items-center px-1">
               <FaExclamationCircle className="mr-2" /> Pending Actions
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               <StatsCard isMini label="Serving" value={paymentStats.servingPending || 0} variant="indigo" icon={<FaUtensils />} />
               <StatsCard isMini label="Online" value={paymentStats.onlinePending || 0} variant="blue" icon={<FaCreditCard />} />
-              <StatsCard isMini label="Refunds" value={refundStats.pending} variant="purple" icon={<FaUndo />} />
-              <StatsCard isMini label="Counter" value={paymentStats.counterPending || 0} variant="amber" icon={<FaMoneyBillWave />} />
+              <StatsCard isMini label="Cash" value={paymentStats.cashPending || 0} variant="amber" icon={<FaMoneyBillWave />} />
               <StatsCard isMini label="Dues" value={paymentStats.duesPending || 0} variant="red" icon={<FaExclamationCircle />} />
             </div>
           </div>
 
           {/* Overview Section - Business Health */}
-          <div className="flex-[1.2] bg-gray-50/50 border border-gray-100 rounded-2xl p-3">
+          <div className="flex-[1.6] bg-gray-50/50 border border-gray-100 rounded-2xl p-3">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center px-1">
               Business Overview
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
               <StatsCard isMini label="Revenue" value={`₹${paymentStats.totalRevenue.toFixed(0)}`} variant="green" icon={<FaCheckCircle />} />
               <StatsCard isMini label="Dues Amount" value={`₹${Math.round(paymentStats.unpaidDuesAmount || 0)}`} variant="red" icon={<FaExclamationCircle />} />
               <StatsCard isMini label="Total" value={orderCounts.totalOrders} variant="indigo" icon={<FaClipboardList />} />
               <StatsCard isMini label="Served" value={orderCounts.COMPLETED} variant="emerald" icon={<FaCheck />} />
+              <StatsCard isMini label="Rejected" value={orderCounts.REJECTED} variant="red" icon={<FaTimes />} />
               <StatsCard isMini label="Cancelled" value={orderCounts.CANCELLED} variant="red" icon={<FaTimes />} />
             </div>
           </div>
@@ -358,7 +406,7 @@ export default function OrdersPage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
               {filteredOrders.map((order) => (
                 <OrderCard
-                   key={order._id}
+                   key={`${order._id}-${order.updatedAt || order._id}`}
                    order={order as any}
                    onAction={handleAction}
                 />
@@ -367,89 +415,6 @@ export default function OrdersPage() {
           )}
         </AnimatePresence>
       </div>
-
-      <AnimatePresence>
-        {actionModalOpen && currentAction && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100">
-               <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-indigo-50/50">
-                  <h3 className="text-lg font-black text-indigo-900 uppercase tracking-tight">
-                    {currentAction.type.replace('_', ' ')}
-                  </h3>
-                  <button onClick={() => setActionModalOpen(false)}><FaTimes className="text-gray-400 hover:text-gray-600" /></button>
-               </div>
-
-               <div className="p-6 space-y-5">
-                  {currentAction.type === 'VERIFY_PAYMENT' && (
-                    <div>
-                        <label className="block text-xs font-black text-gray-400 uppercase mb-2">Confirm Last 6 digits of UTR</label>
-                        <input
-                          autoFocus
-                          type="text"
-                          maxLength={6}
-                          value={actionPayload.utr}
-                          onChange={(e) => setActionPayload({ ...actionPayload, utr: e.target.value.replace(/\D/g, '') })}
-                          className="w-full px-4 py-4 border border-gray-200 rounded-2xl text-center text-2xl font-black font-mono tracking-widest focus:ring-4 focus:ring-indigo-50"
-                          placeholder="000000"
-                        />
-                    </div>
-                  )}
-
-                  {currentAction.type === 'COLLECT_PAYMENT' && (
-                    <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-black text-gray-400 uppercase mb-2">Collection Method</label>
-                          <div className="grid grid-cols-2 gap-3">
-                              {['CASH', 'ONLINE'].map(m => (
-                                <button
-                                  key={m}
-                                  onClick={() => setActionPayload({ ...actionPayload, method: m })}
-                                  className={`py-3 rounded-xl border-2 font-black transition-all ${actionPayload.method === m ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-300'}`}
-                                >
-                                  {m}
-                                </button>
-                              ))}
-                          </div>
-                        </div>
-                        {actionPayload.method === 'ONLINE' && (
-                           <div>
-                              <label className="block text-xs font-black text-gray-400 uppercase mb-2">Last 6 digits of UTR (Optional)</label>
-                              <input
-                                type="text"
-                                maxLength={6}
-                                value={actionPayload.utr}
-                                onChange={(e) => setActionPayload({ ...actionPayload, utr: e.target.value.replace(/\D/g, '') })}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-center font-mono font-bold tracking-widest focus:ring-4 focus:ring-indigo-50"
-                              />
-                           </div>
-                        )}
-                    </div>
-                  )}
-
-                  {currentAction.type === 'REJECT_ORDER' && (
-                    <div>
-                       <label className="block text-xs font-black text-gray-400 uppercase mb-2">Rejection Reason</label>
-                       <textarea
-                          rows={3}
-                          value={actionPayload.reason}
-                          onChange={(e) => setActionPayload({ ...actionPayload, reason: e.target.value })}
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-red-50"
-                          placeholder="e.g. Items out of stock"
-                       />
-                    </div>
-                  )}
-
-                  <div className="flex gap-3 pt-2">
-                    <Button fullWidth variant="outline" onClick={() => setActionModalOpen(false)}>Cancel</Button>
-                    <Button fullWidth onClick={() => handleAction(currentAction.id, currentAction.type, { ...actionPayload, confirmed: true })}>
-                       Confirm Action
-                    </Button>
-                  </div>
-               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <CreateOrderModal
         isOpen={createOrderModalOpen}

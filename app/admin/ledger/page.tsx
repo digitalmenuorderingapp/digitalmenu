@@ -40,8 +40,8 @@ interface LedgerTransaction {
   _id: string;
   restaurant: string;
   orderId: string;
-  type: 'PAYMENT' | 'REFUND';
-  paymentMode: 'COUNTER' | 'ONLINE' | 'CASH';
+  type: 'PAYMENT';
+  paymentMode: 'CASH' | 'ONLINE';
   status: 'PENDING' | 'VERIFIED';
   amount: number;
   transactionDate: string;
@@ -73,23 +73,20 @@ interface Ledger {
   _id: string;
   restaurant: string;
   date: string;
-  counter: {
+  cash: {
     received: number;
     verified: number;
     pending: number;
-    refunded: number;
     balance: number;
   };
   online: {
     received: number;
     verified: number;
     pending: number;
-    refunded: number;
     balance: number;
   };
   total: {
     received: number;
-    refunded: number;
     netBalance: number;
     unpaidDues?: number;
   };
@@ -98,6 +95,13 @@ interface Ledger {
     servedOrders: number;
     rejectedOrders: number;
     cancelledOrders: number;
+    orderType: {
+      dineIn: number;
+      takeaway: number;
+      delivery: number;
+    };
+    pendingPayments: number;
+    dueOrders: number;
   };
   soldItems: SoldItem[];
   hourlyBreakdown: HourlyBreakdown[];
@@ -297,63 +301,101 @@ export default function LedgerPage() {
         </div>
 
         {activeTab === 'today' && ledger && (
-          <div className="flex flex-col xl:flex-row gap-6">
-            {/* Financial Section */}
-            <div className="flex-[2] bg-indigo-50/20 border border-indigo-100/50 rounded-2xl p-3">
-              <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 flex items-center px-1">
-                Financial Reconciliation
-              </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                <StatsCard 
-                  isMini
-                  label="Counter" 
-                  value={`₹${Math.round(ledger.counter.balance)}`} 
-                  variant="amber" 
-                  icon={<FaMoneyBillWave />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Online" 
-                  value={`₹${Math.round(ledger.online.balance)}`} 
-                  variant="blue" 
-                  icon={<FaCreditCard />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Net Balance" 
-                  value={`₹${Math.round(ledger.total.netBalance)}`} 
-                  variant="green" 
-                  icon={<FaChartLine />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Unpaid Dues" 
-                  value={`₹${Math.round(ledger.total.unpaidDues || 0)}`} 
-                  variant="red" 
-                  icon={<FaExclamationCircle />} 
-                />
+          <div className="flex flex-col gap-6">
+            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-base font-black text-gray-900 uppercase tracking-tight">Order Distribution</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Operational Channel Mix</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                    Fulfillment: {ledger.counts.totalOrders > 0 ? ((ledger.counts.servedOrders / ledger.counts.totalOrders) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
               </div>
-            </div>
-
-            {/* Operational Section */}
-            <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-2xl p-3">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center px-1">
-                Operational Overview
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 <StatsCard 
                   isMini
-                  label="Total" 
-                  value={ledger.counts.totalOrders} 
+                  label="Dine-in" 
+                  value={ledger.counts.orderType?.dineIn || 0} 
                   variant="indigo" 
                   icon={<FaUtensils />} 
                 />
                 <StatsCard 
                   isMini
+                  label="Takeaway" 
+                  value={ledger.counts.orderType?.takeaway || 0} 
+                  variant="amber" 
+                  icon={<FaPlusCircle />} 
+                />
+                <StatsCard 
+                  isMini
                   label="Served" 
-                  value={ledger.counts.servedOrders} 
+                  value={ledger.counts.servedOrders || 0} 
                   variant="emerald" 
                   icon={<FaCheck />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Cancelled" 
+                  value={ledger.counts.cancelledOrders || 0} 
+                  variant="red" 
+                  icon={<FaTimes />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Rejected" 
+                  value={ledger.counts.rejectedOrders || 0} 
+                  variant="red" 
+                  icon={<FaExclamationCircle />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Success Rate" 
+                  value={`${ledger.counts.totalOrders > 0 ? ((ledger.counts.servedOrders / (ledger.counts.totalOrders - ledger.counts.cancelledOrders - ledger.counts.rejectedOrders || 1)) * 100).toFixed(0) : 0}%`}
+                  variant="green" 
+                  icon={<FaCheckCircle />} 
+                />
+              </div>
+            </div>
+
+            <div className="bg-red-50/20 border border-red-100/50 rounded-3xl p-6">
+              <div className="flex items-center justify-between mb-6 px-1">
+                <div>
+                   <h3 className="text-sm font-black text-red-900 uppercase tracking-tight">Actionable Audit</h3>
+                   <p className="text-[10px] font-black text-red-600/50 uppercase tracking-widest mt-1">Pending Verification & Dues</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatsCard 
+                  isMini
+                  label="Pending Counts" 
+                  value={ledger.counts.pendingPayments || 0} 
+                  variant="red" 
+                  icon={<FaClock />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Due Counts" 
+                  value={ledger.counts.dueOrders || 0} 
+                  variant="red" 
+                  icon={<FaExclamationCircle />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Pending Amount" 
+                  value={`₹${Math.round(ledger.cash.pending + ledger.online.pending)}`} 
+                  variant="red" 
+                  icon={<FaMoneyBillWave />} 
+                />
+                <StatsCard 
+                  isMini
+                  label="Due Amount" 
+                  value={`₹${Math.round(ledger.total.unpaidDues || 0)}`} 
+                  variant="red" 
+                  icon={<FaExclamationCircle />} 
                 />
               </div>
             </div>
@@ -364,107 +406,35 @@ export default function LedgerPage() {
       {activeTab === 'today' && ledger && (
         <div className="space-y-8">
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-500">
-                <div className="bg-red-50/50 px-6 py-4 border-b border-red-100/50 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-red-100 rounded-2xl flex items-center justify-center">
-                      <FaClock className="w-5 h-5 text-red-600 animate-pulse" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-red-900 uppercase tracking-tight">Pending Ledger</h3>
-                      <p className="text-[10px] font-black text-red-600/50 uppercase tracking-widest">Awaiting Verification</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 space-y-5">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-colors group-hover:bg-amber-50/30 group-hover:border-amber-100/30">
-                    <div className="flex items-center space-x-3 text-sm font-bold text-gray-500 uppercase tracking-tighter">
-                      <FaMoneyBillWave className="text-amber-500" />
-                      <span>Counter Verification Pending Amount</span>
-                    </div>
-                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.counter.pending)}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-colors group-hover:bg-blue-50/30 group-hover:border-blue-100/30">
-                    <div className="flex items-center space-x-3 text-sm font-bold text-gray-500 uppercase tracking-tighter">
-                      <FaCreditCard className="text-blue-500" />
-                      <span>Online Verification Pending Amount</span>
-                    </div>
-                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.online.pending)}</span>
-                  </div>
-                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Gross Pending Amount</span>
-                    <span className="text-3xl font-black text-red-600 tracking-tighter">₹{Math.round(ledger.counter.pending + ledger.online.pending)}</span>
-                  </div>
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 overflow-hidden">
+              <div className="flex items-center justify-between mb-6 px-1">
+                <div>
+                   <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Financial Summary</h3>
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Real-time Monetary Pulse</p>
                 </div>
               </div>
-
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-500">
-                <div className="bg-amber-50/50 px-6 py-4 border-b border-amber-100/50 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-amber-100 rounded-2xl flex items-center justify-center">
-                      <FaMoneyBillWave className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-amber-900 uppercase tracking-tight">Counter Ledger</h3>
-                      <p className="text-[10px] font-black text-amber-600/50 uppercase tracking-widest">Physical Collection</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 space-y-5">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-colors group-hover:bg-green-50/30 group-hover:border-green-100/30">
-                    <div className="flex items-center space-x-3 text-sm font-bold text-gray-500 uppercase tracking-tighter">
-                      <FaPlusCircle className="text-green-500" />
-                      <span>Gross Verified</span>
-                    </div>
-                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.counter.verified)}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-red-50/20 rounded-2xl border border-red-100/30">
-                    <div className="flex items-center space-x-3 text-sm font-bold text-red-500 uppercase tracking-tighter">
-                      <FaMinusCircle />
-                      <span>Refunded Amount</span>
-                    </div>
-                    <span className="text-lg font-black text-red-600">-₹{Math.round(ledger.counter.refunded)}</span>
-                  </div>
-                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Net Balance</span>
-                    <span className="text-3xl font-black text-amber-600 tracking-tighter">₹{Math.round(ledger.counter.balance)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-500">
-                <div className="bg-blue-50/50 px-6 py-4 border-b border-blue-100/50 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-2xl flex items-center justify-center">
-                      <FaCreditCard className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-blue-900 uppercase tracking-tight">Online Ledger</h3>
-                      <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-widest">Digital Settlement</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 space-y-5">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-colors group-hover:bg-green-50/30 group-hover:border-green-100/30">
-                    <div className="flex items-center space-x-3 text-sm font-bold text-gray-500 uppercase tracking-tighter">
-                      <FaPlusCircle className="text-green-500" />
-                      <span>Gross Verified</span>
-                    </div>
-                    <span className="text-lg font-black text-gray-900">₹{Math.round(ledger.online.verified)}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-red-50/20 rounded-2xl border border-red-100/30">
-                    <div className="flex items-center space-x-3 text-sm font-bold text-red-500 uppercase tracking-tighter">
-                      <FaMinusCircle />
-                      <span>Refunded Amount</span>
-                    </div>
-                    <span className="text-lg font-black text-red-600">-₹{Math.round(ledger.online.refunded)}</span>
-                  </div>
-                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Settled Balance</span>
-                    <span className="text-3xl font-black text-blue-600 tracking-tighter">₹{Math.round(ledger.online.balance)}</span>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+                <StatsCard 
+                  label="Cash Received" 
+                  value={`₹${Math.round(ledger.cash.verified)}`} 
+                  variant="amber" 
+                  icon={<FaMoneyBillWave />} 
+                  description="Gross Physical Collection"
+                />
+                <StatsCard 
+                  label="Online Received" 
+                  value={`₹${Math.round(ledger.online.verified)}`} 
+                  variant="blue" 
+                  icon={<FaCreditCard />} 
+                  description="Digital Settlement"
+                />
+                <StatsCard 
+                  label="Net Balance" 
+                  value={`₹${Math.round(ledger.total.netBalance)}`} 
+                  variant="green" 
+                  icon={<FaChartLine />} 
+                  description="Verified Total Revenue"
+                />
               </div>
             </div>
 
@@ -572,8 +542,8 @@ export default function LedgerPage() {
               description={`${transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').length} Verified`}
             />
             <StatsCard 
-              label="Counter Collected" 
-              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && (t.paymentMode === 'CASH' || t.paymentMode === 'COUNTER') && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
+              label="Cash Collected" 
+              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
               variant="amber" 
               icon={<FaMoneyBillWave />} 
             />
@@ -585,7 +555,7 @@ export default function LedgerPage() {
             />
             <StatsCard 
               label="Monthly Net" 
-              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0) - transactions.filter(t => t.type === 'REFUND').reduce((sum, t) => sum + Math.abs(t.amount), 0))}`} 
+              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
               variant="green" 
               icon={<FaChartLine />} 
             />

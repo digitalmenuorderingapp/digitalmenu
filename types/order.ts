@@ -25,6 +25,7 @@ export interface OrderItem {
     offerPrice?: number;
 }
 
+
 export interface Order {
     _id: string;
     orderNumber?: string;
@@ -35,7 +36,7 @@ export interface Order {
     items: OrderItem[];
     totalAmount: number;
     status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
-    paymentMethod?: 'ONLINE' | 'COUNTER';
+    paymentMethod?: 'ONLINE' | 'CASH';
     paymentStatus?: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
     paymentDueStatus?: 'CLEAR' | 'DUE';
     collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
@@ -43,12 +44,6 @@ export interface Order {
     retryCount?: number;
     collectedAt?: string;
     collectedBy?: string;
-    refund?: {
-        status: 'NOT_REQUIRED' | 'PENDING' | 'COMPLETED';
-        method?: string;
-        amount?: number;
-        processedAt?: string;
-    };
     transactions?: any[];
     rejectionReason?: string;
     cancellationReason?: string;
@@ -61,5 +56,9 @@ export interface Order {
         comment?: string;
         rating?: number;
         submittedAt?: string;
+    };
+    paymentVerificationRequestbycustomer?: {
+        applied?: boolean;
+        appliedUTR?: string;
     };
 }

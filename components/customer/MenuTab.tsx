@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUtensils, FaPlus, FaMinus, FaLeaf, FaDotCircle, FaSlidersH, FaTimes, FaShoppingCart, FaSpinner } from 'react-icons/fa';
@@ -30,6 +30,28 @@ export default function MenuTab({
   const [activeFoodType, setActiveFoodType] = useState<string>('');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Auto-slide effect for item images
+  useEffect(() => {
+    if (!selectedItem) {
+      setCurrentImageIndex(0);
+      return;
+    }
+
+    const images = (selectedItem.images && selectedItem.images.length > 0) 
+      ? selectedItem.images 
+      : [selectedItem.image].filter(Boolean);
+      
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [selectedItem]);
+
   const totalCartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   const foodTypes = Array.from(
@@ -46,67 +68,69 @@ export default function MenuTab({
 
   return (
     <div className="relative">
-      <main className="max-w-4xl mx-auto px-4 py-4">
-        {/* Restaurant Header */}
-        {(restaurantInfo || session.tableNumber) && (
-          <div className="mb-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-[2rem] p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">
-             <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] animate-pulse"></div>
-             
-             <div className="relative z-10 flex items-center justify-between">
-              <div className="flex items-center gap-5">
-                {restaurantInfo?.logo ? (
-                  <div className="p-1 bg-white/5 rounded-2xl border border-white/10 shadow-2xl">
+      <main className="max-w-4xl mx-auto">
+        {/* Merged Header - Edge to Edge, No Rounded Corners */}
+        {(restaurantInfo || session.tableNumber || session.customerName) && (
+          <div className="bg-slate-900 text-white relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute inset-0" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '20px 20px'}}></div>
+            </div>
+            
+            <div className="relative z-10">
+              {/* Top Section: Restaurant + Table */}
+              <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  {restaurantInfo?.logo ? (
                     <img 
                       src={restaurantInfo.logo} 
                       alt="Logo" 
-                      className="w-14 h-14 rounded-xl object-cover"
+                      className="w-12 h-12 object-cover rounded-lg"
                     />
+                  ) : (
+                    <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center">
+                      <FaUtensils className="w-5 h-5 text-indigo-400" />
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-xl font-black text-white leading-none">
+                        {restaurantInfo?.name || 'Restaurant'}
+                      </h1>
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                    </div>
+                    <p className="text-[10px] text-indigo-300 mt-1">
+                      {restaurantInfo?.motto || 'A world of flavor'}
+                    </p>
                   </div>
-                ) : (
-                  <div className="w-14 h-14 bg-white/5 backdrop-blur-3xl rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
-                    <FaUtensils className="w-6 h-6 text-indigo-400 opacity-40" />
+                </div>
+                
+                {session.tableNumber && (
+                  <div className="text-right">
+                    <p className="text-[9px] text-indigo-300 uppercase tracking-wider">Table</p>
+                    <p className="text-2xl font-black text-white leading-none">#{session.tableNumber}</p>
                   </div>
                 )}
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h2 className="text-2xl font-black tracking-tighter text-white leading-none">
-                      {restaurantInfo?.name || 'Restaurant'}
-                    </h2>
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" title="System Online"></div>
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
-                    {restaurantInfo?.motto || 'Live Digital Menu Experience'}
-                  </p>
-                </div>
               </div>
               
-              {session.tableNumber && (
-                <div className="bg-white/[0.03] backdrop-blur-3xl rounded-[1.5rem] px-5 py-3 border border-white/10 flex flex-col items-center justify-center min-w-[70px] shadow-2xl">
-                  <p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest leading-none mb-1">Table</p>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-black text-indigo-500">#</span>
-                    <p className="text-2xl font-black text-white leading-none">{session.tableNumber}</p>
+              {/* Bottom Section: Welcome + Persons */}
+              {session.customerName && (
+                <div className="flex items-center justify-between px-4 py-3 bg-black/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                      <span className="text-xl">👋</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-indigo-300 uppercase tracking-wider">Welcome</p>
+                      <p className="text-lg font-black text-white leading-none">{session.customerName}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-white">{session.numberOfPersons || 1}</p>
+                    <p className="text-[9px] text-indigo-300 uppercase">{session.numberOfPersons === 1 ? 'Person' : 'Persons'}</p>
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {/* Welcome Card */}
-        {session.customerName && (
-          <div className="mb-4 bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-800 rounded-2xl px-5 py-3 text-white shadow-lg flex items-center justify-between border border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
-                <span className="text-lg">👋</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Welcome</p>
-                <p className="text-lg font-black leading-none">{session.customerName}</p>
-              </div>
-            </div>
-            <div className="text-[10px] font-black text-indigo-300 bg-white/10 px-3 py-1 rounded-full border border-white/10">
-              {session.numberOfPersons || 1} {session.numberOfPersons === 1 ? 'Person' : 'Persons'}
             </div>
           </div>
         )}
@@ -137,7 +161,7 @@ export default function MenuTab({
 
       {/* Menu Items Grid */}
       <main className="max-w-4xl mx-auto px-4 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredItems.length === 0 ? (
             <div className="col-span-full text-center py-12 text-gray-400">
               No items match your filter
@@ -153,19 +177,26 @@ export default function MenuTab({
                   layout
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="group flex flex-col bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 overflow-hidden hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer"
+                  className="group flex flex-col bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
                   onClick={() => setSelectedItem(item)}
                 >
                   {/* Image Section */}
-                  <div className="relative aspect-[16/11] w-full overflow-hidden">
-                    <div className="absolute inset-0 bg-gray-100 group-hover:scale-105 transition-transform duration-700 ease-out">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-50">
+                    <div className="absolute inset-0 scale-105 group-hover:scale-110 transition-transform duration-500 ease-out">
                       {(item.images?.length || 0) > 0 || item.image ? (
-                        <Image
-                          src={item.images?.[0] || item.image || ''}
-                          alt={item.name}
-                          fill
-                          className="object-cover"
-                        />
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.5 }}
+                          className="w-full h-full"
+                        >
+                          <Image
+                            src={item.images?.[0] || item.image || ''}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </motion.div>
                       ) : (
                         <div className="flex items-center justify-center h-full bg-slate-50 text-slate-200">
                           <FaUtensils className="w-10 h-10 opacity-20" />
@@ -173,33 +204,25 @@ export default function MenuTab({
                       )}
                     </div>
                     
-                    {/* Floating Badges */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                       {item.isBestSeller && (
-                        <motion.div 
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          className="px-2.5 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[9px] font-black rounded-lg shadow-xl uppercase tracking-tighter ring-1 ring-white/20 flex items-center gap-1"
-                        >
-                          <span className="text-[10px]">⭐</span>
-                          <span>Best Seller</span>
-                        </motion.div>
-                       )}
-                       {item.discountPercentage && item.discountPercentage > 0 && (
-                        <div className="px-2.5 py-1 bg-red-600 text-white text-[9px] font-black rounded-lg shadow-xl uppercase tracking-tighter ring-1 ring-white/20">
-                          -{item.discountPercentage}% OFF
-                        </div>
-                       )}
-                       <div className={`w-6 h-6 rounded-lg border border-white/40 backdrop-blur-md shadow-xl flex items-center justify-center ${isVeg ? 'bg-emerald-500/90' : 'bg-red-500/90'}`}>
-                         <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]" />
-                       </div>
-                    </div>
-
                     <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent"></div>
                   </div>
 
+                  {/* Badges Row - At top of content */}
+                  <div className="px-4 pt-3 pb-1 flex items-center gap-2 flex-wrap">
+                     {item.isBestSeller && (
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wide rounded-sm">
+                        ⭐ Best Seller
+                      </span>
+                     )}
+                    
+                     <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-wide rounded-sm flex items-center gap-1 ${isVeg ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                       <span className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                       {isVeg ? 'Veg' : 'Non-Veg'}
+                     </span>
+                  </div>
+
                   {/* Content */}
-                  <div className="p-4 flex flex-col flex-1">
+                  <div className="p-4 pt-2 flex flex-col flex-1">
                     <div className="flex justify-between items-start mb-1.5">
                        <div className="flex-1 min-w-0 pr-2">
                           <h3 className="text-base font-black text-slate-900 truncate leading-tight group-hover:text-indigo-600 transition-colors">{item.name}</h3>
@@ -210,12 +233,13 @@ export default function MenuTab({
                        </div>
                        <div className="flex flex-col items-end flex-shrink-0 bg-white px-2 py-1 rounded-xl">
                             {item.offerPrice ? (
-                              <>
-                                <span className="text-base font-black text-indigo-600 leading-none">₹{item.offerPrice.toFixed(0)}</span>
-                                <span className="text-[9px] text-slate-400 line-through mt-0.5 italic">₹{(item.price || 0).toFixed(0)}</span>
-                              </>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-lg font-black text-gray-900 leading-none">₹{item.offerPrice.toFixed(0)}</span>
+                                <span className="text-xs text-gray-400 line-through">₹{(item.price || 0).toFixed(0)}</span>
+                                <span className="text-xs font-bold text-emerald-600">{Math.round(((item.price - item.offerPrice) / item.price) * 100)}% off</span>
+                              </div>
                             ) : (
-                              <span className="text-base font-black text-slate-900 leading-none">₹{(item.price || 0).toFixed(0)}</span>
+                              <span className="text-lg font-black text-gray-900 leading-none">₹{(item.price || 0).toFixed(0)}</span>
                             )}
                        </div>
                     </div>
@@ -230,7 +254,7 @@ export default function MenuTab({
                           {qty === 0 ? (
                             <button
                               onClick={() => addToCart(item)}
-                              className="w-full py-3 bg-slate-900 text-white font-black uppercase text-[10px] tracking-[0.2em] rounded-xl shadow-lg shadow-slate-200 hover:bg-slate-800 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 group/btn"
+                              className="w-full py-3 bg-slate-900 text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-slate-800 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center rounded-lg justify-center gap-2 group/btn"
                             >
                               <FaPlus className="w-2.5 h-2.5 text-indigo-400 group-hover/btn:rotate-90 transition-transform" />
                               Add to Order
@@ -239,11 +263,11 @@ export default function MenuTab({
                             <motion.div 
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
-                              className="flex items-center w-full bg-indigo-600 rounded-xl p-0.5 shadow-lg shadow-indigo-100"
+                              className="flex items-center w-full bg-indigo-600 p-0.5 shadow-lg shadow-indigo-100"
                             >
                               <button
                                 onClick={() => removeFromCart(item._id)}
-                                className="w-9 h-9 flex items-center justify-center text-white hover:bg-white/10 rounded-lg transition-colors"
+                                className="w-9 h-9 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
                               >
                                 <FaMinus className="w-3 h-3" />
                               </button>
@@ -253,7 +277,7 @@ export default function MenuTab({
                               </div>
                               <button
                                 onClick={() => addToCart(item)}
-                                className="w-9 h-9 flex items-center justify-center text-white hover:bg-white/10 rounded-lg transition-colors"
+                                className="w-9 h-9 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
                               >
                                 <FaPlus className="w-3 h-3" />
                               </button>
@@ -287,31 +311,88 @@ export default function MenuTab({
               transition={{ type: 'spring', damping: 28, stiffness: 250 }}
               className="fixed bottom-0 left-0 right-0 max-w-2xl mx-auto bg-white rounded-t-[3rem] z-[120] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden will-change-transform"
             >
-              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-4 shrink-0" />
+              {/* Top Header Bar with Close Button */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  {/* Best Seller Badge */}
+                  {selectedItem.isBestSeller && (
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black rounded-lg shadow-lg uppercase tracking-tighter flex items-center gap-1"
+                    >
+                      <span>⭐</span>
+                      <span>Best Seller</span>
+                    </motion.div>
+                  )}
+                  {/* Veg/Non-Veg Badge */}
+                  <div className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border ${(selectedItem.isVeg ?? (selectedItem.foodType?.toLowerCase() === 'veg')) ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                    <div className={`w-2.5 h-2.5 rounded-full border-2 ${(selectedItem.isVeg ?? (selectedItem.foodType?.toLowerCase() === 'veg')) ? 'border-emerald-500 bg-emerald-500' : 'border-red-500 bg-red-500'}`} />
+                    {(selectedItem.isVeg ?? (selectedItem.foodType?.toLowerCase() === 'veg')) ? 'Vegetarian' : 'Non-Veg'}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedItem(null)}
+                  className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-colors"
+                >
+                  <FaTimes className="text-gray-900 w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-3 shrink-0" />
               
               <div className="overflow-y-auto px-6 pb-24 flex-1">
-                <div className="relative aspect-video w-full rounded-[2.5rem] overflow-hidden shadow-2xl mb-8 group/gallery">
-                  {(selectedItem.images?.length || 0) > 0 || selectedItem.image ? (
-                    <div className="relative w-full h-full">
-                      {/* Image Gallery */}
-                      <div className="flex h-full overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-2 px-2 py-2">
-                        {(selectedItem.images || [selectedItem.image]).map((img, idx) => (
-                           <div key={idx} className="relative min-w-full h-full snap-start rounded-[1.5rem] overflow-hidden">
-                              <Image 
-                                src={img || ''} 
-                                alt={`${selectedItem.name} ${idx + 1}`} 
-                                fill 
-                                className="object-cover" 
-                              />
-                           </div>
-                        ))}
+                <div className="relative aspect-[16/10] w-full rounded-[2.5rem] overflow-hidden shadow-2xl mb-8 group/gallery bg-slate-50">
+                  <AnimatePresence mode="wait">
+                    {((selectedItem.images && selectedItem.images.length > 0) || selectedItem.image) ? (
+                      <div className="relative w-full h-full overflow-hidden">
+                        {/* Image Gallery */}
+                        <div className="relative h-full w-full">
+                          <AnimatePresence mode="wait">
+                            {((selectedItem.images && selectedItem.images.length > 0) ? selectedItem.images : [selectedItem.image]).map((img, idx) => (
+                              idx === currentImageIndex && (
+                              <motion.div 
+                                key={idx}
+                                initial={{ opacity: 0, x: 100 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -100 }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                drag="x"
+                                dragConstraints={{ left: 0, right: 0 }}
+                                onDragEnd={(_, info) => {
+                                  const swipeThreshold = 50;
+                                  const images = selectedItem.images || [selectedItem.image];
+                                  if (info.offset.x < -swipeThreshold) {
+                                    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+                                  } else if (info.offset.x > swipeThreshold) {
+                                    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+                              >
+                                <Image 
+                                  src={img || ''} 
+                                  alt={`${selectedItem.name} ${idx + 1}`} 
+                                  fill 
+                                  className="object-cover pointer-events-none" 
+                                  priority
+                                />
+                              </motion.div>
+                            )
+                          ))}
+                        </AnimatePresence>
                       </div>
                       
                       {/* Gallery Indicator */}
-                      {(selectedItem.images?.length || 0) > 1 && (
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
-                          {selectedItem.images?.map((_, idx) => (
-                            <div key={idx} className="w-1.5 h-1.5 rounded-full bg-white/40 last:bg-white" />
+                      {((selectedItem.images && selectedItem.images.length > 1) || (!selectedItem.images?.length && false)) && (
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 pointer-events-none">
+                          {((selectedItem.images && selectedItem.images.length > 0) ? selectedItem.images : [selectedItem.image]).map((_, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                idx === currentImageIndex ? 'bg-white scale-125' : 'bg-white/40'
+                              }`} 
+                            />
                           ))}
                         </div>
                       )}
@@ -321,44 +402,31 @@ export default function MenuTab({
                       <FaUtensils className="w-20 h-20 opacity-40" />
                     </div>
                   )}
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    {selectedItem.isBestSeller && (
-                      <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black text-xs uppercase shadow-2xl flex items-center gap-2 border border-white/20">
-                        <span>⭐</span>
-                        <span>Best Seller</span>
-                      </div>
-                    )}
-                    <div className={`px-4 py-2 rounded-xl border border-white/40 backdrop-blur-md shadow-xl flex items-center gap-2 text-white font-black text-xs uppercase bg-${(selectedItem.isVeg ?? (selectedItem.foodType?.toLowerCase() === 'veg')) ? 'emerald' : 'red'}-500/80`}>
-                      <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]" />
-                      {(selectedItem.isVeg ?? (selectedItem.foodType?.toLowerCase() === 'veg')) ? 'Vegetarian' : 'Non-Vegetarian'}
-                    </div>
-                  </div>
-                </div>
+                </AnimatePresence>
+              </div>
 
-                <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between items-start mb-6">
                   <div className="flex-1 pr-6">
-                    <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-tight mb-2">
+                    <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">
                       {selectedItem.name}
                     </h2>
-                    <span className={`px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-widest border ${(selectedItem.isVeg ?? (selectedItem.foodType?.toLowerCase() === 'veg')) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                      {(selectedItem.isVeg ?? (selectedItem.foodType?.toLowerCase() === 'veg')) ? 'Vegetarian' : 'Non-Vegetarian'}
-                    </span>
                   </div>
                   <div className="flex flex-col items-end bg-gray-900 text-white p-4 rounded-[2rem] shadow-xl">
                     {selectedItem.offerPrice ? (
-                      <>
-                        <span className="text-2xl font-black leading-none">₹{selectedItem.offerPrice}</span>
-                        <span className="text-[10px] text-gray-400 line-through mt-1 italic">M.R.P: ₹{selectedItem.price}</span>
-                      </>
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-3xl font-black leading-none">₹{selectedItem.offerPrice}</span>
+                        <span className="text-lg text-gray-400 line-through">₹{selectedItem.price}</span>
+                        <span className="text-base font-bold text-emerald-400">{Math.round(((selectedItem.price - selectedItem.offerPrice) / selectedItem.price) * 100)}% off</span>
+                      </div>
                     ) : (
-                      <span className="text-2xl font-black leading-none">₹{selectedItem.price}</span>
+                      <span className="text-3xl font-black leading-none">₹{selectedItem.price}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-4">
                   <div>
-                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-3">Product Description</h4>
+                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-2">Product Description</h4>
                     <p className="text-base text-gray-600 leading-relaxed font-medium">
                       {selectedItem.description || 'Experience culinary perfection with this signature dish. Each component is meticulously selected and prepared to offer an unforgettable experience of textures and flavors.'}
                     </p>
@@ -368,24 +436,7 @@ export default function MenuTab({
 
               <div className="absolute bottom-0 left-0 right-0 p-6 pt-2 bg-gradient-to-t from-white via-white to-transparent">
                   <div className="flex items-center gap-4">
-                    {/* Left: Cart Button */}
-                    <button 
-                      onClick={() => {
-                        setSelectedItem(null);
-                        onGoToCart?.();
-                      }}
-                      className="relative w-14 h-14 bg-orange-500 text-white rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200"
-                      title="Go to Cart"
-                    >
-                      <FaShoppingCart className="w-5 h-5" />
-                      {totalCartCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm tabular-nums">
-                          {totalCartCount}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* Middle: Quantity Management */}
+                    {/* Left: Quantity Management */}
                     <div className="flex-1">
                       {getItemQuantity(selectedItem._id) === 0 ? (
                         <button 
@@ -407,12 +458,21 @@ export default function MenuTab({
                       )}
                     </div>
 
-                    {/* Right: Close Button */}
+                    {/* Right: Cart Button */}
                     <button 
-                      onClick={() => setSelectedItem(null)}
-                      className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition-colors"
+                      onClick={() => {
+                        setSelectedItem(null);
+                        onGoToCart?.();
+                      }}
+                      className="relative w-14 h-14 bg-orange-500 text-white rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200"
+                      title="Go to Cart"
                     >
-                      <FaTimes className="text-gray-900" />
+                      <FaShoppingCart className="w-5 h-5" />
+                      {totalCartCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm tabular-nums">
+                          {totalCartCount}
+                        </span>
+                      )}
                     </button>
                   </div>
               </div>

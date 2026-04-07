@@ -1,16 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes } from 'react-icons/fa';
+import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes, FaUtensils, FaExclamationTriangle } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
-import { Order } from '@/types/order';
+import { Order, MenuItem } from '@/types/order';
 
 
 interface OrdersTabProps {
   orders: Order[];
   session: any;
+  onRefresh: () => void;
+  menuItems: MenuItem[];
 }
 
 interface FeedbackFormProps {
@@ -75,88 +77,125 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
   );
 }
 
-function RetryForm({ order, session }: { order: Order; session: any }) {
+function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session: any; onRefresh?: () => void }) {
   const [utr, setUtr] = useState('');
-  const [method, setMethod] = useState<'ONLINE' | 'COUNTER'>(order.paymentMethod || 'COUNTER');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPending, setIsPending] = useState(order.paymentStatus === 'RETRY' || order.utr);
 
-  const handleRetry = async () => {
-    if (method === 'ONLINE' && (!utr || utr.length < 6)) {
-      toast.error('Valid 6-digit UTR is mandatory for Online');
+  const handleVerify = async () => {
+    if (!utr || utr.length < 6) {
+      toast.error('Please enter the last 6 digits of your UTR');
       return;
     }
 
     try {
       setIsSubmitting(true);
       await api.put(`/order/${order._id}/retry-payment`, {
-        paymentMethod: method,
+        paymentMethod: 'ONLINE',
         utr,
         deviceId: session.deviceId
       });
-      toast.success('Payment details updated! Verification pending.');
+      toast.success('UTR submitted! Verification pending.');
+      setUtr('');
+      setIsPending(true);
+      if (onRefresh) onRefresh();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update payment');
+      toast.error(error.response?.data?.message || 'Verification failed');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+  // If already submitted and waiting for admin
+  if (isPending || order.paymentStatus === 'RETRY' || order.utr) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-center">
+          <FaClock className="w-8 h-8 text-amber-500 mx-auto mb-2 animate-pulse" />
+          <p className="text-sm font-bold text-amber-800">Verification Pending</p>
+          <p className="text-xs text-amber-600 mt-1">
+            Your UTR has been submitted. Waiting for admin to verify.
+          </p>
+          {order.utr && (
+            <p className="text-xs text-gray-500 mt-2 font-mono">
+              UTR: ••••••{order.utr.slice(-4)}
+            </p>
+          )}
+        </div>
         <button
-          onClick={() => setMethod('COUNTER')}
-          className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all ${
-            method === 'COUNTER' ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200'
-          }`}
+          onClick={() => onRefresh?.()}
+          disabled={isSubmitting}
+          className="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
         >
-          Pay at Counter
-        </button>
-        <button
-          onClick={() => setMethod('ONLINE')}
-          className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all ${
-            method === 'ONLINE' ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200'
-          }`}
-        >
-          Pay Online
+          <div className="flex items-center justify-center gap-2">
+            <FaSpinner className={`animate-spin ${!isSubmitting && 'hidden'}`} />
+            Check Status
+          </div>
         </button>
       </div>
+    );
+  }
 
-      {method === 'ONLINE' && (
-        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Last 6 Digits of UTR *</label>
+  return (
+    <div className="space-y-4">
+      {/* Instructions */}
+      <div className="bg-white/50 rounded-xl p-3 border border-amber-200/50">
+        <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 1:</span> 
+          Pay via Cash/UPI at the restaurant counter.
+        </p>
+        <div className="h-px bg-amber-200/30 my-2" />
+        <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 2:</span> 
+          Pay online via any UPI app and enter the last 6 digits of your UTR below.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
           <input
             type="text"
-            inputMode="numeric"
             value={utr}
             onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="000000"
-            className="w-full px-4 py-3.5 bg-white border-2 border-indigo-50 rounded-xl text-center text-xl font-black font-mono tracking-widest focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
+            disabled={isSubmitting}
+            className="w-full px-4 py-3.5 bg-white border-2 border-indigo-50 rounded-xl text-center text-xl font-black font-mono tracking-widest focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
           />
         </div>
-      )}
+      </div>
 
       <button
-        onClick={handleRetry}
-        disabled={isSubmitting}
-        className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all disabled:opacity-50 shadow-xl shadow-gray-200"
+        onClick={handleVerify}
+        disabled={isSubmitting || utr.length < 6}
+        className="w-full py-4 bg-gray-900 text-white rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-black active:scale-95 transition-all disabled:opacity-50 shadow-lg touch-manipulation"
       >
         {isSubmitting ? (
           <div className="flex items-center justify-center gap-2">
             <FaSpinner className="animate-spin" />
-            Updating...
+            Submitting...
           </div>
-        ) : 'Update Payment Details'}
+        ) : 'Submit UTR for Verification'}
       </button>
     </div>
   );
 }
 
-export default function OrdersTab({ orders, session }: OrdersTabProps) {
+export default function OrdersTab({ orders, session, onRefresh, menuItems }: OrdersTabProps) {
+
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  // @ts-ignore
+  const [orderToVerify, setOrderToVerify] = useState<Order | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const getItemImage = (itemId: string) => {
+    const menuItem = menuItems?.find(mi => mi._id === itemId);
+    if (!menuItem) return null;
+    return menuItem.image || (menuItem.images && menuItem.images.length > 0 ? menuItem.images[0] : null);
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'PLACED':
@@ -191,6 +230,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
     }
   };
 
+  // Helper function to format dates
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -222,6 +262,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
       setCancelModalOpen(false);
       setCancelOrderId(null);
       setCancelReason('');
+      onRefresh();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
     } finally {
@@ -239,14 +280,25 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
     try {
       await api.put(`/order/${orderId}/feedback`, { comment, rating });
       toast.success('Feedback submitted');
+      onRefresh();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to submit feedback');
     }
   };
 
+  // @ts-ignore
+  const toggleOrderExpand = (orderId: string) => {
+    const newExpanded = new Set(expandedOrders);
+    if (newExpanded.has(orderId)) {
+      newExpanded.delete(orderId);
+    } else {
+      newExpanded.add(orderId);
+    }
+    setExpandedOrders(newExpanded);
+  };
+
   return (
     <>
-
       <main className="max-w-4xl mx-auto px-4 py-6">
         {orders.length === 0 ? (
           <div className="text-center py-16">
@@ -264,26 +316,74 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                     order.status === 'COMPLETED' ? 'from-green-50 to-green-100' :
                       order.status === 'ACCEPTED' ? 'from-blue-50 to-blue-100' :
                         'from-indigo-50 to-indigo-100'
-                  } px-6 py-4 border-b border-gray-200`}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center space-x-3 mb-2">
+                  } px-4 sm:px-6 py-4 border-b border-gray-200`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-2 sm:space-x-3 mb-2 flex-wrap gap-y-2">
                         {getStatusIcon(order.status)}
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(order.status)}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${getStatusColor(order.status)}`}>
                           {order.status}
                         </span>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900">
+                      <h3 className="text-xl sm:text-2xl font-black text-gray-900 truncate">
                         #{order.orderNumber || order._id.slice(-8)}
                       </h3>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-[10px] sm:text-xs text-gray-500 mt-1 font-bold">
                         {formatDate(order.createdAt)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-indigo-600">
-                        ₹{order.totalAmount.toFixed(2)}
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-2xl sm:text-3xl font-black text-indigo-600">
+                        ₹{order.totalAmount.toFixed(0)}
                       </p>
+                    </div>
+                  </div>
+                  
+                  {/* Status Stepper */}
+                  <div className="mt-6 px-2">
+                    <div className="relative flex items-center justify-between">
+                      {/* Progress Line */}
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 z-0">
+                        <div 
+                          className="h-full bg-indigo-500 transition-all duration-1000 ease-out"
+                          style={{ 
+                            width: order.status === 'PLACED' ? '0%' : 
+                                   order.status === 'ACCEPTED' ? '50%' : 
+                                   order.status === 'COMPLETED' ? '100%' : '0%' 
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Steps */}
+                      {[
+                        { key: 'PLACED', label: 'Placed', icon: <FaClock className="w-2.5 h-2.5" /> },
+                        { key: 'ACCEPTED', label: 'Preparing', icon: <FaUtensils className="w-2.5 h-2.5" /> },
+                        { key: 'COMPLETED', label: 'Served', icon: <FaCheckCircle className="w-2.5 h-2.5" /> }
+                      ].map((step, idx) => {
+                        const isDone = ['ACCEPTED', 'COMPLETED'].includes(order.status) && idx === 0 || 
+                                       order.status === 'COMPLETED' && idx === 1 ||
+                                       order.status === step.key;
+                        const isCurrent = order.status === step.key;
+                        const isPast = (order.status === 'ACCEPTED' && idx === 0) || 
+                                       (order.status === 'COMPLETED' && (idx === 0 || idx === 1));
+
+                        return (
+                          <div key={step.key} className="relative z-10 flex flex-col items-center">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
+                              isCurrent ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg' :
+                              isPast ? 'bg-indigo-500 border-indigo-500 text-white' :
+                              'bg-white border-gray-300 text-gray-400'
+                            }`}>
+                              {isPast ? <FaCheckCircle className="w-3 h-3" /> : step.icon}
+                            </div>
+                            <span className={`absolute -bottom-5 text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-colors ${
+                              isCurrent ? 'text-indigo-600' : 'text-gray-400'
+                            }`}>
+                              {step.label}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -298,19 +398,42 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                     </h4>
                     <div className="space-y-3">
                       {order.items.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
-                          <div className="flex items-center space-x-3">
-                            <span className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-sm font-bold text-indigo-600 shadow-sm">
-                              {item.quantity}x
-                            </span>
-                            <span className="text-gray-800 font-medium">{item.name}</span>
+                        <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0 gap-4">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            {/* Item Image with Quantity Badge */}
+                            <div className="relative flex-shrink-0">
+                              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-10 border border-white">
+                                {item.quantity}
+                              </span>
+                              {(() => {
+                                const itemImg = getItemImage(item.itemId);
+                                return itemImg ? (
+                                  <img 
+                                    src={itemImg} 
+                                    alt={item.name} 
+                                    className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-xl border border-gray-100 shadow-sm"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100">
+                                    <span className="text-lg font-bold text-indigo-400 uppercase">{item.name.charAt(0)}</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-gray-900 font-bold block truncate text-sm sm:text-base">{item.name}</span>
+                              <p className="text-[10px] text-gray-500 font-medium tracking-tight">Qty: {item.quantity} × ₹{(item.price / item.quantity).toFixed(0)}</p>
+                            </div>
                           </div>
-                          <span className="font-semibold text-gray-900">
-                            ₹{(item.offerPrice || (item.price * item.quantity)).toFixed(2)}
-                          </span>
+                          <div className="text-right flex-shrink-0">
+                            <span className="font-bold text-gray-900 block text-sm sm:text-base">
+                              ₹{(item.price).toFixed(0)}
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>
+                    
                     <div className="mt-3 pt-3 border-t-2 border-gray-300">
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-gray-900">Total:</span>
@@ -329,152 +452,92 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
                     </div>
                   )}
 
-                  {/* Rejection Reason */}
-                  {order.status === 'REJECTED' && order.rejectionReason && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm font-medium text-red-800 mb-1">Rejection Reason:</p>
-                      <p className="text-sm text-red-700">{order.rejectionReason}</p>
-                    </div>
-                  )}
-
-                  {/* Cancellation Reason */}
-                  {order.status === 'CANCELLED' && order.cancellationReason && (
-                    <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-sm font-medium text-orange-800 mb-1">Cancellation Reason:</p>
-                      <p className="text-sm text-orange-700">{order.cancellationReason}</p>
-                    </div>
-                  )}
-
-                  {/* PAYMENT BLOCK */}
+                  {/* Payment Block */}
                   <div className={`p-4 rounded-2xl border transition-all duration-300 ${isOrderPaid(order)
                     ? 'bg-green-50/50 border-green-100'
                     : 'bg-amber-50/50 border-amber-100'
                     }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${isOrderPaid(order) ? 'bg-white text-green-600' : 'bg-white text-amber-600'
-                          }`}>
-                          {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-6 h-6" /> : <FaMoneyBillWave className="w-6 h-6" />}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 ${isOrderPaid(order) ? 'bg-white text-green-600' : 'bg-white text-amber-600'}`}>
+                          {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-5 h-5 sm:w-6 sm:h-6" /> : <FaMoneyBillWave className="w-5 h-5 sm:w-6 sm:h-6" />}
                         </div>
-                        <div>
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Payment Status</p>
-                          <h4 className={`text-base font-bold flex items-center ${isOrderPaid(order) ? 'text-green-700' :
-                              order.paymentStatus === 'RETRY' ? 'text-red-700' : 'text-amber-700'}`}>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Payment Status</p>
+                          <h4 className={`text-sm sm:text-base font-bold flex items-center ${isOrderPaid(order) ? 'text-green-700' : 'text-amber-700'}`}>
                             {isOrderPaid(order) ? (
-                              <><FaCheckCircle className="mr-1.5 w-4 h-4" /> Paid {order.paymentMethod === 'ONLINE' ? '(Online)' : '(Cash)'}</>
-                            ) : order.paymentStatus === 'RETRY' ? (
-                              <><FaTimesCircle className="mr-1.5 w-4 h-4" /> Payment Failed (Retry)</>
+                              <><FaCheckCircle className="mr-1.5 w-3.5 h-3.5 flex-shrink-0" /> Paid {order.paymentMethod === 'ONLINE' ? '(Online)' : '(Cash)'}</>
                             ) : (
-                              <><FaClock className="mr-1.5 w-4 h-4" /> Payment Pending</>
+                              <><FaClock className="mr-1.5 w-3.5 h-3.5 flex-shrink-0" /> Payment Pending</>
                             )}
                           </h4>
-                          <p className="text-[11px] text-gray-500 font-medium mt-0.5">
-                            {isOrderPaid(order) 
-                              ? `Verified at ${formatDate(order.updatedAt || order.createdAt)}` 
-                              : `Initiated at ${formatDate(order.createdAt)}`}
-                          </p>
+                          {!isOrderPaid(order) && (
+                            <p className="text-[10px] text-amber-600 font-bold mt-0.5">
+                              Pay at counter or enter UTR
+                            </p>
+                          )}
                         </div>
                       </div>
-                      {isOrderPaid(order) ? (
-                        <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-200">
+                      
+                      {/* Verification Link/Button */}
+                      {!isOrderPaid(order) && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && (
+                        <>
+                          {/* Max retries reached - show Pay at Counter */}
+                          {(order.retryCount || 0) >= 3 ? (
+                            <div className="w-full sm:w-auto px-4 py-3 bg-amber-100 text-amber-700 rounded-xl text-xs font-bold uppercase tracking-wider flex-shrink-0 min-w-[100px] text-center">
+                              <FaMoneyBillWave className="inline w-4 h-4 mr-1" />
+                              Pay at Counter
+                            </div>
+                          ) : /* Verification pending - show loading state */
+                          (order.paymentVerificationRequestbycustomer?.applied) ? (
+                            <button 
+                              disabled
+                              className="w-full sm:w-auto px-4 py-3 bg-indigo-400 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex-shrink-0 min-w-[100px] touch-manipulation flex items-center justify-center gap-2"
+                            >
+                              <FaSpinner className="animate-spin w-4 h-4" />
+                              Verifying...
+                            </button>
+                          ) : /* Default - show Verify UPI button */
+                          (
+                            <button 
+                              onClick={() => setOrderToVerify(order)}
+                              className="w-full sm:w-auto px-4 py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 active:bg-indigo-800 active:scale-95 transition-all shadow-lg shadow-indigo-200 flex-shrink-0 min-w-[100px] touch-manipulation"
+                            >
+                              Verify UPI
+                            </button>
+                          )}
+                        </>
+                      )}
+                      
+                      {isOrderPaid(order) && (
+                         <div className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-green-200 flex-shrink-0 self-start sm:self-center">
                           Verified
-                        </div>
-                      ) : order.paymentStatus === 'RETRY' ? (
-                        <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-200 animate-bounce">
-                          Retry
-                        </div>
-                      ) : (
-                        <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200 animate-pulse">
-                          Pending
                         </div>
                       )}
                     </div>
-
-                    {/* Retry Form */}
-                    {order.paymentStatus === 'RETRY' && (
-                      <div className="mt-4 bg-red-50 p-4 rounded-xl border border-red-200 shadow-inner">
-                        <p className="text-xs font-bold text-red-600 mb-3 uppercase tracking-wider flex items-center gap-2">
-                          <FaClock className="w-3 h-3" /> Action Required: Verification Failed
-                        </p>
-                        <RetryForm order={order} session={session} />
-                      </div>
-                    )}
                   </div>
 
-                  {/* REFUND BLOCK - Only for REJECTED/CANCELLED orders with payment */}
-                  {(order.status === 'CANCELLED' || order.status === 'REJECTED') && isOrderPaid(order) && (
-                    <div className={`p-4 rounded-2xl border transition-all duration-300 ${order.refund?.status === 'COMPLETED'
-                      ? 'bg-purple-50 border-purple-100'
-                      : 'bg-orange-50 border-orange-100'
-                      }`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${order.refund?.status === 'COMPLETED' ? 'bg-white text-purple-600' : 'bg-white text-orange-600'
-                            }`}>
-                            <FaSpinner className={`w-6 h-6 ${order.refund?.status === 'COMPLETED' ? '' : 'animate-spin'}`} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Refund Status</p>
-                            <h4 className={`text-base font-bold flex items-center ${order.refund?.status === 'COMPLETED' ? 'text-purple-700' : 'text-orange-700'}`}>
-                              {order.refund?.status === 'COMPLETED' ? (
-                                <><FaCheckCircle className="mr-1.5 w-4 h-4" /> Refund Completed</>
-                              ) : (
-                                <><FaSpinner className="mr-1.5 w-4 h-4 animate-spin" /> Refund Processing</>
-                              )}
-                            </h4>
-                            <p className="text-[11px] text-gray-500 font-medium mt-0.5">
-                              {order.refund?.status === 'COMPLETED'
-                                ? `₹${(order.refund?.amount || order.totalAmount).toFixed(2)} refunded via ${order.refund?.method || 'original method'} at ${formatDate(order.refund?.processedAt || order.updatedAt)}`
-                                : `Your refund of ₹${order.totalAmount.toFixed(2)} is being processed by the restaurant.`}
-                            </p>
-                          </div>
-                        </div>
-                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.refund?.status === 'COMPLETED'
-                          ? 'bg-purple-100 text-purple-700 border-purple-200'
-                          : 'bg-orange-100 text-orange-700 border-orange-200'
-                          }`}>
-                          {order.refund?.status === 'COMPLETED' ? 'Refunded' : 'Processing'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Feedback Section - Show for COMPLETED orders without feedback */}
+                  {/* Feedback Section */}
                   {order.status === 'COMPLETED' && !order.feedback?.rating && (
                     <div className="bg-green-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                        <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-                        Rate Your Experience
-                      </h4>
                       <FeedbackForm orderId={order._id} onSubmit={submitFeedback} />
                     </div>
                   )}
 
                   {/* Show existing feedback */}
-                  {(order.feedback?.comment || order.feedback?.rating) && (
+                  {order.feedback?.rating && (
                     <div className="bg-green-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                        <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-                        Your Feedback
-                      </h4>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          {order.feedback?.rating && (
-                            <div className="flex items-center mb-2">
-                              {[...Array(5)].map((_, i) => (
-                                <FaStar
-                                  key={i}
-                                  className={`w-5 h-5 ${i < order.feedback!.rating! ? 'text-yellow-400' : 'text-gray-300'}`}
-                                />
-                              ))}
-                            </div>
-                          )}
-                          {order.feedback.comment && (
-                            <p className="text-sm text-green-700 italic">"{order.feedback.comment}"</p>
-                          )}
-                        </div>
-                        <FaComment className="w-5 h-5 text-green-600 ml-3" />
+                      <div className="flex items-center mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <FaStar
+                            key={i}
+                            className={`w-5 h-5 ${i < order.feedback!.rating! ? 'text-yellow-400' : 'text-gray-300'}`}
+                          />
+                        ))}
                       </div>
+                      {order.feedback?.comment && (
+                        <p className="text-sm text-green-700 italic">"{order.feedback.comment}"</p>
+                      )}
                     </div>
                   )}
 
@@ -496,7 +559,7 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
         )}
       </main>
 
-      {/* Cancel Order Modal */}
+      {/* Cancel Modal */}
       <AnimatePresence>
         {cancelModalOpen && (
           <motion.div
@@ -504,7 +567,6 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => !isCancelling && setCancelModalOpen(false)}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
@@ -513,70 +575,107 @@ export default function OrdersTab({ orders, session }: OrdersTabProps) {
               className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="bg-gradient-to-r from-red-500 to-orange-500 p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-black">Cancel Order</h2>
-                    <p className="text-sm opacity-90 mt-1">Are you sure you want to cancel?</p>
+                    <p className="text-sm opacity-90 mt-1">Are you sure?</p>
                   </div>
-                  <button
-                    onClick={() => !isCancelling && setCancelModalOpen(false)}
-                    className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors"
-                  >
+                  <button onClick={() => !isCancelling && setCancelModalOpen(false)}>
                     <FaTimes className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Content */}
               <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Reason for cancellation <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  <textarea
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value.slice(0, 200))}
-                    placeholder="Tell us why you're cancelling..."
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm resize-none"
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Reason (optional)..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                />
+                <div className="flex gap-3">
+                  <button onClick={() => setCancelModalOpen(false)} className="flex-1 py-3 bg-gray-100 rounded-xl">Keep</button>
+                  <button onClick={cancelOrder} className="flex-1 py-3 bg-red-600 text-white rounded-xl">Cancel</button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Verification Modal */}
+      <AnimatePresence>
+        {orderToVerify && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            onClick={() => setOrderToVerify(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-br from-indigo-600 to-indigo-900 p-8 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight">Verify Payment</h2>
+                    <p className="text-xs text-indigo-200 font-bold uppercase tracking-widest mt-1">Order #{orderToVerify.orderNumber || orderToVerify._id.slice(-6)}</p>
+                  </div>
+                  <button onClick={() => setOrderToVerify(null)} className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10">
+                    <FaTimes />
+                  </button>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black">₹{orderToVerify.totalAmount.toFixed(0)}</span>
+                  <span className="text-xs text-indigo-300 font-bold uppercase tracking-widest">Total Amount</span>
+                </div>
+              </div>
+
+              <div className="p-8">
+                {/* Check if max retries reached */}
+                {(orderToVerify.retryCount || 0) >= 3 ? (
+                  <div className="space-y-6">
+                    <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
+                      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FaExclamationTriangle className="w-8 h-8 text-red-500" />
+                      </div>
+                      <h3 className="text-lg font-black text-red-800 mb-2">Max Attempts Reached</h3>
+                      <p className="text-sm text-red-600 mb-4">
+                        You have exceeded the maximum number of UTR verification attempts (3/3).
+                      </p>
+                      <div className="bg-white rounded-xl p-4 border border-red-100">
+                        <p className="text-sm font-bold text-gray-800 mb-2">Please pay at the counter</p>
+                        <p className="text-xs text-gray-500">
+                          Visit the restaurant counter and pay via Cash or UPI directly. The staff will mark your payment as collected.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <PaymentEntryForm 
+                    order={orderToVerify} 
+                    session={session} 
+                    onRefresh={() => {
+                      onRefresh();
+                      setOrderToVerify(null);
+                    }} 
                   />
-                  <p className="text-xs text-gray-400 mt-1 text-right">
-                    {cancelReason.length}/200
-                  </p>
-                </div>
-
-                <div className="bg-red-50 rounded-xl p-4 border border-red-100">
-                  <p className="text-sm text-red-700">
-                    <span className="font-bold">Note:</span> Once cancelled, this action cannot be undone. If payment was already made, a refund will be processed.
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => setCancelModalOpen(false)}
-                    disabled={isCancelling}
-                    className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
-                  >
-                    Keep Order
-                  </button>
-                  <button
-                    onClick={cancelOrder}
-                    disabled={isCancelling}
-                    className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {isCancelling ? (
-                      <>
-                        <FaSpinner className="w-4 h-4 animate-spin" />
-                        Cancelling...
-                      </>
-                    ) : (
-                      'Yes, Cancel'
-                    )}
-                  </button>
-                </div>
+                )}
+              </div>
+              
+              <div className="px-8 pb-8">
+                <button 
+                  onClick={() => setOrderToVerify(null)}
+                  className="w-full py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all"
+                >
+                  Close & Pay Later
+                </button>
               </div>
             </motion.div>
           </motion.div>

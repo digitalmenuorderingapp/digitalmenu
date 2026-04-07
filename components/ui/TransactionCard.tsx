@@ -6,7 +6,6 @@ import {
   FaMoneyBillWave, 
   FaCreditCard, 
   FaCheckCircle, 
-  FaUndo, 
   FaClock, 
   FaHashtag,
   FaUtensils,
@@ -15,8 +14,8 @@ import {
 
 interface Transaction {
   _id: string;
-  type: 'PAYMENT' | 'REFUND';
-  paymentMode: 'CASH' | 'ONLINE' | 'COUNTER';
+  type: 'PAYMENT';
+  paymentMode: 'CASH' | 'ONLINE';
   status: 'PENDING' | 'VERIFIED';
   amount: number;
   createdAt: string;
@@ -34,7 +33,6 @@ interface TransactionCardProps {
 }
 
 const TransactionCard = ({ transaction, onViewDetails }: TransactionCardProps) => {
-  const isPayment = transaction.type === 'PAYMENT';
   const isOnline = transaction.paymentMode === 'ONLINE';
   const isVerified = transaction.status === 'VERIFIED';
 
@@ -48,27 +46,22 @@ const TransactionCard = ({ transaction, onViewDetails }: TransactionCardProps) =
     >
       {/* Type-based Accent Strip */}
       <div className={`absolute top-0 left-0 w-1.5 h-full ${
-        isPayment ? (isVerified ? 'bg-green-500' : 'bg-amber-400') : 'bg-red-500'
+        isVerified ? 'bg-green-500' : 'bg-amber-400'
       }`} />
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg shadow-sm transition-transform group-hover:scale-110 ${
-            isPayment 
-              ? (isOnline ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600') 
-              : 'bg-red-50 text-red-600'
+            isOnline ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
           }`}>
-            {isPayment 
-              ? (isOnline ? <FaCreditCard /> : <FaMoneyBillWave />) 
-              : <FaUndo />
-            }
+            {isOnline ? <FaCreditCard /> : <FaMoneyBillWave />}
           </div>
 
           <div>
             <div className="flex items-center space-x-2 mb-1">
               <span className="font-black text-gray-900 uppercase tracking-tight">#{transaction.meta.orderNumber}</span>
               <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                isPayment ? (isVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700') : 'bg-red-100 text-red-700'
+                isVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
               }`}>
                 {transaction.type}
               </span>
@@ -101,8 +94,8 @@ const TransactionCard = ({ transaction, onViewDetails }: TransactionCardProps) =
 
         <div className="flex items-center justify-between md:justify-end md:space-x-6 w-full md:w-auto">
           <div className="text-right">
-            <p className={`text-xl font-black ${isPayment ? 'text-indigo-600' : 'text-red-600'}`}>
-              {isPayment ? '+' : '-'}₹{Math.round(Math.abs(transaction.amount))}
+            <p className="text-xl font-black text-indigo-600">
+              +₹{Math.round(Math.abs(transaction.amount))}
             </p>
             <div className={`flex items-center justify-end text-[10px] font-black uppercase tracking-widest mt-0.5 ${isVerified ? 'text-green-600' : 'text-orange-500'}`}>
               {isVerified ? (

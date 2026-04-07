@@ -9,7 +9,7 @@ import { socketService } from '@/services/socket';
 import { useGlobalShortcuts } from '@/hooks/useKeyboardShortcuts';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import toast from 'react-hot-toast';
-import { playNotificationSound } from '@/utils/notifications';
+import { playNewOrderSound } from '@/utils/notifications';
 import {
   FaUtensils,
   FaTable,
@@ -81,8 +81,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       const handleNewOrder = (order: any) => {
         console.log('📦 New order received via socket:', order);
+        
+        // Skip notification if this admin created the order themselves
+        if (order.createdBy === user._id || order.source === 'admin') {
+          return;
+        }
+        
         toast.success(`New order from Table #${order.tableNumber || 'N/A'}!`);
-        playNotificationSound();
+        playNewOrderSound();
         
         // Increment badge if not on orders page
         if (!pathname.includes('/admin/orders')) {

@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fa';
 import Button from './Button';
 
-export type ActionType = 'VERIFY_PAYMENT' | 'REJECT_ORDER' | 'MARK_UNPAID' | 'COLLECT_PAYMENT' | 'COMPLETE_REFUND';
+export type ActionType = 'VERIFY_PAYMENT' | 'REJECT_ORDER' | 'MARK_UNPAID' | 'COLLECT_PAYMENT';
 
 interface ActionModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ interface ActionModalProps {
   type: ActionType;
   orderNumber?: string;
   amount?: number;
+  submittedUtr?: string;
 }
 
 const REJECT_REASONS = [
@@ -40,12 +41,21 @@ const UNPAID_REASONS = [
   'Other (Specify below)'
 ];
 
-const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount }: ActionModalProps) => {
+const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, submittedUtr }: ActionModalProps) => {
   const [loading, setLoading] = useState(false);
   const [utr, setUtr] = useState('');
   const [reason, setReason] = useState('');
   const [customReason, setCustomReason] = useState('');
   const [method, setMethod] = useState<'CASH' | 'ONLINE'>('CASH');
+
+  // Set initial UTR if available from customer submission
+  React.useEffect(() => {
+    if (isOpen && submittedUtr && type === 'VERIFY_PAYMENT') {
+      setUtr(submittedUtr);
+    } else if (isOpen && !submittedUtr) {
+      setUtr('');
+    }
+  }, [isOpen, submittedUtr, type]);
 
   const getTitle = () => {
     switch (type) {
@@ -53,7 +63,6 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount }: 
       case 'REJECT_ORDER': return 'Reject Order';
       case 'MARK_UNPAID': return 'Mark as Unpaid';
       case 'COLLECT_PAYMENT': return 'Collect Payment';
-      case 'COMPLETE_REFUND': return 'Complete Refund';
       default: return 'Confirm Action';
     }
   };
@@ -64,15 +73,16 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount }: 
       case 'REJECT_ORDER': return <FaBan className="text-red-600" />;
       case 'MARK_UNPAID': return <FaExclamationTriangle className="text-amber-600" />;
       case 'COLLECT_PAYMENT': return <FaMoneyBillWave className="text-indigo-600" />;
-      case 'COMPLETE_REFUND': return <FaUndo className="text-purple-600" />;
       default: return <FaInfoCircle className="text-blue-600" />;
     }
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (overrideAction?: string) => {
     setLoading(true);
     try {
-      const payload: any = {};
+      const payload: any = {
+        actionOverride: overrideAction // Used to distinguish between APPROVE and RETRY in VERIFY_PAYMENT
+      };
       
       if (type === 'VERIFY_PAYMENT') {
         payload.utr = utr;
@@ -247,17 +257,10 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount }: 
                 </div>
               )}
 
-              {type === 'COMPLETE_REFUND' && (
-                <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100">
-                  <p className="text-purple-900 text-sm font-bold">
-                    This will mark the refund as <strong>Completed</strong> in your records. Please ensure you have already initiated the refund through your payment gateway or handed over the cash.
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Footer */}
-            <div className="p-6 bg-gray-50 flex gap-3 border-t border-gray-100">
+            <div className={`p-6 bg-gray-50 flex gap-3 border-t border-gray-100 ${type === 'VERIFY_PAYMENT' ? 'flex-col sm:flex-row' : ''}`}>
               <Button
                 variant="outline"
                 fullWidth
@@ -266,17 +269,31 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount }: 
               >
                 Cancel
               </Button>
+              
+              {type === 'VERIFY_PAYMENT' && (
+                <Button
+                  variant="amber"
+                  fullWidth
+                  onClick={() => handleConfirm('REQUEST_RETRY')}
+                  isLoading={loading}
+                  disabled={loading}
+                >
+                  Request Retry
+                </Button>
+              )}
+
               <Button
                 variant={type === 'REJECT_ORDER' || type === 'MARK_UNPAID' ? 'danger' : 'primary'}
                 fullWidth
-                onClick={handleConfirm}
+                onClick={() => handleConfirm(type === 'VERIFY_PAYMENT' ? 'VERIFY_PAYMENT' : undefined)}
                 isLoading={loading}
                 disabled={
+                  loading ||
                   ((type === 'REJECT_ORDER' || type === 'MARK_UNPAID') && !reason) ||
                   ((type === 'REJECT_ORDER' || type === 'MARK_UNPAID') && reason === 'Other (Specify below)' && !customReason)
                 }
               >
-                Confirm
+                {type === 'VERIFY_PAYMENT' ? 'Approve Payment' : 'Confirm'}
               </Button>
             </div>
           </motion.div>
@@ -285,10 +302,5 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount }: 
     </AnimatePresence>
   );
 };
-
-// Add standard icon
-const FaUndo = ({ className }: { className?: string }) => (
-  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" className={className} height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M212.333 224.333H12c-6.627 0-12-5.373-12-12V12C0 5.373 5.373 0 12 0h48c6.627 0 12 5.373 12 12v78.112C117.773 39.279 184.26 7.47 258.175 8.33c133.456 1.551 245.316 110.177 253.308 243.344C520.155 396.657 400.916 512 256 512c-69.176 0-131.789-28.093-177.309-73.475-4.809-4.793-4.912-12.607-.226-17.527l34.02-35.657c4.46-4.675 11.751-4.975 16.592-.664C161.42 414.28 206.012 432 256 432c101.442 0 184-82.558 184-184 0-101.442-82.558-184-184-184-48.87 0-93.029 19.349-125.667 50.667h82c6.627 0 12 5.373 12 12v48c0 6.627-5.373 12-12 12z"></path></svg>
-);
 
 export default ActionModal;

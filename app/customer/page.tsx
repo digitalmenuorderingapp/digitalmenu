@@ -323,42 +323,6 @@ function CustomerPageContent() {
         });
       });
 
-      // Listen for refund updates
-      socketService.on('orderRefundUpdate', (order: Order) => {
-        if (order.refund?.status === 'COMPLETED') {
-          toast.success(`Refund of ₹${order.refund.amount?.toFixed(2)} processed via ${order.refund.method}! 💰`, {
-            duration: 8000,
-            style: {
-              borderRadius: '12px',
-              background: '#10b981',
-              color: '#fff',
-            },
-          });
-        } else if (order.refund?.status === 'PENDING') {
-          toast('Refund is being processed... ⏳', {
-            duration: 6000,
-            style: {
-              borderRadius: '12px',
-              background: '#f59e0b',
-              color: '#fff',
-            },
-          });
-        }
-
-        playNotificationSound();
-
-        // Update orders list
-        setOrders(prevOrders => {
-          const index = prevOrders.findIndex(o => o._id === order._id);
-          if (index !== -1) {
-            const newOrders = [...prevOrders];
-            newOrders[index] = order;
-            return newOrders;
-          }
-          return [order, ...prevOrders];
-        });
-      });
-
       // Listen for general order updates (for any other changes)
       socketService.on('orderUpdate', (order: Order) => {
         // 🔄 SYNC STATE
@@ -392,7 +356,6 @@ function CustomerPageContent() {
 
       return () => {
         socketService.off('orderStatusUpdate');
-        socketService.off('orderRefundUpdate');
         socketService.off('orderUpdate');
         socketService.off('paymentVerified');
         socketService.off('menuUpdated');
@@ -442,7 +405,7 @@ function CustomerPageContent() {
     return item ? item.quantity : 0;
   };
 
-  const placeOrder = async (paymentMethod: 'COUNTER' | 'ONLINE', utr?: string, specialInstructions?: string) => {
+  const placeOrder = async (paymentMethod: 'CASH' | 'ONLINE', utr?: string, specialInstructions?: string) => {
     if (cart.length === 0) {
       toast.error('Your cart is empty');
       return;
@@ -476,6 +439,8 @@ function CustomerPageContent() {
           price: item.offerPrice || item.price,
           quantity: item.quantity
         })),
+
+
         totalAmount: cart.reduce((total, item) => {
           const price = item.offerPrice || item.price;
           return total + (price * item.quantity);
@@ -529,58 +494,7 @@ function CustomerPageContent() {
 
   const headerConfig = getHeaderConfig();
 
-  const tabVariants = {
-    enter: { x: 300, opacity: 0 },
-    center: { x: 0, opacity: 1 },
-    exit: { x: -300, opacity: 0 }
-  };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'menu':
-        return (
-          <MenuTab
-            menuItems={menuItems}
-            cart={cart}
-            addToCart={addToCart}
-            removeFromCart={removeFromCart}
-            getItemQuantity={getItemQuantity}
-            restaurantInfo={restaurantInfo}
-            session={session}
-            onGoToCart={() => setActiveTab('cart')}
-          />
-        );
-      case 'cart':
-        return (
-          <CartTab
-            cart={cart}
-            addToCart={addToCart}
-            removeFromCart={removeFromCart}
-            getItemQuantity={getItemQuantity}
-            session={session}
-            onPlaceOrder={placeOrder}
-          />
-        );
-      case 'orders':
-        return (
-          <OrdersTab
-            orders={orders}
-            session={session}
-          />
-        );
-      case 'profile':
-        return (
-          <ProfileTab
-            session={session}
-            onUpdateSession={(updates) => {
-              updateSession(updates);
-            }}
-          />
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -668,6 +582,8 @@ function CustomerPageContent() {
           <OrdersTab
             orders={orders}
             session={session}
+            onRefresh={fetchOrders}
+            menuItems={menuItems}
           />
         </div>
 

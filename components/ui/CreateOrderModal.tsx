@@ -62,7 +62,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     numberOfPersons: '1',
     orderType: 'dine-in' as 'dine-in' | 'takeaway' | 'delivery',
     specialInstructions: '',
-    paymentMethod: 'COUNTER' as 'COUNTER' | 'ONLINE'
+    paymentMethod: 'CASH' as 'CASH' | 'ONLINE'
   });
 
   useEffect(() => {
@@ -75,13 +75,20 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     try {
       setIsLoading(true);
       const restaurantId = user?.id || user?._id;
+      console.log('Fetching menu for restaurantId:', restaurantId);
+      console.log('User object:', user);
       if (!restaurantId) {
         toast.error('Restaurant ID not found. Please login again.');
         return;
       }
       const response = await api.get(`/menu/${restaurantId}`);
-      console.log('Menu API response:', response.data);
-      setMenuItems(response.data.data.filter((item: MenuItem) => item.isActive));
+      console.log('Full API response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response data.data:', response.data?.data);
+      const items = response.data?.data || [];
+      console.log('Items before filter:', items);
+      console.log('Items after isActive filter:', items.filter((item: MenuItem) => item.isActive));
+      setMenuItems(items.filter((item: MenuItem) => item.isActive));
     } catch (error: any) {
       console.error('Failed to load menu items:', error);
       toast.error(error.response?.data?.message || 'Failed to load menu items');
@@ -184,7 +191,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         numberOfPersons: '1',
         orderType: 'dine-in',
         specialInstructions: '',
-        paymentMethod: 'COUNTER'
+        paymentMethod: 'CASH'
       });
       
       onOrderCreated();
@@ -311,7 +318,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                           e.stopPropagation();
                                           addToCart(item);
                                         }}
-                                        className="w-10 h-10 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center group-hover:scale-110 transition-transform"
+                                        className="w-10 h-10 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center group-hover:scale-110"
                                       >
                                         <FaPlus className="text-sm" />
                                       </button>
@@ -341,7 +348,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+                      <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
                         <FaUser className="text-xs text-gray-400" />
                         Customer Name *
                       </label>
@@ -356,7 +363,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+                      <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
                         <FaPhone className="text-xs text-gray-400" />
                         Phone Number
                       </label>
@@ -439,30 +446,32 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Payment Method
                       </label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, paymentMethod: 'COUNTER' })}
-                          className={`p-2 rounded-lg border transition-all ${
-                            formData.paymentMethod === 'COUNTER'
-                              ? 'bg-indigo-600 text-white border-indigo-600'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300'
+                          onClick={() => setFormData({ ...formData, paymentMethod: 'CASH' })}
+                          className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[80px] active:scale-95 ${
+                            formData.paymentMethod === 'CASH'
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:shadow-md'
                           }`}
                         >
-                          <FaMoneyBillWave className="mx-auto mb-1" />
-                          <span className="text-xs">Counter</span>
+                          <FaMoneyBillWave className="w-6 h-6" />
+                          <span className="text-sm font-semibold">Cash</span>
+                          <span className="text-xs opacity-80">Pay at counter</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, paymentMethod: 'ONLINE' })}
-                          className={`p-2 rounded-lg border transition-all ${
+                          className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[80px] active:scale-95 ${
                             formData.paymentMethod === 'ONLINE'
-                              ? 'bg-indigo-600 text-white border-indigo-600'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300'
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:shadow-md'
                           }`}
                         >
-                          <FaCreditCard className="mx-auto mb-1" />
-                          <span className="text-xs">Online</span>
+                          <FaCreditCard className="w-6 h-6" />
+                          <span className="text-sm font-semibold">Online</span>
+                          <span className="text-xs opacity-80">UPI/Card/NetBanking</span>
                         </button>
                       </div>
                     </div>
