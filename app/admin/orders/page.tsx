@@ -148,8 +148,10 @@ export default function OrdersPage() {
         });
         
         // Refresh to get complete data - fetchOrders will merge socket orders
-        console.log('[Socket] Calling fetchOrdersRef for new order');
-        fetchOrdersRef.current?.();
+        console.log('[Socket] Calling fetchOrdersRef for new order, ref exists:', !!fetchOrdersRef.current);
+        setTimeout(() => {
+          fetchOrdersRef.current?.();
+        }, 100);
       };
 
       const handleOrderCancelled = (order: Order) => {
@@ -290,7 +292,7 @@ export default function OrdersPage() {
   }, [user?._id]);
 
   const fetchOrders = async () => {
-    console.log('[fetchOrders] Called with params:', { searchQuery, selectedDate, activeTab });
+    console.log('[fetchOrders] Called with params:', { searchQuery, selectedDate, activeTab, caller: new Error().stack?.split('\n')[2]?.trim() });
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
