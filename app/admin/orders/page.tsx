@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
@@ -29,7 +29,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import { socketService } from '@/services/socket';
-import { playNewOrderSound, playPaymentVerifiedSound, playCancelledSound } from '@/utils/notifications';
+import { playNewOrderSound, playPaymentVerifiedSound, playCancelledSound, initAudioContext } from '@/utils/notifications';
 import { getTodayISTDateString } from '@/utils/date';
 import Button from '@/components/ui/Button';
 import OrderCard, { isOrderPaid, getPaymentStatusDisplay } from '@/components/ui/OrderCard';
@@ -47,6 +47,7 @@ interface Order {
   specialInstructions?: string;
   orderType?: 'dine-in' | 'takeaway' | 'delivery';
   deviceId: string;
+  restaurant?: string;
   adminId?: string;
   items: Array<{ name: string; quantity: number; price: number }>;
   totalAmount: number;
@@ -86,16 +87,50 @@ export default function OrdersPage() {
   const fetchOrdersRef = useRef<() => Promise<void>>();
   // Track orders received via socket to ensure they persist after fetch
   const socketOrdersRef = useRef<Map<string, Order>>(new Map());
+  // Track processed socket events to prevent duplicate toasts
+  const processedEventsRef = useRef<Map<string, number>>(new Map());
+
+  // Helper to check if event was already processed (deduplication window: 5 seconds)
+  const isDuplicateEvent = (eventKey: string): boolean => {
+    const now = Date.now();
+    const lastProcessed = processedEventsRef.current.get(eventKey);
+    
+    // Clean up old entries (older than 10 seconds)
+    processedEventsRef.current.forEach((timestamp, key) => {
+      if (now - timestamp > 10000) {
+        processedEventsRef.current.delete(key);
+      }
+    });
+    
+    if (lastProcessed && (now - lastProcessed < 5000)) {
+      console.log('[Socket] Duplicate event ignored:', eventKey);
+      return true;
+    }
+    
+    processedEventsRef.current.set(eventKey, now);
+    return false;
+  };
 
   useEffect(() => {
     if (user?._id) {
+      const userIdStr = user._id.toString();
+      console.log('[Socket] Connecting and joining room:', userIdStr);
       socketService.connect();
-      socketService.join(user._id);
+      socketService.join(userIdStr);
 
       const handleNewOrder = (order: Order) => {
-        // Only process orders for this admin
-        if (order.deviceId !== user._id && order.adminId !== user._id) return;
+        // Only process orders for this admin - check restaurant field matches user._id
+        const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
+        if (!isForThisAdmin) {
+          console.log('[Socket] Order not for this admin. Order restaurant:', order.restaurant, 'User ID:', userIdStr);
+          return;
+        }
         
+        // Deduplication check
+        const eventKey = `newOrder-${order._id}`;
+        if (isDuplicateEvent(eventKey)) return;
+        
+        console.log('[Socket] New order received:', order.orderNumber || order._id);
         toast.success(`New order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber}!`);
         playNewOrderSound();
         
@@ -113,12 +148,20 @@ export default function OrdersPage() {
         });
         
         // Refresh to get complete data - fetchOrders will merge socket orders
+        console.log('[Socket] Calling fetchOrdersRef for new order');
         fetchOrdersRef.current?.();
       };
 
       const handleOrderCancelled = (order: Order) => {
-        // Only process orders for this admin
-        if (order.deviceId !== user._id && order.adminId !== user._id) return;
+        // Only process orders for this admin - check restaurant field matches user._id
+        const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
+        if (!isForThisAdmin) return;
+        
+        // Deduplication check
+        const eventKey = `cancelled-${order._id}`;
+        if (isDuplicateEvent(eventKey)) return;
+        
+        console.log('[Socket] Order cancelled:', order.orderNumber || order._id);
         toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was cancelled`);
         playCancelledSound();
         // Remove from socket orders ref
@@ -127,8 +170,15 @@ export default function OrdersPage() {
       };
 
       const handleOrderRejected = (order: Order) => {
-        // Only process orders for this admin
-        if (order.deviceId !== user._id && order.adminId !== user._id) return;
+        // Only process orders for this admin - check restaurant field matches user._id
+        const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
+        if (!isForThisAdmin) return;
+        
+        // Deduplication check
+        const eventKey = `rejected-${order._id}`;
+        if (isDuplicateEvent(eventKey)) return;
+        
+        console.log('[Socket] Order rejected:', order.orderNumber || order._id);
         toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was rejected`);
         playCancelledSound();
         // Remove from socket orders ref
@@ -137,32 +187,89 @@ export default function OrdersPage() {
       };
 
       const handlePaymentVerified = (order: Order) => {
-        // Only process orders for this admin
-        if (order.deviceId !== user._id && order.adminId !== user._id) return;
+        // Only process orders for this admin - check restaurant field matches user._id
+        const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
+        if (!isForThisAdmin) return;
+        
+        // Deduplication check
+        const eventKey = `verified-${order._id}`;
+        if (isDuplicateEvent(eventKey)) return;
+        
+        console.log('[Socket] Payment verified:', order.orderNumber || order._id);
         toast.success(`Payment verified for order #${order.orderNumber || order._id.slice(-8)}!`);
         playPaymentVerifiedSound();
         fetchOrdersRef.current?.();
       };
 
       const handleOrderUpdate = (updatedOrder: Order) => {
-        // Only process orders for this admin
-        if (updatedOrder.deviceId !== user._id && updatedOrder.adminId !== user._id) return;
+        // Only process orders for this admin - check restaurant field matches user._id
+        const isForThisAdmin = updatedOrder.restaurant?.toString() === userIdStr || updatedOrder.adminId?.toString() === userIdStr || updatedOrder.deviceId === userIdStr;
+        if (!isForThisAdmin) return;
+        
+        // Deduplication check for status change toasts
+        const eventKey = `update-${updatedOrder._id}-${updatedOrder.status}`;
+        if (isDuplicateEvent(eventKey)) {
+          // Still update the order in state, just don't show toast
+          setOrders(prevOrders => {
+            const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
+            if (index !== -1) {
+              const newOrders = [...prevOrders];
+              newOrders[index] = { ...updatedOrder, updatedAt: updatedOrder.updatedAt || new Date().toISOString() };
+              return newOrders;
+            }
+            return [updatedOrder, ...prevOrders];
+          });
+          return;
+        }
+        
+        console.log('[Socket] Order update received:', updatedOrder.orderNumber || updatedOrder._id, 'Status:', updatedOrder.status);
+        
+        // Only show toast for meaningful status changes (not every update)
+        const prevOrder = orders.find(o => o._id === updatedOrder._id);
+        const prevStatus = prevOrder?.status;
+        const newStatus = updatedOrder.status;
+        
+        // Show toast only for actual status transitions
+        if (prevStatus && prevStatus !== newStatus) {
+          if (newStatus === 'ACCEPTED' && prevStatus === 'PLACED') {
+            toast.success(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} accepted! Being prepared 🍳`);
+            playNewOrderSound();
+          } else if (newStatus === 'COMPLETED') {
+            toast.success(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} completed! 🎉`);
+            playPaymentVerifiedSound();
+          } else if (newStatus === 'REJECTED') {
+            toast.error(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} was rejected`);
+            playCancelledSound();
+          } else if (newStatus === 'CANCELLED') {
+            toast.error(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} was cancelled`);
+            playCancelledSound();
+          }
+        }
+        
+        // Ensure updatedAt is set for proper key generation
+        const orderWithTimestamp = {
+          ...updatedOrder,
+          updatedAt: updatedOrder.updatedAt || new Date().toISOString()
+        };
         
         // Update in socket orders ref if exists
-        if (socketOrdersRef.current.has(updatedOrder._id)) {
-          socketOrdersRef.current.set(updatedOrder._id, updatedOrder);
+        if (socketOrdersRef.current.has(orderWithTimestamp._id)) {
+          socketOrdersRef.current.set(orderWithTimestamp._id, orderWithTimestamp);
         }
         
         setOrders(prevOrders => {
-          const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
+          const index = prevOrders.findIndex(o => o._id === orderWithTimestamp._id);
+          console.log('[Socket] Updating order at index:', index, 'prev status:', prevOrders[index]?.status, 'new status:', orderWithTimestamp.status);
           if (index !== -1) {
             // Update existing order in place
             const newOrders = [...prevOrders];
-            newOrders[index] = updatedOrder;
+            newOrders[index] = orderWithTimestamp;
+            console.log('[Socket] Orders updated, new length:', newOrders.length);
             return newOrders;
           }
           // If order not in list, add it at the top (new order via update)
-          return [updatedOrder, ...prevOrders];
+          console.log('[Socket] Adding new order to list');
+          return [orderWithTimestamp, ...prevOrders];
         });
       };
 
@@ -183,6 +290,7 @@ export default function OrdersPage() {
   }, [user?._id]);
 
   const fetchOrders = async () => {
+    console.log('[fetchOrders] Called with params:', { searchQuery, selectedDate, activeTab });
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
@@ -196,12 +304,15 @@ export default function OrdersPage() {
 
       const response = await api.get(`/order?${params.toString()}`);
       const fetchedOrders = response.data.data || [];
+      console.log('[fetchOrders] Fetched', fetchedOrders.length, 'orders');
       
       // Merge any socket-received orders that might be missing from API response
       // (e.g., due to timing or date filtering issues)
       const fetchedIds = new Set(fetchedOrders.map((o: Order) => o._id));
       const missingSocketOrders = Array.from(socketOrdersRef.current.values())
         .filter(o => !fetchedIds.has(o._id));
+      
+      console.log('[fetchOrders] Missing socket orders:', missingSocketOrders.length);
       
       // Clean up socketOrdersRef for orders that are now in the fetched list
       fetchedOrders.forEach((o: Order) => socketOrdersRef.current.delete(o._id));
@@ -213,7 +324,7 @@ export default function OrdersPage() {
       
       if (response.data.stats) setStats(response.data.stats);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('[fetchOrders] Error fetching orders:', error);
     } finally {
       setIsLoading(false);
     }
@@ -221,6 +332,7 @@ export default function OrdersPage() {
 
   // Keep the ref updated with the latest fetchOrders function
   fetchOrdersRef.current = fetchOrders;
+  console.log('[Ref] fetchOrdersRef updated');
 
   useEffect(() => {
     fetchOrders();
@@ -267,39 +379,65 @@ export default function OrdersPage() {
   };
 
 
-  const paymentStats = {
-    totalRevenue: orders
-      .filter(o => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
-      .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
-    // Serving = ACCEPTED status (orders being prepared/served)
-    servingPending: orders.filter(o => o.status === 'ACCEPTED').length,
-    // Online = ONLINE payment method + PENDING payment status
-    onlinePending: orders.filter(o => 
-      o.paymentMethod === 'ONLINE' && 
-      o.paymentStatus === 'PENDING' && 
-      o.status !== 'CANCELLED' && 
-      o.status !== 'REJECTED'
-    ).length,
-    onlinePendingAmount: orders
-      .filter(o => o.paymentMethod === 'ONLINE' && o.paymentStatus === 'PENDING' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
-      .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
-    // Cash = CASH payment method + PENDING payment status  
-    cashPending: orders.filter(o => 
-      o.paymentMethod === 'CASH' && 
-      o.paymentStatus === 'PENDING' && 
-      o.status !== 'CANCELLED' && 
-      o.status !== 'REJECTED'
-    ).length,
-    cashPendingAmount: orders
-      .filter(o => o.paymentMethod === 'CASH' && o.paymentStatus === 'PENDING' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
-      .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
-    // Dues
-    duesPending: orders.filter(o => o.paymentDueStatus === 'DUE').length,
-    unpaidDuesAmount: orders.filter(o => o.paymentDueStatus === 'DUE').reduce((s, o) => s + (o.totalAmount || 0), 0),
-  };
+  const paymentStats = useMemo(() => {
+    console.log('[Stats] Calculating paymentStats, orders count:', orders.length);
+    console.log('[Stats] Sample order:', orders[0] ? { 
+      status: orders[0].status, 
+      paymentMethod: orders[0].paymentMethod, 
+      paymentStatus: orders[0].paymentStatus,
+      paymentDueStatus: orders[0].paymentDueStatus
+    } : 'no orders');
+    
+    const stats = {
+      totalRevenue: orders
+        .filter(o => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
+        .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+      // Serving = ACCEPTED status (orders being prepared/served)
+      servingPending: orders.filter(o => o.status === 'ACCEPTED').length,
+      // Online = ONLINE payment method + PENDING payment status (default to ONLINE if not set)
+      onlinePending: orders.filter(o => {
+        const method = o.paymentMethod || 'ONLINE'; // Default to ONLINE
+        const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus; // Default PENDING if not set
+        const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
+        return method === 'ONLINE' && isPending && notCancelled;
+      }).length,
+      onlinePendingAmount: orders
+        .filter(o => {
+          const method = o.paymentMethod || 'ONLINE';
+          const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus;
+          const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
+          return method === 'ONLINE' && isPending && notCancelled;
+        })
+        .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+      // Cash = CASH payment method + PENDING payment status  
+      cashPending: orders.filter(o => {
+        const method = o.paymentMethod;
+        const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus;
+        const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
+        return method === 'CASH' && isPending && notCancelled;
+      }).length,
+      cashPendingAmount: orders
+        .filter(o => {
+          const method = o.paymentMethod;
+          const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus;
+          const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
+          return method === 'CASH' && isPending && notCancelled;
+        })
+        .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+      // Dues
+      duesPending: orders.filter(o => o.paymentDueStatus === 'DUE').length,
+      unpaidDuesAmount: orders.filter(o => o.paymentDueStatus === 'DUE').reduce((s, o) => s + (o.totalAmount || 0), 0),
+    };
+    
+    console.log('[Stats] Calculated stats:', stats);
+    return stats;
+  }, [orders]);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+    <div 
+      className="w-full px-4 sm:px-6 lg:px-8 py-4"
+      onClick={() => initAudioContext()}
+    >
       <div className="mb-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
           <div>
@@ -406,7 +544,7 @@ export default function OrdersPage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
               {filteredOrders.map((order) => (
                 <OrderCard
-                   key={`${order._id}-${order.updatedAt || order._id}`}
+                   key={`${order._id}-${order.status}-${order.paymentStatus}-${order.updatedAt || Date.now()}`}
                    order={order as any}
                    onAction={handleAction}
                 />

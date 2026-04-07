@@ -332,6 +332,71 @@ const OrderCard = ({
           </div>
         )}
 
+        {/* Feedback for completed orders */}
+        {order.status === 'COMPLETED' && order.feedback && (order.feedback.rating || order.feedback.comment) && (
+          <div className="mb-4 p-3 rounded-2xl bg-green-50/50 border border-green-100">
+            <div className="flex items-start space-x-2">
+              <FaStar className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Customer Feedback</p>
+                {order.feedback.rating && (
+                  <div className="flex items-center gap-1 mb-1">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar 
+                        key={i} 
+                        className={`w-4 h-4 ${i < order.feedback!.rating! ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                      />
+                    ))}
+                    <span className="text-sm font-bold text-gray-700 ml-1">{order.feedback.rating}/5</span>
+                  </div>
+                )}
+                {order.feedback.comment && (
+                  <p className="text-sm font-medium text-green-900">{order.feedback.comment}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rejection reason */}
+        {order.status === 'REJECTED' && order.rejectionReason && (
+          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
+            <div className="flex items-start space-x-2">
+              <FaExclamationCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Rejection Reason</p>
+                <p className="text-sm font-medium text-red-900">{order.rejectionReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cancellation reason */}
+        {order.status === 'CANCELLED' && order.cancellationReason && (
+          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
+            <div className="flex items-start space-x-2">
+              <FaTimes className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Cancellation Reason</p>
+                <p className="text-sm font-medium text-red-900">{order.cancellationReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Unpaid reason for orders marked as unpaid */}
+        {order.paymentStatus === 'UNPAID' && (
+          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
+            <div className="flex items-start space-x-2">
+              <FaExclamationTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Payment Status</p>
+                <p className="text-sm font-medium text-red-900">Order marked as unpaid</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
           <div className={`p-2 sm:p-3 rounded-2xl border transition-all ${paymentStatusDisplay.bgColor} ${paid ? 'border-green-100' : 'border-gray-100'}`}>
             <div className="flex items-center space-x-2 sm:space-x-3">
