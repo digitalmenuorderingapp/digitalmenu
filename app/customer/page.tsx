@@ -115,13 +115,6 @@ function CustomerPageContent() {
                 logo: restaurantData.logo,
                 motto: restaurantData.motto
               });
-
-              setRestaurantInfo({
-                name: restaurantName,
-                id: qrData.restaurantId,
-                logo: restaurantData.logo,
-                motto: restaurantData.motto
-              });
               toast.success(`Welcome to ${restaurantName}!`);
             } catch (error) {
               console.error('Restaurant fetch error:', error);

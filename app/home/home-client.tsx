@@ -612,21 +612,21 @@ export default function MarketingHomeClient() {
                     </span>
                   </div>
 
-                  {/* Feature 2: Monthly Auto-Report Email */}
+                  {/* Feature 2: Cloud-Encrypted Reports */}
                   <div className="flex items-start gap-3 sm:gap-4 mb-4 group/item">
                     <div className="w-9 h-9 md:w-10 md:h-10 bg-orange-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-orange-500 transition-colors">
                       <FaChartLine className="text-orange-500 group-hover/item:text-white transition-colors text-sm" aria-hidden="true" />
                     </div>
                     <div>
                       <div className="font-black text-gray-900 text-sm tracking-tight">
-                        {lang === 'bn' ? 'মাসিক রিপোর্ট নিবন্ধিত মেইলে' : lang === 'hi' ? 'मासिक रिपोर्ट पंजीकृत ईमेल पर' : 'Monthly Report to Registered Email'}
+                        {lang === 'bn' ? 'ক্লাউড-এনক্রিপ্টেড রিপোর্ট' : lang === 'hi' ? 'क्लाउड-एन्क्रिप्टेड रिपोर्ट' : 'Cloud-Encrypted Reports'}
                       </div>
                       <div className="text-xs text-gray-400 font-medium mt-0.5">
-                        {lang === 'bn' ? 'প্রতি মাসে আপনার অর্ডার ও বিক্রির রিপোর্ট স্বয়ংক্রিয়ভাবে পাঠানো হয়।' : lang === 'hi' ? 'हर महीने ऑर्डर और बिक्री रिपोर्ट स्वचालित रूप से भेजी जाती है।' : 'Order & sales summary auto-sent to your registered email every month.'}
+                        {lang === 'bn' ? 'পূর্ববর্তী মাসের ডেটা ক্লাউডে এনক্রিপ্টেড থাকে। বর্তমান মাসের ডেটা যেকোনো সময় তৈরি এবং ডাউনলোড করুন।' : lang === 'hi' ? 'पिछले महीने का डेटा क्लाउड में एन्क्रिप्टेड रहता है। वर्तमान महीने का डेटा किसी भी समय जेनरेट और डाउनलोड करें।' : 'Previous months\' reports securely encrypted in cloud. Generate and download current month data anytime.'}
                       </div>
                     </div>
                     <span className="ml-auto text-[10px] font-black text-orange-600 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full whitespace-nowrap self-start">
-                      {lang === 'bn' ? 'স্বয়ংক্রিয়' : 'AUTO'}
+                      {lang === 'bn' ? 'ক্লাউড' : 'CLOUD'}
                     </span>
                   </div>
 
