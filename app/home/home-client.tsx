@@ -201,7 +201,7 @@ export default function MarketingHomeClient() {
       {/* --- NAVBAR --- */}
       <header>
         <nav className="fixed top-0 w-full z-[100] backdrop-blur-md bg-white/70 border-b border-gray-100" aria-label="Main navigation">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className=" mx-auto lg:mx-10 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -249,7 +249,7 @@ export default function MarketingHomeClient() {
                     <Link href="/auth" className="px-5 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
                       {t.nav_login}
                     </Link>
-                    <Link href="/auth?mode=register" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block">
+                    <Link href="/auth?mode=register" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block min-w-[150px] text-center">
                       {t.nav_getStarted}
                     </Link>
                   </>

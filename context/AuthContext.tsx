@@ -1,21 +1,48 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import useSWR, { mutate } from 'swr';
 import api from '@/services/api';
+import { fetcher } from '@/services/swr';
 import { getAdminDeviceInfo } from '@/utils/device';
 import toast from 'react-hot-toast';
+
+interface RefreshToken {
+  tokenHash: string;
+  deviceId: string;
+  deviceName?: string;
+  ipAddress?: string;
+  lastSeen?: string | Date;
+  isOnline?: boolean;
+  issuedAt?: string | Date;
+  expiresAt?: string | Date;
+  revokedAt?: string | Date;
+  loginMethod?: 'local' | 'google';
+  sessions?: Array<{
+    loggedInAt: string | Date;
+    loggedOutAt?: string | Date;
+    duration?: number;
+    loginMethod?: 'local' | 'google';
+  }>;
+}
+
+interface AuthMeResponse {
+  success: boolean;
+  user?: RestaurantAdmin | null;
+}
 
 export interface RestaurantAdmin {
   id: string;
   _id?: string; // MongoDB _id field
   email: string;
+  googleId?: string;
+  isPasswordSet?: boolean;
   restaurantName?: string;
   ownerName?: string;
   address?: string;
   phone?: string;
   motto?: string;
-  logo?: string;
-  shortId?: string;
+  logo?: string | null;
   subscription: {
     type: 'free' | 'paid' | 'trial';
     status: 'active' | 'inactive' | 'expired';
@@ -23,6 +50,13 @@ export interface RestaurantAdmin {
     expiryDate: string | Date | null;
     daysLeft?: number;
   };
+  requestCount?: number;
+  shortId?: string;
+  refreshTokens?: RefreshToken[];
+  reports?: any[];
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  lastActivity?: string | Date;
 }
 
 interface AuthContextType {
@@ -30,6 +64,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ notVerified?: boolean }>;
+  googleSignIn: (credential: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -42,62 +77,40 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<RestaurantAdmin | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Skip SWR for superadmin routes to avoid noise
+  const isSuperadminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/superadmin');
 
-  // Check auth status on mount
-  useEffect(() => {
-    // Skip auth check for superadmin routes to avoid noise
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/superadmin')) {
-      setIsLoading(false);
-      return;
+  // Use SWR for user data fetching
+  const { data, error, isLoading, mutate: mutateUser } = useSWR<AuthMeResponse>(
+    isSuperadminRoute ? null : '/auth/me',
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      shouldRetryOnError: false,
+      onError: (err) => {
+        if (err?.response?.status === 401) {
+          localStorage.removeItem('user');
+        }
+      }
     }
-    checkAuth();
-  }, []);
+  );
 
-  const checkAuth = async () => {
-    // Defensive timeout to ensure UI doesn't hang forever
-    const authTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.warn('[AUTH] Auth check timed out. Forcing loading to end.');
-        setIsLoading(false);
-      }
-    }, 8000);
-
-    try {
-      const response = await api.get('/auth/me', { timeout: 10000 });
-      if (response.data.success && response.data.user) {
-        const userData = response.data.user;
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-      } else {
-        setUser(null);
-        localStorage.removeItem('user');
-      }
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        setUser(null);
-        localStorage.removeItem('user');
-      }
-    } finally {
-      clearTimeout(authTimeout);
-      setIsLoading(false);
-    }
-  };
+  const user = data?.success && data.user ? data.user : null;
 
   const login = async (email: string, password: string) => {
     try {
       const deviceInfo = getAdminDeviceInfo();
-      const response = await api.post('/auth/login', { 
-        email, 
+      const response = await api.post('/auth/login', {
+        email,
         password,
         deviceId: deviceInfo.deviceId,
         deviceName: deviceInfo.deviceName
       });
-      
+
       if (response.data.success) {
         const userData = response.data.user;
-        setUser(userData);
+        mutateUser({ success: true, user: userData }, false);
         localStorage.setItem('user', JSON.stringify(userData));
         toast.success('Login successful!');
         return { success: true };
@@ -141,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.data.success) {
         const userData = response.data.user;
-        setUser(userData);
+        mutateUser({ success: true, user: userData }, false);
         localStorage.setItem('user', JSON.stringify(userData));
         toast.success('Email verified successfully!');
       }
@@ -191,27 +204,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const googleSignIn = async (credential: string) => {
+    try {
+      const deviceInfo = getAdminDeviceInfo();
+      const response = await api.post('/auth/google-signin', {
+        credential,
+        deviceId: deviceInfo.deviceId,
+        deviceName: deviceInfo.deviceName
+      });
+
+      if (response.data.success) {
+        const userData = response.data.user;
+        mutateUser({ success: true, user: userData }, false);
+        localStorage.setItem('user', JSON.stringify(userData));
+        toast.success('Welcome! Login successful');
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Google Sign-In failed';
+      toast.error(message);
+      throw new Error(message);
+    }
+  };
+
   const logout = async () => {
     try {
       await api.post('/auth/logout');
     } catch (error) {
       console.log('Logout request failed:', error);
     } finally {
-      setUser(null);
+      mutateUser({ success: false, user: null }, false);
       localStorage.removeItem('user');
       toast.success('Logged out successfully');
     }
   };
 
   const refreshUser = async () => {
-    try {
-      const response = await api.get('/auth/me');
-      if (response.data.success) {
-        setUser(response.data.user);
-      }
-    } catch (error) {
-      setUser(null);
-    }
+    await mutateUser();
   };
 
   return (
@@ -221,6 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        googleSignIn,
         register,
         verifyOtp,
         forgotPassword,

@@ -6,30 +6,23 @@ import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaEnvelope, FaLock, FaSpinner, FaArrowRight, FaUser,
-    FaKey, FaShieldAlt, FaRedo, FaUtensils, FaTimes
+    FaKey, FaShieldAlt, FaRedo, FaUtensils, FaTimes, FaInfoCircle
 } from 'react-icons/fa';
 import MathCaptcha from '@/components/auth/MathCaptcha';
 import Link from 'next/link';
 
-type AuthMode = 'login' | 'register';
-
 function AuthPageContent() {
-    const [mode, setMode] = useState<AuthMode>('login');
-    const [showForgot, setShowForgot] = useState(false);
     const [showOtp, setShowOtp] = useState(false);
     const [otpEmail, setOtpEmail] = useState('');
 
-    // Login/Register States
+    // Login States
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
     // Captcha validation states
     const [loginCaptchaValid, setLoginCaptchaValid] = useState(false);
-    const [registerCaptchaValid, setRegisterCaptchaValid] = useState(false);
-    const [forgotCaptchaValid, setForgotCaptchaValid] = useState(false);
     const [captchaKey, setCaptchaKey] = useState(0); // Used to force refresh captcha
 
     // OTP States
@@ -37,23 +30,13 @@ function AuthPageContent() {
     const [otpTimer, setOtpTimer] = useState(30);
     const [resendingOtp, setResendingOtp] = useState(false);
 
-    // Registration agreement
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
-
-    // Forgot Password States
-    const [forgotStep, setForgotStep] = useState(1);
-    const [forgotEmail, setForgotEmail] = useState('');
-    const [newPassword, setNewPassword] = useState('');
     const {
-        login, register, forgotPassword, resetPassword,
-        verifyOtp, resendOtp
+        login, googleSignIn, verifyOtp, resendOtp
     } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
 
     useEffect(() => {
-        const initialMode = searchParams.get('mode');
-        if (initialMode === 'register') setMode('register');
         const initialEmail = searchParams.get('email');
         if (initialEmail) {
             setOtpEmail(initialEmail);
@@ -61,103 +44,18 @@ function AuthPageContent() {
         }
     }, [searchParams]);
 
-    useEffect(() => {
-        let interval: any;
-        if (showOtp && otpTimer > 0) {
-            interval = setInterval(() => setOtpTimer((t) => t - 1), 1000);
-        }
-        return () => clearInterval(interval);
-    }, [showOtp, otpTimer]);
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!loginCaptchaValid) {
-            setError('Please solve the math captcha correctly');
-            return;
-        }
-        setIsLoading(true);
-        setError('');
-        try {
-            const result = await login(email, password);
-            if (result?.notVerified) {
-                setOtpEmail(email);
-                setShowOtp(true);
-                setIsLoading(false);
-            } else {
-                // Keep loading active during navigation - don't set isLoading false here
-                // The page will unmount anyway after navigation
-                router.push('/admin/dashboard');
-            }
-        } catch (err: any) {
-            setError(err?.response?.data?.message || 'Login failed');
-            setCaptchaKey(prev => prev + 1);
-            setIsLoading(false);
-        }
-    };
-
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!registerCaptchaValid) {
-            setError('Please solve the math captcha correctly');
-            return;
-        }
-        setIsLoading(true);
-        setError('');
-
-        if (password !== confirmPassword) {
-            setError('Passwords do not match');
-            setIsLoading(false);
-            return;
-        }
-
-        if (!agreedToTerms) {
-            setError('Please agree to the privacy policy and terms of service');
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            await register(email, password);
-            setOtpEmail(email);
-            setShowOtp(true);
-        } catch (err: any) {
-            setError(err?.response?.data?.message || 'Registration failed');
-            setCaptchaKey(prev => prev + 1); // Refresh captcha on error
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleSendForgotOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!forgotCaptchaValid) {
-            setError('Please solve the math captcha correctly');
-            return;
-        }
-        setIsLoading(true);
-        try {
-            await forgotPassword(forgotEmail);
-            setForgotStep(2);
-        } catch (err) {
-            setCaptchaKey(prev => prev + 1); // Refresh captcha on error
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleResetPassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            await resetPassword(forgotEmail, otp, newPassword);
-            setShowForgot(false);
-            setMode('login');
-            setForgotStep(1);
-        } catch (err) {
-            // Handled in context
-        } finally {
-            setIsLoading(false);
-        }
+    const handleGoogleSignIn = () => {
+        // Redirect to backend to initiate Google OAuth flow
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+        const { getAdminDeviceInfo } = require('@/utils/device');
+        const deviceInfo = getAdminDeviceInfo();
+        
+        const params = new URLSearchParams({
+            deviceId: String(deviceInfo.deviceId),
+            deviceName: String(deviceInfo.deviceName)
+        });
+        
+        window.location.href = `${backendUrl}/api/auth/google?${params.toString()}`;
     };
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -188,356 +86,142 @@ function AuthPageContent() {
         setOtp(value.replace(/\D/g, '').slice(0, 6));
     };
 
-    const toggleMode = () => {
-        setMode(mode === 'login' ? 'register' : 'login');
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!loginCaptchaValid) {
+            setError('Please solve the math captcha correctly');
+            return;
+        }
+        setIsLoading(true);
         setError('');
+        try {
+            const result = await login(email, password);
+            if (result?.notVerified) {
+                setOtpEmail(email);
+                setShowOtp(true);
+                setIsLoading(false);
+            } else {
+                router.push('/admin/dashboard');
+            }
+        } catch (err: any) {
+            setError(err?.response?.data?.message || 'Login failed');
+            setCaptchaKey(prev => prev + 1);
+            setIsLoading(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 relative overflow-hidden flex items-center justify-center p-4">
-            {/* Background Blobs (Softer for Light Theme) */}
-            <div className="absolute top-0 -left-10 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-            <div className="absolute top-0 -right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-            <div className="absolute -bottom-20 left-20 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
-
-            <div className="hidden lg:flex w-full max-w-4xl relative z-10 h-[600px] rounded-3xl overflow-hidden shadow-2xl border border-slate-200 bg-white/95 backdrop-blur-xl shadow-slate-200 transition-all duration-700">
-
-                {/* Left Side: Login Form */}
-                <div className={`w-1/2 h-full p-12 flex flex-col justify-center transition-all duration-700 ease-in-out ${mode === 'register' ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-2 font-outfit tracking-tight">Welcome Back</h2>
-                        <p className="text-slate-500">Sign in to your account</p>
-                    </div>
-
-                    <form onSubmit={handleLogin} className="space-y-6">
-                        <div className="relative group">
-                            <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
-                            />
-                        </div>
-                        <div className="relative group">
-                            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                            <input
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
-                            />
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => { setShowForgot(true); setForgotStep(1); }}
-                            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors block text-right w-full"
-                        >
-                            Forgot Password?
-                        </button>
-                        <MathCaptcha key={`login-${captchaKey}`} onValidate={setLoginCaptchaValid} />
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group"
-                        >
-                            {isLoading ? <FaSpinner className="animate-spin" /> : <>Sign In <FaArrowRight className="group-hover:translate-x-1 transition-transform" /></>}
-                        </button>
-                    </form>
-                </div>
-
-                {/* Right Side: Register Form */}
-                <div className={`w-1/2 h-full p-12 flex flex-col justify-center transition-all duration-700 ease-in-out absolute right-0 ${mode === 'login' ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-2 font-outfit tracking-tight">Create Account</h2>
-                        <p className="text-slate-500">Join our digital dining platform</p>
-                    </div>
-
-                    <form onSubmit={handleRegister} className="space-y-4">
-                        <div className="relative group">
-                            <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
-                            />
-                        </div>
-                        <div className="relative group">
-                            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                            <input
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
-                            />
-                        </div>
-                        <div className="relative group">
-                            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                            <input
-                                type="password"
-                                placeholder="Confirm Password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2 px-2 py-2">
-                            <input
-                                type="checkbox"
-                                id="agree-check"
-                                checked={agreedToTerms}
-                                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                            <label htmlFor="agree-check" className="text-sm text-slate-500">
-                                I agree to the <Link href="/privacy-policy" className="text-indigo-600 hover:underline">Privacy Policy</Link> and <Link href="/terms-of-service" className="text-indigo-600 hover:underline">Terms of Service</Link>
-                            </label>
-                        </div>
-                        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-                        <MathCaptcha key={`register-${captchaKey}`} onValidate={setRegisterCaptchaValid} />
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group"
-                        >
-                            {isLoading ? <FaSpinner className="animate-spin" /> : <>Sign Up <FaArrowRight className="group-hover:translate-x-1 transition-transform" /></>}
-                        </button>
-                    </form>
-                </div>
-
-                {/* Sliding Overlay */}
-                <div className={`absolute top-0 w-1/2 h-full bg-indigo-600 transition-all duration-700 ease-in-out flex flex-col items-center justify-center p-12 text-center text-white z-20 ${mode === 'login' ? 'translate-x-full' : 'translate-x-0'}`}>
-                    <div className="mb-8">
-                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-xl mb-6">
-                            <FaUtensils className="text-indigo-600 text-3xl" />
-                        </div>
-                        <h1 className="text-3xl font-bold mb-4">{mode === 'login' ? 'Welcome Back!' : 'Hello Friend!'}</h1>
-                        <p className="text-indigo-100 mb-8">
-                            {mode === 'login' ? 'To keep connected with us please login with your personal info.' : 'Enter your details and start your journey with us.'}
-                        </p>
-                        <button
-                            onClick={toggleMode}
-                            className="border-2 border-white px-10 py-3 rounded-2xl font-bold hover:bg-white hover:text-indigo-600 transition-all active:scale-95"
-                        >
-                            {mode === 'login' ? 'SIGN UP' : 'SIGN IN'}
-                        </button>
-                    </div>
-                </div>
+        <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 relative overflow-hidden flex items-center justify-center p-4">
+            {/* Animated Background Pattern */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0s' }} />
+                <div className="absolute top-1/4 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+                <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }} />
             </div>
 
-
-
-            {/* Mobile View */}
-            <div className="flex lg:hidden w-full max-w-md relative z-10 flex-col space-y-6">
-                <div className="text-center mb-4">
-                    <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-4">
-                        <FaUtensils className="text-white text-xl" />
+            {/* Main Card - Single Centered Layout */}
+            <div className="relative z-10 w-full max-w-max">
+                <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border border-white/20">
+                    {/* Logo & Header */}
+                    <div className="text-center mb-6">
+                        <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-3">
+                            <FaUtensils className="text-white text-xl" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-900 mb-1 tracking-tight">Digital<span className="text-indigo-600">Menu</span></h1>
+                        <p className="text-slate-500 text-xs">Sign in to your account</p>
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Digital<span className="text-indigo-600">Menu</span></h1>
-                </div>
 
-                <div className="backdrop-blur-xl bg-white border border-slate-200 p-8 rounded-3xl shadow-2xl overflow-hidden min-h-[460px] flex flex-col relative shadow-slate-300">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={mode}
-                            initial={{ opacity: 0, x: mode === 'login' ? -20 : 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: mode === 'login' ? 20 : -20 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex-1 flex flex-col"
+                    {/* Info Notice */}
+                    <div className="mb-5 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-2">
+                        <FaInfoCircle className="text-indigo-600 mt-0.5 shrink-0 text-xs" />
+                        <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                            Email & Password login is only available if an administrator has set a password for you.
+                        </p>
+                    </div>
+
+                    {/* Login Form */}
+                    <form onSubmit={handleLogin} className="space-y-3">
+                        <div className="relative group">
+                            <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors text-sm" />
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
+                            />
+                        </div>
+                        <div className="relative group">
+                            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors text-sm" />
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
+                            />
+                        </div>
+
+                        {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+
+                        <MathCaptcha key={`login-${captchaKey}`} onValidate={setLoginCaptchaValid} />
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group text-sm"
                         >
-                            <div className="text-center mb-6">
-                                <h2 className="text-2xl font-bold text-slate-900 mb-1">{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
-                                <p className="text-slate-500 text-sm">{mode === 'login' ? 'Sign in to your account' : 'Join our digital dining platform'}</p>
-                            </div>
+                            {isLoading ? <FaSpinner className="animate-spin" /> : <>Sign In <FaArrowRight className="group-hover:translate-x-1 transition-transform text-xs" /></>}
+                        </button>
+                    </form>
 
-                            <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-4">
-                                <div className="relative group">
-                                    <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="email"
-                                        placeholder="Email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50"
-                                    />
-                                </div>
-                                <div className="relative group">
-                                    <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="password"
-                                        placeholder="Password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50"
-                                    />
-                                </div>
-                                {mode === 'register' && (
-                                    <>
-                                        <div className="relative group">
-                                            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                type="password"
-                                                placeholder="Confirm Password"
-                                                value={confirmPassword}
-                                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                                required
-                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50"
-                                            />
-                                        </div>
-                                        <div className="flex items-start gap-2 py-1 px-1">
-                                            <input
-                                                type="checkbox"
-                                                id="agree-check-mobile"
-                                                checked={agreedToTerms}
-                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                                className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                            />
-                                            <label htmlFor="agree-check-mobile" className="text-[10px] text-slate-500 leading-tight">
-                                                I agree to the <Link href="/privacy-policy" className="text-indigo-600 hover:underline">Privacy Policy</Link> and <Link href="/terms-of-service" className="text-indigo-600 hover:underline">Terms of Service</Link>
-                                            </label>
-                                        </div>
-                                    </>
-                                )}
+                    {/* Divider */}
+                    <div className="mt-5 flex items-center justify-between">
+                        <hr className="w-full border-slate-200" />
+                        <span className="p-2 text-slate-400 text-xs">or</span>
+                        <hr className="w-full border-slate-200" />
+                    </div>
 
-                                {mode === 'login' && (
-                                    <button
-                                        type="button"
-                                        onClick={() => { setShowForgot(true); setForgotStep(1); }}
-                                        className="text-xs text-indigo-600 hover:text-indigo-800 block text-right w-full font-medium"
-                                    >
-                                        Forgot Password?
-                                    </button>
-                                )}
+                    {/* Google Sign In Button */}
+                    <button
+                        onClick={handleGoogleSignIn}
+                        type="button"
+                        className="w-full mt-3 flex items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-700 font-medium py-3 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm text-sm"
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Sign in with Google
+                    </button>
 
-                                <MathCaptcha key={`mobile-${captchaKey}`} onValidate={mode === 'login' ? setLoginCaptchaValid : setRegisterCaptchaValid} />
+                    {/* Register Notice */}
+                    <div className="mt-5 p-3 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl flex items-start gap-2">
+                        <FaInfoCircle className="text-indigo-600 mt-0.5 shrink-0 text-xs" />
+                        <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                            New merchant? Registration is only available via Google Sign-in.
+                        </p>
+                    </div>
 
-                                {error && <p className="text-red-500 text-xs text-center">{error}</p>}
-
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2"
-                                >
-                                    {isLoading ? <FaSpinner className="animate-spin" /> : (mode === 'login' ? 'Sign In' : 'Sign Up')}
-                                </button>
-                            </form>
-
-                            <div className="mt-6 text-center">
-                                <button
-                                    onClick={toggleMode}
-                                    className="text-gray-400 text-sm hover:text-white transition-colors underline decoration-indigo-500/50"
-                                >
-                                    {mode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
+                    {/* Terms */}
+                    <p className="text-[11px] text-slate-400 text-center mt-4 leading-relaxed">
+                        By signing in, you agree to our{' '}
+                        <Link href="/privacy-policy" className="text-indigo-600 hover:underline">Privacy Policy</Link>
+                        {' '}and{' '}
+                        <Link href="/terms-of-service" className="text-indigo-600 hover:underline">Terms of Service</Link>
+                    </p>
                 </div>
 
-                <Link href="/" className="text-gray-500 hover:text-white transition-colors text-sm flex items-center justify-center space-x-2">
+                {/* Back to Home */}
+                <Link href="/" className="mt-4 text-white/80 hover:text-white transition-colors text-xs flex items-center justify-center gap-2">
                     <span>←</span>
                     <span>Back to website</span>
                 </Link>
             </div>
-
-            {/* SHARED OVERLAYS (Outside desktop/mobile containers for common visibility) */}
-            {/* Bottom Slide: Forgot Password */}
-            <AnimatePresence>
-                {showForgot && (
-                    <motion.div
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '100%' }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[100] bg-white p-6 md:p-12 flex flex-col"
-                    >
-                        <button
-                            onClick={() => setShowForgot(false)}
-                            className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors"
-                        >
-                            <FaTimes size={24} />
-                        </button>
-
-                        <div className="max-w-md mx-auto w-full flex-1 flex flex-col justify-center">
-                            <div className="text-center mb-8">
-                                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">Reset Password</h2>
-                                <p className="text-slate-500 text-sm md:text-base">
-                                    {forgotStep === 1 ? "Enter your email to receive a reset code" : "Enter the code and your new password"}
-                                </p>
-                            </div>
-
-                            {forgotStep === 1 ? (
-                                <form onSubmit={handleSendForgotOtp} className="space-y-6">
-                                    <div className="relative group">
-                                        <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600" />
-                                        <input
-                                            type="email"
-                                            placeholder="Email Address"
-                                            value={forgotEmail}
-                                            onChange={(e) => setForgotEmail(e.target.value)}
-                                            required
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
-                                        />
-                                    </div>
-                                    <MathCaptcha key={`forgot-${captchaKey}`} onValidate={setForgotCaptchaValid} />
-                                    <button
-                                        type="submit"
-                                        disabled={isLoading}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
-                                    >
-                                        {isLoading ? <FaSpinner className="animate-spin" /> : "Send Code"}
-                                    </button>
-                                </form>
-                            ) : (
-                                <form onSubmit={handleResetPassword} className="space-y-6">
-                                    <div className="flex flex-col gap-2">
-                                        <input
-                                            type="text"
-                                            value={otp}
-                                            onChange={(e) => handleOtpChange(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 text-center text-2xl font-bold tracking-[1em] text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
-                                            placeholder="000000"
-                                            maxLength={6}
-                                        />
-                                        <p className="text-[10px] text-slate-400 text-center">Enter the 6-digit code sent to your email</p>
-                                    </div>
-                                    <div className="relative group">
-                                        <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600" />
-                                        <input
-                                            type="password"
-                                            placeholder="New Password"
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            required
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
-                                        />
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        disabled={isLoading}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
-                                    >
-                                        {isLoading ? <FaSpinner className="animate-spin" /> : "Reset Password"}
-                                    </button>
-                                </form>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* OTP Overlay */}
             <AnimatePresence>

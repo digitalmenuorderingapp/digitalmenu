@@ -51,8 +51,8 @@ export const TRANSLATIONS = {
     platform_title: "Built for Humans.",
     platform_desc: "We removed all the 'steps'. No app downloads. No account creation for customers. Just scan and eat.",
     platform_setup: "Live in 10 Minutes",
-    plat_step1_title: "Sign Up",
-    plat_step1_desc: "Create your restaurant profile and upload logo.",
+    plat_step1_title: "Sign Up (Google Only)",
+    plat_step1_desc: "Register your restaurant instantly using your Google account.",
     plat_step2_title: "Add Your Menu",
     plat_step2_desc: "List your dishes, prices, and mouth-watering photos.",
     plat_step3_title: "Get Your QRs",
@@ -98,8 +98,8 @@ export const TRANSLATIONS = {
     sec1_desc: "Your restaurant data sits in its own secure locker.",
     sec2_title: "Audit Transparency",
     sec2_desc: "See every login event and tracking point real-time.",
-    sec3_title: "Secure Authentication",
-    sec3_desc: "Password-based login with OTP verification for registration and password recovery.",
+    sec3_title: "Secure Access",
+    sec3_desc: "Google Sign-in for registration. Email & Password login is only available if an administrator has set a password for you.",
     sec_dev: "Lead Engineer",
     cta_title_p1: "Your Restaurant.",
     cta_title_p2: "Just Way Smarter.",
@@ -130,7 +130,7 @@ export const TRANSLATIONS = {
     support_security_desc: "Protect your restaurant account from unauthorized access.",
     support_security_instruction_title: "Suspicious Activity?",
     support_security_instruction_body: "If you notice any suspicious login activity, please take these steps immediately:",
-    support_security_step1: "Reset your password using the OTP verification method.",
+    support_security_step1: "Reset your password from your account settings.",
     support_security_step2: "Go to the 'Devices' section and remove all devices other than your current one.",
     support_faq_title: "Frequently Asked Questions",
     support_shortcuts_title: "Keyboard Shortcuts",
@@ -167,6 +167,38 @@ export const TRANSLATIONS = {
       {
         question: "How do I use keyboard shortcuts?",
         answer: "Press Alt + any key to quickly navigate between pages. For example, Alt + D for Dashboard, Alt + O for Orders, Alt + L for Ledger. Press Shift + ? to see all shortcuts."
+      },
+      {
+        question: "How do I change my password?",
+        answer: "Go to your account settings in the top right menu. You can update your password there. Make sure to use a strong password with at least 6 characters."
+      },
+      {
+        question: "Can I access my account from multiple devices?",
+        answer: "Yes, you can log in from multiple devices. However, for security, we recommend monitoring your active devices in the 'Devices' section and removing any unfamiliar devices."
+      },
+      {
+        question: "How do I export my financial reports?",
+        answer: "Navigate to the 'Reports' section in your sidebar. You can generate and download Excel reports for any date range. Reports include sales data, payment breakdowns, and order details."
+      },
+      {
+        question: "What happens when my subscription expires?",
+        answer: "When your subscription expires, you'll lose access to order management features. However, your data remains safe. You can renew anytime to continue using all features."
+      },
+      {
+        question: "How do I track my daily revenue?",
+        answer: "The 'Ledger' section provides real-time revenue tracking. You can view daily, weekly, and monthly breakdowns, payment method splits, and order statistics."
+      },
+      {
+        question: "Can I customize my restaurant's branding?",
+        answer: "Yes! Go to 'Restaurant Info' in your sidebar to upload your logo, set your restaurant name, and customize other branding elements that appear on customer-facing pages."
+      },
+      {
+        question: "What payment methods are supported?",
+        answer: "DigitalMenu supports Cash payments and Online payments via integrated payment gateways. Customers can choose their preferred method during checkout."
+      },
+      {
+        question: "How do I handle order cancellations?",
+        answer: "In the 'Orders' section, you can view and manage all orders. You can cancel orders and add cancellation reasons for record-keeping and analytics."
       }
     ],
     support_shortcuts: [
@@ -195,7 +227,7 @@ export const TRANSLATIONS = {
     
     guide_setup_t: "Phase 1: Your Brand Identity",
     guide_setup_d: "Before taking orders, finalize your restaurant's digital face by going to 'Restaurant Info'.",
-    guide_setup_s1: "Upload high-quality Logo for brand recognition.",
+    guide_setup_s1: "Register using Google Sign-in to instantly create your merchant account.",
     guide_setup_s2: "Verify your Email and Phone for order alerts.",
     guide_setup_s3: "Set your Address for accurate customer billing.",
 
@@ -222,6 +254,17 @@ export const TRANSLATIONS = {
     guide_audit_s1: "Check 'Net Balance' to see exactly how much money is in hand.",
     guide_audit_s2: "Verify Online Payments: Ensure amounts match your bank dashboard before verifying.",
     guide_audit_s3: "Monthly Audit: Export your Excel report on the 1st of every month for taxation.",
+    auth_login_notice: "Email & Password login is only available if an administrator has set a password for you.",
+    auth_register_notice: "New merchant? Registration is only available via Google Sign-in.",
+    auth_welcome_back: "Welcome Back",
+    auth_sign_in_desc: "Sign in to your account",
+    auth_new_here: "New Here?",
+    auth_register_desc: "Register your restaurant and start your digital dining journey with us today.",
+    auth_register_with_google: "Register with Google",
+    auth_sign_in_with_google: "Sign in with Google",
+    auth_forgot_password: "Forgot Password?",
+    auth_sign_in_btn: "Sign In",
+    auth_or: "OR"
   },
   hi: {
     nav_platform: "कैसे काम करता है",
@@ -273,8 +316,8 @@ export const TRANSLATIONS = {
     platform_title: "इंसानों के लिए बना।",
     platform_desc: "हमने सारे झंझट हटा दिए। ग्राहक को कोई ऐप डाउनलोड नहीं करनी, बस स्कैन करो और खाओ।",
     platform_setup: "10 मिनट में लाइव",
-    plat_step1_title: "रजिस्टर करें",
-    plat_step1_desc: "अपना रेस्तरां प्रोफाइल बनाएं और लोगो अपलोड करें।",
+    plat_step1_title: "रजिस्टर करें (सिर्फ गूगल)",
+    plat_step1_desc: "अपने गूगल अकाउंट का इस्तेमाल करके तुरंत अपना रेस्तरां रजिस्टर करें।",
     plat_step2_title: "मेन्यू जोड़ें",
     plat_step2_desc: "अपनी लजीज डिशेज, कीमतें और फोटो अपलोड करें।",
     plat_step3_title: "QR प्राप्त करें",
@@ -318,10 +361,10 @@ export const TRANSLATIONS = {
     sec_manifest: "सुरक्षा का वादा",
     sec1_title: "डेटा सीक्रेसी",
     sec1_desc: "आपका डेटा पूरी तरह से सुरक्षित और अलग है।",
-    sec2_title: "ट्रांसपेরেন্সি",
+    sec2_title: "ट्रांसपेरেন্সি",
     sec2_desc: "हर लॉगिन और गतिविधि पर नज़र रखें।",
-    sec3_title: "गूगल लॉगिन",
-    sec3_desc: "एक क्लिक में अपनी ई-मेल से सुरक्षित एक्सेस पाएं।",
+    sec3_title: "सुरक्षित एक्सेस",
+    sec3_desc: "रजिस्ट्रेशन के लिए गूगल लॉगिन। ईमेल और पासवर्ड लॉगिन केवल तभी उपलब्ध है जब एडमिन ने आपके लिए पासवर्ड सेट किया हो।",
     sec_dev: "इंजीनियर",
     cta_title_p1: "आपका रेस्तरां।",
     cta_title_p2: "अब और भी स्मार्ट।",
@@ -352,7 +395,7 @@ export const TRANSLATIONS = {
     support_security_desc: "अपने रेस्तरां खाते को अनधिकृत पहुंच से बचाएं।",
     support_security_instruction_title: "संदिग्ध गतिविधि?",
     support_security_instruction_body: "यदि आप कोई संदिग्ध लॉगिन गतिविधि देखते हैं, तो कृपया ये कदम तुरंत उठाएं:",
-    support_security_step1: "OTP सत्यापन विधि का उपयोग करके अपना पासवर्ड रीसेट करें।",
+    support_security_step1: "अपने अकाउंट सेटिंग्स से अपना पासवर्ड रीसेट करें।",
     support_security_step2: "'डिवाइस' सेक्शन में जाएं और अपने वर्तमान डिवाइस के अलावा अन्य सभी डिवाइस को हटा दें।",
     support_faq_title: "अक्सर पूछे जाने वाले प्रश्न",
     support_shortcuts_title: "कीबोर्ड शॉर्टकट",
@@ -389,6 +432,38 @@ export const TRANSLATIONS = {
       {
         question: "मैं कीबोर्ड शॉर्टकट का उपयोग कैसे करूँ?",
         answer: "पेजों के बीच तेज़ी से नेविगेट करने के लिए Alt + कोई भी की दबाएं। उदाहरण के लिए, डैशबोर्ड के लिए Alt + D, ऑर्डर्स के लिए Alt + O। सभी शॉर्टकट देखने के लिए Shift + ? दबाएं।"
+      },
+      {
+        question: "मैं अपना पासवर्ड कैसे बदलूँ?",
+        answer: "ऊपर दाईं ओर मेनू में अपने अकाउंट सेटिंग्स पर जाएं। आप वहां अपना पासवर्ड अपडेट कर सकते हैं। कम से कम 6 अक्षरों वाला मजबूत पासवर्ड का उपयोग करें।"
+      },
+      {
+        question: "क्या मैं कई डिवाइस से अपने अकाउंट में लॉगिन कर सकता हूँ?",
+        answer: "हां, आप कई डिवाइस से लॉगिन कर सकते हैं। हालांकि, सुरक्षा के लिए, हम अनुशंसा करते हैं कि आप 'डिवाइस' सेक्शन में अपने सक्रिय डिवाइस की निगरानी करें और किसी भी अपरिचित डिवाइस को हटा दें।"
+      },
+      {
+        question: "मैं अपनी वित्तीय रिपोर्ट कैसे निर्यात करूँ?",
+        answer: "अपने साइडबार में 'रिपोर्ट' सेक्शन पर जाएं। आप किसी भी तारीख सीमा के लिए एक्सेल रिपोर्ट जनरेट और डाउनलोड कर सकते हैं। रिपोर्ट में बिक्री डेटा, भुगतान विवरण और ऑर्डर विवरण शामिल हैं।"
+      },
+      {
+        question: "जब मेरी सदस्यता समाप्त हो जाती है तो क्या होता है?",
+        answer: "जब आपकी सदस्यता समाप्त हो जाती है, तो आप ऑर्डर प्रबंधन सुविधाओं तक पहुंच खो देंगे। हालांकि, आपका डेटा सुरक्षित रहता है। आप सभी सुविधाओं का उपयोग जारी रखने के लिए किसी भी समय नवीनीकरण कर सकते हैं।"
+      },
+      {
+        question: "मैं अपनी दैनिक आय कैसे ट्रैक करूँ?",
+        answer: "'लेजर' सेक्शन रियल-टाइम आय ट्रैकिंग प्रदान करता है। आप दैनिक, साप्ताहिक और मासिक विवरण, भुगतान विधि विभाजन और ऑर्डर आंकड़े देख सकते हैं।"
+      },
+      {
+        question: "क्या मैं अपने रेस्तरां की ब्रांडिंग को कस्टमाइज़ कर सकता हूँ?",
+        answer: "हां! अपने साइडबार में 'रेस्तरां जानकारी' पर जाएं। आप अपना लोगो अपलोड कर सकते हैं, अपने रेस्तरां का नाम सेट कर सकते हैं, और अन्य ब्रांडिंग तत्वों को कस्टमाइज़ कर सकते हैं।"
+      },
+      {
+        question: "कौन से भुगतान विधियां समर्थित हैं?",
+        answer: "डिजिटलमेन्यू नकद भुगतान और एकीकृत भुगतान गेटवे के माध्यम से ऑनलाइन भुगतान का समर्थन करता है। ग्राहक चेकआउट के समय अपनी पसंद का तरीका चुन सकते हैं।"
+      },
+      {
+        question: "मैं ऑर्डर रद्दीकरण कैसे संभालूँ?",
+        answer: "'ऑर्डर्स' सेक्शन में, आप सभी ऑर्डर देख और प्रबंधित कर सकते हैं। आप ऑर्डर रद्द कर सकते हैं और रिकॉर्ड-कीपिंग और विश्लेषण के लिए रद्दीकरण कारण जोड़ सकते हैं।"
       }
     ],
     support_shortcuts: [
@@ -417,7 +492,7 @@ export const TRANSLATIONS = {
 
     guide_setup_t: "फेज 1: आपके ब्रांड की पहचान",
     guide_setup_d: "ऑर्डर लेने से पहले, 'रेस्तरां जानकारी' पर जाकर अपने रेस्तरां का डिजिटल चेहरा तैयार करें।",
-    guide_setup_s1: "ब्रांड पहचान के लिए हाई-क्वालिटी लोगो अपलोड करें।",
+    guide_setup_s1: "मर्चेंट अकाउंट बनाने के लिए गूगल लॉगिन का उपयोग करें।",
     guide_setup_s2: "ऑर्डर अलर्ट के लिए अपना ईमेल और फोन वेरिफाई करें।",
     guide_setup_s3: "सटीक कस्टमर बिलिंग के लिए अपना पता सेट करें।",
 
@@ -444,6 +519,17 @@ export const TRANSLATIONS = {
     guide_audit_s1: "यह देखने के लिए 'नेट बैलेंस' चेक करें कि आपके पास वास्तव में कितना पैसा है।",
     guide_audit_s2: "ऑनलाइन भुगतान वेरिफाई करें: वेरिफाई करने से पहले सुनिश्चित करें कि बैंक डैशबोर्ड से राशि मैच हो रही है।",
     guide_audit_s3: "मंथली ऑडिट: टैक्स और फाइलिंग के लिए हर महीने की 1 तारीख को अपनी एक्सेल रिपोर्ट एक्सपोर्ट करें।",
+    auth_login_notice: "ईमेल और पासवर्ड लॉगिन केवल तभी उपलब्ध है जब एडमिन ने आपके लिए पासवर्ड सेट किया हो।",
+    auth_register_notice: "नए मर्चेंट? रजिस्ट्रेशन केवल गूगल लॉगिन के माध्यम से उपलब्ध है।",
+    auth_welcome_back: "वापसी पर स्वागत है",
+    auth_sign_in_desc: "अपने खाते में साइन इन करें",
+    auth_new_here: "क्या आप नए हैं?",
+    auth_register_desc: "अपना रेस्तरां रजिस्टर करें और आज ही हमारे साथ अपनी डिजिटल यात्रा शुरू करें।",
+    auth_register_with_google: "गूगल के साथ रजिस्टर करें",
+    auth_sign_in_with_google: "गूगल के साथ साइन इन करें",
+    auth_forgot_password: "पासवर्ड भूल गए?",
+    auth_sign_in_btn: "साइन इन करें",
+    auth_or: "या"
   },
   bn: {
     nav_platform: "কীভাবে কাজ করে",
@@ -495,8 +581,8 @@ export const TRANSLATIONS = {
     platform_title: "আপনার জন্য সহজবোধ্য।",
     platform_desc: "আমরা সব জটিল ধাপ মুছে দিয়েছি। গ্রাহকের কোনো অ্যাপ লাগবে না, শুধু স্ক্যান করেই অর্ডার।",
     platform_setup: "১০ মিনিটে অনলাইন",
-    plat_step1_title: "নিবন্ধন করুন",
-    plat_step1_desc: "আপনার রেস্তোরাঁর প্রোফাইল তৈরি করুন ও লোগো দিন।",
+    plat_step1_title: "নিবন্ধন করুন (শুধুমাত্র গুগল)",
+    plat_step1_desc: "আপনার গুগল অ্যাকাউন্ট ব্যবহার করে অবিলম্বে আপনার রেস্তোরাঁ নিবন্ধন করুন।",
     plat_step2_title: "মেনু দিন",
     plat_step2_desc: "খাবারগুলোর ছবি, বিবরণ ও দাম যুক্ত করুন।",
     plat_step3_title: "কিউআর পান",
@@ -542,8 +628,8 @@ export const TRANSLATIONS = {
     sec1_desc: "আপনার তথ্য অন্য করো সাথে অদল-বদল করার কোনো সুযোগই নেই।",
     sec2_title: "সবকিছু স্বচ্ছ",
     sec2_desc: "আপনার অ্যাডমিন প্যানেলের প্রতিটি মুভমেন্ট রিয়েল-টাইমে দেখুন।",
-    sec3_title: "জিমেইল লগইন",
-    sec3_desc: "আপনার নিয়মিত জিমেইল দিয়ে অ্যাডমিন প্যানেল সুরক্ষিত রাখুন।",
+    sec3_title: "সুরক্ষিত অ্যাক্সেস",
+    sec3_desc: "নিবন্ধনের জন্য গুগল লগইন। ইমেল এবং পাসওয়ার্ড লগইন কেবল তখনই পাওয়া যাবে যদি অ্যাডমিন আপনার জন্য পাসওয়ার্ড সেট করে থাকেন।",
     sec_dev: "ইঞ্জিনিয়ার",
     cta_title_p1: "নতুন আপনার রেস্তোরাঁ।",
     cta_title_p2: " এবার আরও স্মার্ট।",
@@ -574,7 +660,7 @@ export const TRANSLATIONS = {
     support_security_desc: "আপনার রেস্তোরাঁ অ্যাকাউন্ট অননুমোদিত অ্যাক্সেস থেকে রক্ষা করুন।",
     support_security_instruction_title: "সন্দেহজনক কার্যকলাপ?",
     support_security_instruction_body: "যদি আপনি কোনো সন্দেহজনক লগইন কার্যকলাপ লক্ষ্য করেন, তবে অনুগ্রহ করে অবিলম্বে এই পদক্ষেপগুলি নিন:",
-    support_security_step1: "OTP যাচাইকরণ পদ্ধতি ব্যবহার করে আপনার পাসওয়ার্ড রিসেট করুন।",
+    support_security_step1: "আপনার অ্যাকাউন্ট সেটিংস থেকে আপনার পাসওয়ার্ড রিসেট করুন।",
     support_security_step2: "'ডিভাইস' বিভাগে যান এবং আপনার বর্তমান ডিভাইস ছাড়া অন্য সব ডিভাইস সরিয়ে ফেলুন।",
     support_faq_title: "প্রায়শই জিজ্ঞাসিত প্রশ্নাবলী",
     support_shortcuts_title: "কীবোর্ড শর্টকাট",
@@ -611,6 +697,38 @@ export const TRANSLATIONS = {
       {
         question: "আমি কীভাবে কীবোর্ড শর্টকাট ব্যবহার করব?",
         answer: "দ্রুত নেভিগেট করতে Alt + যেকোনো কী টিপুন। উদাহরণস্বরূপ, ড্যাশবোর্ডের জন্য Alt + D, অর্ডারের জন্য Alt + O। সব শর্টকাট দেখতে Shift + ? টিপুন।"
+      },
+      {
+        question: "আমি কীভাবে আমার পাসওয়ার্ড পরিবর্তন করব?",
+        answer: "উপরের ডানদিকের মেনুতে আপনার অ্যাকাউন্ট সেটিংসে যান। আপনি সেখানে আপনার পাসওয়ার্ড আপডেট করতে পারবেন। অন্তত ৬ অক্ষরের একটি শক্তিশালী পাসওয়ার্ড ব্যবহার করুন।"
+      },
+      {
+        question: "আমি কি একাধিক ডিভাইস থেকে আমার অ্যাকাউন্টে লগ ইন করতে পারি?",
+        answer: "হ্যাঁ, আপনি একাধিক ডিভাইস থেকে লগ ইন করতে পারেন। তবে, নিরাপত্তার জন্য, আমরা আপনাকে 'ডিভাইস' বিভাগে আপনার সক্রিয় ডিভাইসগুলি পর্যবেক্ষণ করতে এবং অপরিচিত ডিভাইসগুলি সরিয়ে ফেলতে সুপারিশ করি।"
+      },
+      {
+        question: "আমি কীভাবে আমার আর্থিক রিপোর্ট এক্সপোর্ট করব?",
+        answer: "আপনার সাইডবারে 'রিপোর্ট' বিভাগে যান। আপনি যেকোনো তারিখের জন্য এক্সেল রিপোর্ট তৈরি এবং ডাউনলোড করতে পারবেন। রিপোর্টে বিক্রয় ডেটা, পেমেন্ট বিভাজন এবং অর্ডারের বিবরণ অন্তর্ভুক্ত থাকে।"
+      },
+      {
+        question: "আমার সাবস্ক্রিপশন শেষ হলে কী হবে?",
+        answer: "আপনার সাবস্ক্রিপশন শেষ হলে, আপনি অর্ডার ম্যানেজমেন্ট ফিচারে অ্যাক্সেস হারাবেন। তবে, আপনার ডেটা নিরাপদ থাকবে। আপনি যেকোনো সময় নবায়ন করতে পারেন।"
+      },
+      {
+        question: "আমি কীভাবে আমার দৈনিক আয় ট্র্যাক করব?",
+        answer: "'লেজার' বিভাগ রিয়েল-টাইম আয় ট্র্যাকিং প্রদান করে। আপনি দৈনিক, সাপ্তাহিক এবং মাসিক বিবরণ, পেমেন্ট পদ্ধতি বিভাজন এবং অর্ডার পরিসংখ্যান দেখতে পারেন।"
+      },
+      {
+        question: "আমি কি আমার রেস্তোরাঁর ব্র্যান্ডিং কাস্টমাইজ করতে পারি?",
+        answer: "হ্যাঁ! আপনার সাইডবারে 'রেস্টুরেন্ট ইনফো' যান। আপনি আপনার লোগো আপলোড করতে পারেন, রেস্তোরাঁর নাম সেট করতে পারেন, এবং অন্যান্য ব্র্যান্ডিং উপাদানগুলি কাস্টমাইজ করতে পারেন।"
+      },
+      {
+        question: "কোন পেমেন্ট পদ্ধতিগুলি সমর্থিত?",
+        answer: "ডিজিটালমেনু নগদ পেমেন্ট এবং ইন্টিগ্রেটেড পেমেন্ট গেটওয়ের মাধ্যমে অনলাইন পেমেন্ট সমর্থন করে। গ্রাহকরা চেকআউটের সময় তাদের পছন্দের পদ্ধতি বেছে নিতে পারেন।"
+      },
+      {
+        question: "আমি কীভাবে অর্ডার বাতিল পরিচালনা করব?",
+        answer: "'অর্ডার' বিভাগে, আপনি সমস্ত অর্ডার দেখতে এবং পরিচালনা করতে পারেন। আপনি অর্ডার বাতিল করতে পারেন এবং রেকর্ড-কিপিং এবং বিশ্লেষণের জন্য বাতিলের কারণ যোগ করতে পারেন।"
       }
     ],
     support_shortcuts: [
@@ -639,7 +757,7 @@ export const TRANSLATIONS = {
 
     guide_setup_t: "ফেজ ১: আপনার ব্র্যান্ডের পরিচয়",
     guide_setup_d: "অর্ডার নেওয়ার আগে 'রেস্টুরেন্ট ইনফো' অপশনে গিয়ে প্রোফাইল পূর্ণ করুন।",
-    guide_setup_s1: "লোগো আপলোড করুন যাতে কাস্টমার আপনার ব্র্যান্ড চিনতে পারে।",
+    guide_setup_s1: "মার্চেন্ট অ্যাকাউন্ট তৈরি করতে গুগল লগইন ব্যবহার করে নিবন্ধন করুন।",
     guide_setup_s2: "অর্ডার অ্যালার্ট পেতে ইমেইল ও ফোন ভেরিফাই করুন।",
     guide_setup_s3: "সঠিক বিলিংয়ের জন্য রেস্তোরাঁর ঠিকানা সেট করুন।",
 
@@ -666,5 +784,16 @@ export const TRANSLATIONS = {
     guide_audit_s1: "'নেট ব্যালেন্স' চেক করে দেখুন হাতে কত টাকা আছে।",
     guide_audit_s2: "অনলাইন পেমেন্ট ভেরিফাই: ব্যাংক অ্যাপ চেক করে তবেই অনলাই পেমেন্ট ভেরিফাই করুন।",
     guide_audit_s3: "মান্থলি অডিট: দরকারি কাজের জন্য প্রতি মাসের ১ তারিখে এক্সেল রিপোর্ট ডাউনলোড করুন।",
+    auth_login_notice: "ইমেল এবং পাসওয়ার্ড লগইন কেবল তখনই পাওয়া যাবে যদি অ্যাডমিন আপনার জন্য পাসওয়ার্ড সেট করে থাকেন।",
+    auth_register_notice: "নতুন মার্চেন্ট? নিবন্ধন কেবল গুগল লগইন এর মাধ্যমে পাওয়া যাচ্ছে।",
+    auth_welcome_back: "স্বাগতম",
+    auth_sign_in_desc: "আপনার অ্যাকাউন্টে সাইন ইন করুন",
+    auth_new_here: "আপনি কি নতুন?",
+    auth_register_desc: "আপনার রেস্তোরাঁ নিবন্ধন করুন এবং আজই আমাদের সাথে আপনার ডিজিটাল যাত্রা শুরু করুন।",
+    auth_register_with_google: "গুগল দিয়ে নিবন্ধন করুন",
+    auth_sign_in_with_google: "গুগল দিয়ে লগইন করুন",
+    auth_forgot_password: "পাসওয়ার্ড ভুলে গেছেন?",
+    auth_sign_in_btn: "লগইন করুন",
+    auth_or: "অথবা"
   }
 };

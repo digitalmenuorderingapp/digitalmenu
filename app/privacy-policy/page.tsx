@@ -67,7 +67,7 @@ const content = {
         body: [
           'Your data is protected by:',
           '• HTTPS encryption on all connections.',
-          '• Email & password login — OTP verification on registration and password reset.',
+          '• Secure access — Google Sign-in for registration and Admin-managed passwords for traditional login.',
           '• Access controls — only you can see your restaurant\'s data.',
           '• Regular security checks and updates.',
         ],
@@ -153,7 +153,7 @@ const content = {
         body: [
           'हम इन तरीकों से आपकी जानकारी को सुरक्षित रखते हैं:',
           '• सभी कनेक्शन पर HTTPS एन्क्रिप्शन।',
-          '• ईमेल और पासवर्ड से लॉगिन — रजिस्ट्रेशन और पासवर्ड रिसेट पर OTP वेरिफिकेशन।',
+          '• सुरक्षित एक्सेस — रजिस्ट्रेशन के लिए गूगल लॉगिन और ट्रेडिशनल लॉगिन के लिए एडमिन द्वारा सेट पासवर्ड।',
           '• सिर्फ आप ही अपने रेस्टोरेंट का डेटा देख सकते हैं।',
           '• नियमित सिक्योरिटी जांच।',
         ],
@@ -229,8 +229,8 @@ const content = {
         body: [
           'আমরা আপনার ডেটা এভাবে সুরক্ষিত রাখি:',
           '• সব সংযোগে HTTPS এনক্রিপশন।',
-          '• ইমেইল ও পাসওয়ার্ড দিয়ে লগইন — নিবন্ধন ও পাসওয়ার্ড রিসেটে OTP যাচাইকরণ।',
-          '• শুধু আপনি নিজেই আপনার রেস্তোরাঁর ডেটা দেখতে পারবেন।',
+          '• সুরক্ষিত অ্যাক্সেস — নিবন্ধনের জন্য গুগল লগইন এবং সাধারণ লগইন এর জন্য অ্যাডমিন দ্বারা সেট করা পাসওয়ার্ড।',
+          '• শুধু আপনি নিজেই আপনার রেস্তোরাঁয় ডেটা দেখতে পারবেন।',
           '• নিয়মিত নিরাপত্তা পরীক্ষা ও আপডেট।',
         ],
       },

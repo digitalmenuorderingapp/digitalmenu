@@ -1,12 +1,13 @@
-'use client';
+ 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/services/api';
+import useSWR, { mutate } from 'swr';
+import { fetcher } from '@/services/swr';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import {
-  FaArrowLeft,
   FaCalendar,
   FaChartLine,
   FaSpinner,
@@ -27,8 +28,10 @@ import {
   FaPlusCircle,
   FaMinusCircle,
   FaEnvelope,
-  FaSync,
-  FaExclamationCircle
+  FaExclamationCircle,
+  FaFileDownload,
+  FaFileAlt,
+  FaSync
 } from 'react-icons/fa';
 import Button from '@/components/ui/Button';
 import StatsCard from '@/components/ui/StatsCard';
@@ -111,47 +114,46 @@ interface Ledger {
 }
 
 export default function LedgerPage() {
-  const [ledger, setLedger] = useState<Ledger | null>(null);
-  const [transactions, setTransactions] = useState<LedgerTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'today' | 'transactions'>('today');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [userCreatedAt, setUserCreatedAt] = useState<string>('');
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
+  // SWR hooks for data fetching
+  const ledgerSwrKey = isAuthenticated ? '/ledger/today' : null;
+  const { data: ledgerData, isLoading: isLedgerLoading, mutate: mutateLedger } = useSWR(ledgerSwrKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    shouldRetryOnError: false,
+  });
+
+  const transactionsSwrKey = isAuthenticated && activeTab === 'transactions' ? '/ledger/transactions' : null;
+  const { data: transactionsData, mutate: mutateTransactions } = useSWR(transactionsSwrKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    shouldRetryOnError: false,
+  });
+
+  const ledger = ledgerData?.data || null;
+  const transactions = transactionsData?.data?.orders || [];
+  const isLoading = isLedgerLoading;
+
+  // Get user created date for month range
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchTodayLedger();
+    if (user?.createdAt) {
+      setUserCreatedAt(typeof user.createdAt === 'string' ? user.createdAt : user.createdAt.toISOString());
     }
-  }, [isAuthenticated]);
+  }, [user]);
 
-  useEffect(() => {
-    if (isAuthenticated && activeTab === 'transactions') {
-      fetchAllTransactions();
-    }
-  }, [activeTab, isAuthenticated]);
+  const refreshLedger = useCallback(() => {
+    mutateLedger();
+  }, [mutateLedger]);
 
-  const fetchTodayLedger = async () => {
-    try {
-      const response = await api.get('/ledger/today');
-      setLedger(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch ledger:', error);
-      toast.error('Failed to load today\'s ledger');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchAllTransactions = async () => {
-    try {
-      const response = await api.get('/ledger/transactions');
-      setTransactions(response.data.data.orders || []);
-    } catch (error) {
-      console.error('Failed to fetch transactions:', error);
-    }
-  };
+  const refreshTransactions = useCallback(() => {
+    mutateTransactions();
+  }, [mutateTransactions]);
 
   const handleSendEmail = async () => {
     setIsSendingEmail(true);
@@ -176,7 +178,7 @@ export default function LedgerPage() {
       const response = await api.post('/ledger/recalculate');
       if (response.data.success) {
         toast.success('Sync complete! Your ledger is now up to date.', { id: loadingToast });
-        fetchTodayLedger(); // Refresh the data
+        refreshLedger(); // Refresh the data
       }
     } catch (error: any) {
       console.error('Failed to recalculate ledger:', error);
@@ -242,12 +244,6 @@ export default function LedgerPage() {
       <div className="mb-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
           <div className="flex items-center space-x-3">
-            <Link 
-              href="/admin" 
-              className="p-2 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm"
-            >
-              <FaArrowLeft className="w-3.5 h-3.5" />
-            </Link>
             <div>
               <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">Audit Ledger</h1>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">Truth • Integrity • Operations</p>
@@ -282,26 +278,38 @@ export default function LedgerPage() {
               variant="outline"
               onClick={handleSendEmail}
               isLoading={isSendingEmail}
-              className="!py-1.5 !px-3.5"
-              leftIcon={<FaEnvelope className="text-indigo-500 text-[10px]" />}
+              className="h-10 px-4"
+              leftIcon={<FaEnvelope className="text-indigo-500 text-xs" />}
             >
-              <span className="text-[9px] font-black uppercase tracking-widest">Email Report</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Email Report</span>
             </Button>
+
+            <Link href="/admin/reports">
+              <Button
+                variant="outline"
+                className="h-10 px-4"
+                leftIcon={<FaFileAlt className="text-indigo-500 text-xs" />}
+              >
+                <span className="text-[10px] font-black uppercase tracking-widest">Download Reports</span>
+              </Button>
+            </Link>
 
             <Button
               variant="outline"
               onClick={handleRecalculate}
               isLoading={isRecalculating}
-              className="!py-1.5 !px-3.5"
-              leftIcon={<FaSync className={`${isRecalculating ? 'animate-spin' : ''} text-indigo-500 text-[10px]`} />}
+              className="h-10 px-4"
+              leftIcon={<FaSync className={`${isRecalculating ? 'animate-spin' : ''} text-indigo-500 text-xs`} />}
             >
-              <span className="text-[9px] font-black uppercase tracking-widest">Recalculate</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Recalculate</span>
             </Button>
           </div>
         </div>
+      </div>
 
-        {activeTab === 'today' && ledger && (
-          <div className="flex flex-col gap-6">
+      {activeTab === 'today' && ledger && (
+        <div className="space-y-6">
+            {/* Order Distribution */}
             <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -314,129 +322,125 @@ export default function LedgerPage() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                <StatsCard 
-                  isMini
-                  label="Dine-in" 
-                  value={ledger.counts.orderType?.dineIn || 0} 
-                  variant="indigo" 
-                  icon={<FaUtensils />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Takeaway" 
-                  value={ledger.counts.orderType?.takeaway || 0} 
-                  variant="amber" 
-                  icon={<FaPlusCircle />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Served" 
-                  value={ledger.counts.servedOrders || 0} 
-                  variant="emerald" 
-                  icon={<FaCheck />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Cancelled" 
-                  value={ledger.counts.cancelledOrders || 0} 
-                  variant="red" 
-                  icon={<FaTimes />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Rejected" 
-                  value={ledger.counts.rejectedOrders || 0} 
-                  variant="red" 
-                  icon={<FaExclamationCircle />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Success Rate" 
-                  value={`${ledger.counts.totalOrders > 0 ? ((ledger.counts.servedOrders / (ledger.counts.totalOrders - ledger.counts.cancelledOrders - ledger.counts.rejectedOrders || 1)) * 100).toFixed(0) : 0}%`}
-                  variant="green" 
-                  icon={<FaCheckCircle />} 
-                />
-              </div>
-            </div>
-
-            <div className="bg-red-50/20 border border-red-100/50 rounded-3xl p-6">
-              <div className="flex items-center justify-between mb-6 px-1">
-                <div>
-                   <h3 className="text-sm font-black text-red-900 uppercase tracking-tight">Actionable Audit</h3>
-                   <p className="text-[10px] font-black text-red-600/50 uppercase tracking-widest mt-1">Pending Verification & Dues</p>
+                  <StatsCard 
+                    isMini
+                    label="Dine-in" 
+                    value={ledger.counts.orderType?.dineIn || 0} 
+                    variant="indigo" 
+                    icon={<FaUtensils />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Takeaway" 
+                    value={ledger.counts.orderType?.takeaway || 0} 
+                    variant="amber" 
+                    icon={<FaPlusCircle />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Served" 
+                    value={ledger.counts.servedOrders || 0} 
+                    variant="emerald" 
+                    icon={<FaCheck />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Cancelled" 
+                    value={ledger.counts.cancelledOrders || 0} 
+                    variant="red" 
+                    icon={<FaTimes />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Rejected" 
+                    value={ledger.counts.rejectedOrders || 0} 
+                    variant="red" 
+                    icon={<FaExclamationCircle />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Success Rate" 
+                    value={`${ledger.counts.totalOrders > 0 ? ((ledger.counts.servedOrders / (ledger.counts.totalOrders - ledger.counts.cancelledOrders - ledger.counts.rejectedOrders || 1)) * 100).toFixed(0) : 0}%`}
+                    variant="green" 
+                    icon={<FaCheckCircle />} 
+                  />
                 </div>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatsCard 
-                  isMini
-                  label="Pending Counts" 
-                  value={ledger.counts.pendingPayments || 0} 
-                  variant="red" 
-                  icon={<FaClock />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Due Counts" 
-                  value={ledger.counts.dueOrders || 0} 
-                  variant="red" 
-                  icon={<FaExclamationCircle />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Pending Amount" 
-                  value={`₹${Math.round(ledger.cash.pending + ledger.online.pending)}`} 
-                  variant="red" 
-                  icon={<FaMoneyBillWave />} 
-                />
-                <StatsCard 
-                  isMini
-                  label="Due Amount" 
-                  value={`₹${Math.round(ledger.total.unpaidDues || 0)}`} 
-                  variant="red" 
-                  icon={<FaExclamationCircle />} 
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {activeTab === 'today' && ledger && (
-        <div className="space-y-8">
-          <div className="space-y-8">
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 overflow-hidden">
-              <div className="flex items-center justify-between mb-6 px-1">
-                <div>
-                   <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Financial Summary</h3>
-                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Real-time Monetary Pulse</p>
+              {/* Actionable Audit */}
+              <div className="bg-red-50/20 border border-red-100/50 rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-6 px-1">
+                  <div>
+                     <h3 className="text-sm font-black text-red-900 uppercase tracking-tight">Actionable Audit</h3>
+                     <p className="text-[10px] font-black text-red-600/50 uppercase tracking-widest mt-1">Pending Verification & Dues</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatsCard 
+                    isMini
+                    label="Pending Counts" 
+                    value={ledger.counts.pendingPayments || 0} 
+                    variant="red" 
+                    icon={<FaClock />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Due Counts" 
+                    value={ledger.counts.dueOrders || 0} 
+                    variant="red" 
+                    icon={<FaExclamationCircle />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Pending Amount" 
+                    value={`₹${Math.round(ledger.cash.pending + ledger.online.pending)}`} 
+                    variant="red" 
+                    icon={<FaMoneyBillWave />} 
+                  />
+                  <StatsCard 
+                    isMini
+                    label="Due Amount" 
+                    value={`₹${Math.round(ledger.total.unpaidDues || 0)}`} 
+                    variant="red" 
+                    icon={<FaExclamationCircle />} 
+                  />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-                <StatsCard 
-                  label="Cash Received" 
-                  value={`₹${Math.round(ledger.cash.verified)}`} 
-                  variant="amber" 
-                  icon={<FaMoneyBillWave />} 
-                  description="Gross Physical Collection"
-                />
-                <StatsCard 
-                  label="Online Received" 
-                  value={`₹${Math.round(ledger.online.verified)}`} 
-                  variant="blue" 
-                  icon={<FaCreditCard />} 
-                  description="Digital Settlement"
-                />
-                <StatsCard 
-                  label="Net Balance" 
-                  value={`₹${Math.round(ledger.total.netBalance)}`} 
-                  variant="green" 
-                  icon={<FaChartLine />} 
-                  description="Verified Total Revenue"
-                />
+
+              {/* Financial Summary */}
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 overflow-hidden">
+                <div className="flex items-center justify-between mb-6 px-1">
+                  <div>
+                     <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Financial Summary</h3>
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Real-time Monetary Pulse</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <StatsCard 
+                    label="Cash Received" 
+                    value={`₹${Math.round(ledger.cash.verified)}`} 
+                    variant="amber" 
+                    icon={<FaMoneyBillWave />} 
+                    description="Gross Physical Collection"
+                  />
+                  <StatsCard 
+                    label="Online Received" 
+                    value={`₹${Math.round(ledger.online.verified)}`} 
+                    variant="blue" 
+                    icon={<FaCreditCard />} 
+                    description="Digital Settlement"
+                  />
+                  <StatsCard 
+                    label="Net Balance" 
+                    value={`₹${Math.round(ledger.total.netBalance)}`} 
+                    variant="green" 
+                    icon={<FaChartLine />} 
+                    description="Verified Total Revenue"
+                  />
+                </div>
               </div>
-            </div>
 
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
               <div className="flex items-center justify-between mb-8">
@@ -462,9 +466,8 @@ export default function LedgerPage() {
                 ))}
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="p-6 bg-gradient-to-br from-indigo-50/50 to-white border-b border-gray-100">
                 <h3 className="text-base font-black text-indigo-900 uppercase tracking-tight">Prime Performers</h3>
@@ -530,32 +533,47 @@ export default function LedgerPage() {
         </div>
       )}
 
+      {/* Quick Links - Moved to bottom */}
+      <div className="mt-8 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+        <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight mb-4">Quick Links</h3>
+        <div className="flex flex-wrap gap-4">
+          <Link href="/admin/reports" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-indigo-50 transition-colors group">
+            <FaFileAlt className="text-indigo-600 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-gray-700">Monthly Reports</span>
+          </Link>
+          <Link href="/admin/orders" className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-indigo-50 transition-colors group">
+            <FaUtensils className="text-indigo-600 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-gray-700">Recent Orders</span>
+          </Link>
+        </div>
+      </div>
+
       {activeTab === 'transactions' && (
         <div className="space-y-6">
           {/* Monthly Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard 
               label="Monthly Orders" 
-              value={transactions.filter(t => t.type === 'PAYMENT').length} 
+              value={transactions.filter((t: LedgerTransaction) => t.type === 'PAYMENT').length} 
               variant="indigo" 
               icon={<FaUtensils />} 
-              description={`${transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').length} Verified`}
+              description={`${transactions.filter((t: LedgerTransaction) => t.type === 'PAYMENT' && t.status === 'VERIFIED').length} Verified`}
             />
             <StatsCard 
               label="Cash Collected" 
-              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
+              value={`₹${Math.round(transactions.filter((t: LedgerTransaction) => t.type === 'PAYMENT' && t.paymentMode === 'CASH' && t.status === 'VERIFIED').reduce((sum: number, t: LedgerTransaction) => sum + t.amount, 0))}`} 
               variant="amber" 
               icon={<FaMoneyBillWave />} 
             />
             <StatsCard 
               label="Online Settled" 
-              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.paymentMode === 'ONLINE' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
+              value={`₹${Math.round(transactions.filter((t: LedgerTransaction) => t.type === 'PAYMENT' && t.paymentMode === 'ONLINE' && t.status === 'VERIFIED').reduce((sum: number, t: LedgerTransaction) => sum + t.amount, 0))}`} 
               variant="blue" 
               icon={<FaCreditCard />} 
             />
             <StatsCard 
               label="Monthly Net" 
-              value={`₹${Math.round(transactions.filter(t => t.type === 'PAYMENT' && t.status === 'VERIFIED').reduce((sum, t) => sum + t.amount, 0))}`} 
+              value={`₹${Math.round(transactions.filter((t: LedgerTransaction) => t.type === 'PAYMENT' && t.status === 'VERIFIED').reduce((sum: number, t: LedgerTransaction) => sum + t.amount, 0))}`} 
               variant="green" 
               icon={<FaChartLine />} 
             />

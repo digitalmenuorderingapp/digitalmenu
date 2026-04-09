@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '@/components/customer/BottomNav';
@@ -9,6 +9,8 @@ import CartTab from '@/components/customer/CartTab';
 import OrdersTab from '@/components/customer/OrdersTab';
 import ProfileTab from '@/components/customer/ProfileTab';
 import { useCustomerSession } from '@/hooks/useCustomerSession';
+import useSWR, { mutate } from 'swr';
+import { fetcher } from '@/services/swr';
 import { v4 as uuidv4 } from 'uuid';
 import CryptoJS from 'crypto-js';
 import api from '@/services/api';
@@ -27,10 +29,7 @@ function CustomerPageContent() {
   const { session, updateSession } = useCustomerSession();
   const [activeTab, setActiveTab] = useState('menu');
   const [isLoading, setIsLoading] = useState(true);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; id: string; logo?: string; motto?: string } | null>(null);
   const [showCustomerInfoModal, setShowCustomerInfoModal] = useState(false);
   const [customerFormData, setCustomerFormData] = useState({
     customerName: '',
@@ -43,6 +42,39 @@ function CustomerPageContent() {
   const tabParam = searchParams.get('tab');
 
   const hasInitialized = useRef(false);
+
+  // SWR hooks for data fetching
+  const menuSwrKey = session.restaurantId && session.tableNumber ? `/public/menu?restaurantId=${session.restaurantId}&table=${session.tableNumber}` : null;
+  const { data: menuData, mutate: mutateMenu } = useSWR(menuSwrKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    shouldRetryOnError: false,
+  });
+
+  const menuItems = menuData?.data ? Object.values(menuData.data.menuItems).flat() as MenuItem[] : [];
+
+  const ordersSwrKey = session.deviceId ? `/order/device/${session.deviceId}` : null;
+  const { data: ordersData, mutate: mutateOrders } = useSWR(ordersSwrKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    shouldRetryOnError: false,
+  });
+
+  const orders = ordersData?.data || [];
+
+  const restaurantSwrKey = session.restaurantId ? `/public/restaurant/${session.restaurantId}` : null;
+  const { data: restaurantData } = useSWR(restaurantSwrKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+  });
+
+  const restaurantInfo = restaurantData?.data ? {
+    name: restaurantData.data.restaurantName,
+    id: session.restaurantId || '',
+    logo: restaurantData.data.logo,
+    motto: restaurantData.data.motto
+  } : null;
 
   // Handle tab from URL query param
   useEffect(() => {
@@ -101,9 +133,8 @@ function CustomerPageContent() {
               toast.success('Welcome!');
             }
 
-            // ✅ Directly fetch menu with the restaurantId from QR — avoids stale state race condition
+            // ✅ Update session with restaurant info - SWR will automatically fetch menu
             setIsLoading(false);
-            fetchMenuItems(qrData.restaurantId, qrData.table.toString());
             return; // Skip the generic setIsLoading(false) below
           }
         } catch (error) {
@@ -156,36 +187,21 @@ function CustomerPageContent() {
     }
   }, [session.deviceId, session.customerName]);
 
-  // Fetch menu items — accepts explicit restaurantId to avoid stale state race condition
-  const fetchMenuItems = async (restaurantId?: string, tableNumber?: string) => {
-    const rId = restaurantId || session.restaurantId;
-    const tNum = tableNumber !== undefined ? tableNumber : (session.tableNumber || '');
-    if (!rId) return;
-
-    try {
-      const response = await api.get(`/public/menu?restaurantId=${rId}&table=${tNum}`);
-      const data = response.data.data;
-      // Flatten grouped menu items into single array
-      const flatItems = Object.values(data.menuItems).flat() as MenuItem[];
-      setMenuItems(flatItems);
-
-      // Update table capacity in session
-      if (data.tableCapacity) {
-        updateSession({ tableCapacity: data.tableCapacity });
-      }
-    } catch (error) {
-      toast.error('Failed to load menu');
-    }
-  };
-
-  // Returning users: if we already have a restaurantId in session (loaded from localStorage),
-  // fetch the menu once loading is complete and session is ready.
+  // Update table capacity in session when menu data changes
   useEffect(() => {
-    if (session.restaurantId && !isLoading && !qrParam) {
-      fetchMenuItems(session.restaurantId, session.tableNumber || '');
+    if (menuData?.data?.tableCapacity) {
+      updateSession({ tableCapacity: menuData.data.tableCapacity });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.restaurantId, isLoading]);
+  }, [menuData, updateSession]);
+
+  const refreshMenu = useCallback(() => {
+    mutateMenu();
+  }, [mutateMenu]);
+
+  const refreshOrders = useCallback(() => {
+    mutateOrders();
+  }, [mutateOrders]);
+
 
   const decryptQrData = (encryptedData: string) => {
     try {
@@ -220,14 +236,6 @@ function CustomerPageContent() {
   };
 
 
-  const fetchOrders = async () => {
-    try {
-      const response = await api.get(`/order/device/${session.deviceId}`);
-      setOrders(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    }
-  };
 
   // Real-time order updates
   useEffect(() => {
@@ -288,15 +296,19 @@ function CustomerPageContent() {
         playNotificationSound();
 
         // 🔄 SYNC STATE: Update the orders list immediately without a network fetch
-        setOrders(prevOrders => {
-          const index = prevOrders.findIndex(o => o._id === order._id);
-          if (index !== -1) {
-            const newOrders = [...prevOrders];
-            newOrders[index] = order;
-            return newOrders;
-          }
-          return [order, ...prevOrders];
-        });
+        mutateOrders(
+          (currentData: any) => {
+            const existingOrders = currentData?.data || [];
+            const index = existingOrders.findIndex((o: Order) => o._id === order._id);
+            if (index !== -1) {
+              const newOrders = [...existingOrders];
+              newOrders[index] = order;
+              return { ...currentData, data: newOrders };
+            }
+            return { ...currentData, data: [order, ...existingOrders] };
+          },
+          false // Don't revalidate yet
+        );
       });
 
       // Listen for payment verified
@@ -312,29 +324,37 @@ function CustomerPageContent() {
         playNotificationSound();
 
         // Update orders list
-        setOrders(prevOrders => {
-          const index = prevOrders.findIndex(o => o._id === order._id);
-          if (index !== -1) {
-            const newOrders = [...prevOrders];
-            newOrders[index] = order;
-            return newOrders;
-          }
-          return prevOrders;
-        });
+        mutateOrders(
+          (currentData: any) => {
+            const existingOrders = currentData?.data || [];
+            const index = existingOrders.findIndex((o: Order) => o._id === order._id);
+            if (index !== -1) {
+              const newOrders = [...existingOrders];
+              newOrders[index] = order;
+              return { ...currentData, data: newOrders };
+            }
+            return currentData;
+          },
+          false
+        );
       });
 
       // Listen for general order updates (for any other changes)
       socketService.on('orderUpdate', (order: Order) => {
         // 🔄 SYNC STATE
-        setOrders(prevOrders => {
-          const index = prevOrders.findIndex(o => o._id === order._id);
-          if (index !== -1) {
-            const newOrders = [...prevOrders];
-            newOrders[index] = order;
-            return newOrders;
-          }
-          return [order, ...prevOrders];
-        });
+        mutateOrders(
+          (currentData: any) => {
+            const existingOrders = currentData?.data || [];
+            const index = existingOrders.findIndex((o: Order) => o._id === order._id);
+            if (index !== -1) {
+              const newOrders = [...existingOrders];
+              newOrders[index] = order;
+              return { ...currentData, data: newOrders };
+            }
+            return { ...currentData, data: [order, ...existingOrders] };
+          },
+          false
+        );
       });
 
       // Listen for menu updates from admin
@@ -342,7 +362,7 @@ function CustomerPageContent() {
         console.log('[Socket] Menu updated by admin, refetching...');
         // Refetch menu items for current restaurant
         if (session.restaurantId && data.restaurantId === session.restaurantId) {
-          fetchMenuItems(session.restaurantId, session.tableNumber || '');
+          refreshMenu();
           toast('Menu updated! 🍽️', {
             duration: 3000,
             style: {
@@ -366,9 +386,9 @@ function CustomerPageContent() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
 
-    // Fetch data when switching to orders tab
+    // Refresh orders when switching to orders tab
     if (tab === 'orders') {
-      fetchOrders();
+      refreshOrders();
     }
   };
 
@@ -460,7 +480,7 @@ function CustomerPageContent() {
         toast.success(`Your order # is ${orderNumber}`);
         setCart([]);
         handleTabChange('orders');
-        fetchOrders();
+        refreshOrders();
       }
     } catch (error: any) {
       console.error('Failed to place order:', error);
@@ -582,7 +602,7 @@ function CustomerPageContent() {
           <OrdersTab
             orders={orders}
             session={session}
-            onRefresh={fetchOrders}
+            onRefresh={refreshOrders}
             menuItems={menuItems}
           />
         </div>

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import api from '@/services/api';
+import { fetcher } from '@/services/swr';
 import toast from 'react-hot-toast';
 import { FaSpinner, FaDesktop, FaMobileAlt, FaGlobe, FaClock, FaTrashAlt, FaArrowLeft, FaShieldAlt } from 'react-icons/fa';
 
@@ -19,39 +21,28 @@ interface Device {
   userAgent: string;
   isOnline: boolean;
   lastSeen: string;
+  loginMethod?: 'local' | 'google';
   revokedAt?: string;
   sessions: Session[];
 }
 
 export default function ActiveDevicesPage() {
   const router = useRouter();
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchDevices();
-  }, []);
+  // Use SWR for devices data
+  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: Device[] }>('/devices', fetcher);
 
-  const fetchDevices = async () => {
-    try {
-      const response = await api.get('/devices');
-      setDevices(response.data.data || []);
-    } catch (error) {
-      toast.error('Failed to load active devices');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const devices = data?.data || [];
 
   const handleLogoutDevice = async (deviceId: string) => {
     if (!confirm('Are you sure you want to logout this device?')) return;
-    
+
     setActionLoading(deviceId);
     try {
       await api.delete(`/devices/${deviceId}`);
       toast.success('Device logged out successfully');
-      fetchDevices();
+      mutate();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to logout device');
     } finally {
@@ -61,12 +52,12 @@ export default function ActiveDevicesPage() {
 
   const handleRemoveDevice = async (deviceId: string) => {
     if (!confirm('Are you sure you want to remove this device entry permanently? This will clear all session history for this device.')) return;
-    
+
     setActionLoading(deviceId);
     try {
       await api.delete(`/devices/${deviceId}/remove`);
       toast.success('Device removed successfully');
-      fetchDevices();
+      mutate();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to remove device');
     } finally {
@@ -76,12 +67,12 @@ export default function ActiveDevicesPage() {
 
   const handleRemoveAllOthers = async () => {
     if (!confirm('Are you sure you want to remove ALL other devices? This will permanently delete their history and sessions.')) return;
-    
+
     setActionLoading('all-others');
     try {
       await api.delete('/devices/remove/all-others');
       toast.success('All other devices removed');
-      fetchDevices();
+      mutate();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to remove other devices');
     } finally {
@@ -311,10 +302,12 @@ export default function ActiveDevicesPage() {
                         </div>
 
                         <div className="space-y-1 text-sm text-gray-600">
-                          <div className="flex items-center">
-                            <FaGlobe className="w-4 h-4 mr-2" />
-                            <span className="font-medium">{device.ipAddress || 'Unknown IP'}</span>
-                          </div>
+                          {device.ipAddress && (
+                            <div className="flex items-center">
+                              <FaGlobe className="w-4 h-4 mr-2" />
+                              <span className="font-medium">{device.ipAddress}</span>
+                            </div>
+                          )}
                           <div className="flex items-center text-gray-500">
                             <FaClock className="w-4 h-4 mr-2" />
                             <span>Last seen: {formatLastSeen(device.lastSeen)}</span>
@@ -366,9 +359,29 @@ export default function ActiveDevicesPage() {
                         {/* Device Details */}
                         <div className="mt-3 pt-3 border-t border-gray-100">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            {device.userAgent && (
+                              <div>
+                                <p className="text-gray-500 mb-1">Browser</p>
+                                <p className="font-medium text-gray-800 truncate">{device.userAgent}</p>
+                              </div>
+                            )}
                             <div>
-                              <p className="text-gray-500 mb-1">Browser</p>
-                              <p className="font-medium text-gray-800 truncate">{device.userAgent || 'Unknown'}</p>
+                               <p className="text-gray-500 mb-1">Login Method</p>
+                               <div className="flex items-center space-x-2">
+                                 {device.loginMethod === 'google' ? (
+                                   <span className="inline-flex items-center px-2 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-100">
+                                     <svg className="w-3 h-3 mr-1" viewBox="0 0 24 24">
+                                       <path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C9.03,19.27 6.59,17.38 6.59,13.21C6.59,9.03 9.07,7.22 12.2,7.22C14.25,7.22 15.77,8.04 16.74,8.95L18.66,7.03C17.1,5.57 15.12,4.46 12.2,4.46C7.07,4.46 3.71,8.39 3.71,13.24C3.71,18.08 7.05,22.03 12.19,22.03C18.14,22.03 21.5,17.98 21.5,12.06C21.5,11.69 21.45,11.39 21.35,11.1V11.1Z" />
+                                     </svg>
+                                     Google
+                                   </span>
+                                 ) : (
+                                   <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">
+                                     <FaShieldAlt className="w-3 h-3 mr-1" />
+                                     Local
+                                   </span>
+                                 )}
+                               </div>
                             </div>
                             <div>
                               <p className="text-gray-500 mb-1">Device ID</p>

@@ -168,7 +168,7 @@ export default function SupportPage() {
         </div>
 
         {/* Combined Policy & Security Awareness */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           <motion.div variants={item} className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10 -mr-8 -mt-8">
               <FaShieldAlt size={160} />
@@ -180,61 +180,32 @@ export default function SupportPage() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white">{t.support_security_title}</h3>
-                  <p className="text-indigo-200/60 font-medium text-sm italic">{t.support_security_desc}</p>
+                  <p className="text-indigo-200/60 font-medium text-base italic">{t.support_security_desc}</p>
                 </div>
               </div>
 
               <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10">
-                <h4 className="text-red-400 font-bold text-sm mb-4 flex items-center gap-2 uppercase tracking-widest">
+                <h4 className="text-red-400 font-bold text-base mb-4 flex items-center gap-2 uppercase tracking-widest">
                   <span className="w-2 h-2 bg-red-400 rounded-full animate-ping" />
                   {t.support_security_instruction_title}
                 </h4>
-                <p className="text-indigo-100/90 text-sm font-medium leading-relaxed mb-6 italic opacity-80">
+                <p className="text-indigo-100/90 text-base font-medium leading-relaxed mb-6 italic opacity-80">
                   {t.support_security_instruction_body}
                 </p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors group">
                     <div className="w-10 h-10 bg-indigo-500/20 text-indigo-300 rounded-xl flex items-center justify-center shrink-0 font-black group-hover:bg-indigo-500 group-hover:text-white transition-all">1</div>
-                    <p className="text-[13px] text-gray-300 font-medium leading-tight">
+                    <p className="text-sm text-gray-300 font-medium leading-relaxed">
                       {t.support_security_step1}
                     </p>
                   </div>
                   <div className="flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors group">
                     <div className="w-10 h-10 bg-indigo-500/20 text-indigo-300 rounded-xl flex items-center justify-center shrink-0 font-black group-hover:bg-indigo-500 group-hover:text-white transition-all">2</div>
-                    <p className="text-[13px] text-gray-300 font-medium leading-tight">
+                    <p className="text-sm text-gray-300 font-medium leading-relaxed">
                       {t.support_security_step2}
                     </p>
                   </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div variants={item} className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-amber-100 shadow-xl shadow-amber-900/5 relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute bottom-0 right-0 p-8 opacity-[0.03] -mb-10 -mr-10">
-              <FaChartLine size={240} />
-            </div>
-            <div className="relative z-10 space-y-6">
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100">
-                  <FaChartLine className="text-amber-500 text-2xl" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">{t.support_report_policy_title}</h3>
-                  </div>
-                  <p className="text-amber-600/70 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Data Retention Notice</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-gray-600 font-medium leading-relaxed text-sm whitespace-pre-line bg-amber-50/30 p-5 rounded-3xl border border-amber-50">
-                  {t.support_report_policy_desc}
-                </p>
-                <div className="flex items-center gap-4 text-red-600 bg-red-50 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-wider border border-red-100 shadow-sm leading-relaxed translate-y-2">
-                  <FaClock className="text-lg shrink-0 animate-pulse" />
-                  <span>{t.support_report_policy_warning}</span>
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
@@ -28,6 +28,8 @@ import {
   FaPlus
 } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
+import useSWR, { mutate } from 'swr';
+import { fetcher } from '@/services/swr';
 import { socketService } from '@/services/socket';
 import { playNewOrderSound, playPaymentVerifiedSound, playCancelledSound, initAudioContext } from '@/utils/notifications';
 import { getTodayISTDateString } from '@/utils/date';
@@ -72,21 +74,43 @@ interface Order {
 type OrderStatus = 'all' | 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'DUES';
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [orderFilter, setOrderFilter] = useState<OrderStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(() => getTodayISTDateString());
   const { user } = useAuth();
-  
-  
-  const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
-  const fetchOrdersRef = useRef<() => Promise<void>>();
-  // Track orders received via socket to ensure they persist after fetch
-  const socketOrdersRef = useRef<Map<string, Order>>(new Map());
+
+  // Build SWR key based on query parameters
+  const swrKey = useMemo(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.append('search', searchQuery);
+    if (activeTab === 'today') {
+      params.append('date', selectedDate);
+    } else {
+      const now = new Date();
+      params.append('month', (now.getMonth() + 1).toString());
+      params.append('year', now.getFullYear().toString());
+    }
+    return `/order?${params.toString()}`;
+  }, [searchQuery, selectedDate, activeTab]);
+
+  // SWR hook for fetching orders
+  const { data, error, isLoading, mutate: mutateOrders } = useSWR(swrKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    shouldRetryOnError: false,
+  });
+
+  const orders = data?.data || [];
+  const stats = data?.stats || null;
+
+  // Function to refresh orders data (used by socket handlers)
+  const refreshOrders = useCallback(() => {
+    mutateOrders();
+  }, [mutateOrders]);
+
   // Track processed socket events to prevent duplicate toasts
   const processedEventsRef = useRef<Map<string, number>>(new Map());
 
@@ -134,23 +158,24 @@ export default function OrdersPage() {
         toast.success(`New order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber}!`);
         playNewOrderSound();
         
-        // Store in socket orders ref to ensure it persists after fetch
-        socketOrdersRef.current.set(order._id, order);
+        // Optimistically update the orders list
+        mutateOrders(
+          (currentData: any) => {
+            const existingOrders = currentData?.data || [];
+            if (existingOrders.find((o: Order) => o._id === order._id)) {
+              return currentData;
+            }
+            return {
+              ...currentData,
+              data: [order, ...existingOrders]
+            };
+          },
+          false // Don't revalidate yet
+        );
         
-        // Add new order to the top of the list immediately for better UX
-        setOrders(prevOrders => {
-          // Check if order already exists
-          if (prevOrders.find(o => o._id === order._id)) {
-            return prevOrders;
-          }
-          // Add new order at the top
-          return [order, ...prevOrders];
-        });
-        
-        // Refresh to get complete data - fetchOrders will merge socket orders
-        console.log('[Socket] Calling fetchOrdersRef for new order, ref exists:', !!fetchOrdersRef.current);
+        // Refresh to get complete data from server
         setTimeout(() => {
-          fetchOrdersRef.current?.();
+          refreshOrders();
         }, 100);
       };
 
@@ -166,9 +191,7 @@ export default function OrdersPage() {
         console.log('[Socket] Order cancelled:', order.orderNumber || order._id);
         toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was cancelled`);
         playCancelledSound();
-        // Remove from socket orders ref
-        socketOrdersRef.current.delete(order._id);
-        fetchOrdersRef.current?.();
+        refreshOrders();
       };
 
       const handleOrderRejected = (order: Order) => {
@@ -183,9 +206,7 @@ export default function OrdersPage() {
         console.log('[Socket] Order rejected:', order.orderNumber || order._id);
         toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was rejected`);
         playCancelledSound();
-        // Remove from socket orders ref
-        socketOrdersRef.current.delete(order._id);
-        fetchOrdersRef.current?.();
+        refreshOrders();
       };
 
       const handlePaymentVerified = (order: Order) => {
@@ -200,7 +221,7 @@ export default function OrdersPage() {
         console.log('[Socket] Payment verified:', order.orderNumber || order._id);
         toast.success(`Payment verified for order #${order.orderNumber || order._id.slice(-8)}!`);
         playPaymentVerifiedSound();
-        fetchOrdersRef.current?.();
+        refreshOrders();
       };
 
       const handleOrderUpdate = (updatedOrder: Order) => {
@@ -211,23 +232,13 @@ export default function OrdersPage() {
         // Deduplication check for status change toasts
         const eventKey = `update-${updatedOrder._id}-${updatedOrder.status}`;
         if (isDuplicateEvent(eventKey)) {
-          // Still update the order in state, just don't show toast
-          setOrders(prevOrders => {
-            const index = prevOrders.findIndex(o => o._id === updatedOrder._id);
-            if (index !== -1) {
-              const newOrders = [...prevOrders];
-              newOrders[index] = { ...updatedOrder, updatedAt: updatedOrder.updatedAt || new Date().toISOString() };
-              return newOrders;
-            }
-            return [updatedOrder, ...prevOrders];
-          });
           return;
         }
         
         console.log('[Socket] Order update received:', updatedOrder.orderNumber || updatedOrder._id, 'Status:', updatedOrder.status);
         
         // Only show toast for meaningful status changes (not every update)
-        const prevOrder = orders.find(o => o._id === updatedOrder._id);
+        const prevOrder = orders.find((o: Order) => o._id === updatedOrder._id);
         const prevStatus = prevOrder?.status;
         const newStatus = updatedOrder.status;
         
@@ -254,25 +265,35 @@ export default function OrdersPage() {
           updatedAt: updatedOrder.updatedAt || new Date().toISOString()
         };
         
-        // Update in socket orders ref if exists
-        if (socketOrdersRef.current.has(orderWithTimestamp._id)) {
-          socketOrdersRef.current.set(orderWithTimestamp._id, orderWithTimestamp);
-        }
+        // Optimistically update the orders list
+        mutateOrders(
+          (currentData: any) => {
+            const existingOrders = currentData?.data || [];
+            const index = existingOrders.findIndex((o: Order) => o._id === orderWithTimestamp._id);
+            console.log('[Socket] Updating order at index:', index, 'prev status:', existingOrders[index]?.status, 'new status:', orderWithTimestamp.status);
+            
+            if (index !== -1) {
+              const newOrders = [...existingOrders];
+              newOrders[index] = orderWithTimestamp;
+              console.log('[Socket] Orders updated, new length:', newOrders.length);
+              return {
+                ...currentData,
+                data: newOrders
+              };
+            }
+            console.log('[Socket] Adding new order to list');
+            return {
+              ...currentData,
+              data: [orderWithTimestamp, ...existingOrders]
+            };
+          },
+          false // Don't revalidate yet
+        );
         
-        setOrders(prevOrders => {
-          const index = prevOrders.findIndex(o => o._id === orderWithTimestamp._id);
-          console.log('[Socket] Updating order at index:', index, 'prev status:', prevOrders[index]?.status, 'new status:', orderWithTimestamp.status);
-          if (index !== -1) {
-            // Update existing order in place
-            const newOrders = [...prevOrders];
-            newOrders[index] = orderWithTimestamp;
-            console.log('[Socket] Orders updated, new length:', newOrders.length);
-            return newOrders;
-          }
-          // If order not in list, add it at the top (new order via update)
-          console.log('[Socket] Adding new order to list');
-          return [orderWithTimestamp, ...prevOrders];
-        });
+        // Refresh to get complete data from server
+        setTimeout(() => {
+          refreshOrders();
+        }, 100);
       };
 
       socketService.on('newOrder', handleNewOrder);
@@ -289,63 +310,14 @@ export default function OrdersPage() {
         socketService.off('orderUpdate', handleOrderUpdate);
       };
     }
-  }, [user?._id]);
-
-  const fetchOrders = async () => {
-    console.log('[fetchOrders] Called with params:', { searchQuery, selectedDate, activeTab, caller: new Error().stack?.split('\n')[2]?.trim() });
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (activeTab === 'today') {
-        params.append('date', selectedDate);
-      } else {
-        const now = new Date();
-        params.append('month', (now.getMonth() + 1).toString());
-        params.append('year', now.getFullYear().toString());
-      }
-
-      const response = await api.get(`/order?${params.toString()}`);
-      const fetchedOrders = response.data.data || [];
-      console.log('[fetchOrders] Fetched', fetchedOrders.length, 'orders');
-      
-      // Merge any socket-received orders that might be missing from API response
-      // (e.g., due to timing or date filtering issues)
-      const fetchedIds = new Set(fetchedOrders.map((o: Order) => o._id));
-      const missingSocketOrders = Array.from(socketOrdersRef.current.values())
-        .filter(o => !fetchedIds.has(o._id));
-      
-      console.log('[fetchOrders] Missing socket orders:', missingSocketOrders.length);
-      
-      // Clean up socketOrdersRef for orders that are now in the fetched list
-      fetchedOrders.forEach((o: Order) => socketOrdersRef.current.delete(o._id));
-      
-      // Combine: socket orders first (they're newer), then fetched orders
-      setOrders(missingSocketOrders.length > 0 
-        ? [...missingSocketOrders, ...fetchedOrders] 
-        : fetchedOrders);
-      
-      if (response.data.stats) setStats(response.data.stats);
-    } catch (error) {
-      console.error('[fetchOrders] Error fetching orders:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Keep the ref updated with the latest fetchOrders function
-  fetchOrdersRef.current = fetchOrders;
-  console.log('[Ref] fetchOrdersRef updated');
-
-  useEffect(() => {
-    fetchOrders();
-  }, [searchQuery, selectedDate, activeTab]);
+  }, [user?._id, refreshOrders]);
 
   const handleAction = async (orderId: string, action: string, payload: any = {}) => {
     try {
       const finalAction = payload?.actionOverride || action;
       const response = await api.post(`/order/${orderId}/action`, { action: finalAction, payload });
       toast.success(response.data.message || 'Action completed');
-      fetchOrders();
+      refreshOrders();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to complete action');
     }
@@ -392,43 +364,43 @@ export default function OrdersPage() {
     
     const stats = {
       totalRevenue: orders
-        .filter(o => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
-        .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+        .filter((o: Order) => o.paymentStatus === 'VERIFIED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED')
+        .reduce((sum: number, o: Order) => sum + (o.totalAmount || 0), 0),
       // Serving = ACCEPTED status (orders being prepared/served)
-      servingPending: orders.filter(o => o.status === 'ACCEPTED').length,
+      servingPending: orders.filter((o: Order) => o.status === 'ACCEPTED').length,
       // Online = ONLINE payment method + PENDING payment status (default to ONLINE if not set)
-      onlinePending: orders.filter(o => {
+      onlinePending: orders.filter((o: Order) => {
         const method = o.paymentMethod || 'ONLINE'; // Default to ONLINE
         const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus; // Default PENDING if not set
         const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
         return method === 'ONLINE' && isPending && notCancelled;
       }).length,
       onlinePendingAmount: orders
-        .filter(o => {
+        .filter((o: Order) => {
           const method = o.paymentMethod || 'ONLINE';
           const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus;
           const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
           return method === 'ONLINE' && isPending && notCancelled;
         })
-        .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+        .reduce((sum: number, o: Order) => sum + (o.totalAmount || 0), 0),
       // Cash = CASH payment method + PENDING payment status  
-      cashPending: orders.filter(o => {
+      cashPending: orders.filter((o: Order) => {
         const method = o.paymentMethod;
         const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus;
         const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
         return method === 'CASH' && isPending && notCancelled;
       }).length,
       cashPendingAmount: orders
-        .filter(o => {
+        .filter((o: Order) => {
           const method = o.paymentMethod;
           const isPending = o.paymentStatus === 'PENDING' || !o.paymentStatus;
           const notCancelled = o.status !== 'CANCELLED' && o.status !== 'REJECTED';
           return method === 'CASH' && isPending && notCancelled;
         })
-        .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+        .reduce((sum: number, o: Order) => sum + (o.totalAmount || 0), 0),
       // Dues
-      duesPending: orders.filter(o => o.paymentDueStatus === 'DUE').length,
-      unpaidDuesAmount: orders.filter(o => o.paymentDueStatus === 'DUE').reduce((s, o) => s + (o.totalAmount || 0), 0),
+      duesPending: orders.filter((o: Order) => o.paymentDueStatus === 'DUE').length,
+      unpaidDuesAmount: orders.filter((o: Order) => o.paymentDueStatus === 'DUE').reduce((s: number, o: Order) => s + (o.totalAmount || 0), 0),
     };
     
     console.log('[Stats] Calculated stats:', stats);
@@ -544,7 +516,7 @@ export default function OrdersPage() {
             </div>
           ) : (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
-              {filteredOrders.map((order) => (
+              {filteredOrders.map((order: Order) => (
                 <OrderCard
                    key={`${order._id}-${order.status}-${order.paymentStatus}-${order.updatedAt || Date.now()}`}
                    order={order as any}
@@ -560,7 +532,7 @@ export default function OrdersPage() {
         isOpen={createOrderModalOpen}
         onClose={() => setCreateOrderModalOpen(false)}
         onOrderCreated={() => {
-          fetchOrders();
+          refreshOrders();
           setCreateOrderModalOpen(false);
         }}
       />

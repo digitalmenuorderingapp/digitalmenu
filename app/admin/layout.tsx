@@ -32,7 +32,8 @@ import {
   FaCircle,
   FaCrown,
   FaLifeRing,
-  FaMobileAlt
+  FaMobileAlt,
+  FaFileAlt
 } from 'react-icons/fa';
 import api from '@/services/api';
 import { UserProfileSkeleton } from '@/components/ui/Skeleton';
@@ -161,6 +162,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const subStatus = getSubscriptionStatus();
   const isRestricted = !isLoading && isAuthenticated && (user?.subscription?.status === 'inactive' || subStatus.isExpired);
+  
+  const blockedPaths = ['/admin/orders'];
+  const shouldBlockContent = isRestricted && blockedPaths.some(p => pathname.startsWith(p));
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -195,7 +199,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { href: '/admin/menu', label: 'Menu', icon: <FaUtensils className="w-5 h-5" /> },
         { href: '/admin/tables', label: 'Tables', icon: <FaTable className="w-5 h-5" /> },
-        { href: '/admin/restaurant', label: 'Restaurant Info', icon: <FaStore className="w-5 h-5" /> },
+        { href: '/admin/reports', label: 'Reports', icon: <FaFileAlt className="w-5 h-5" /> },
+        { href: '/admin/restaurant', label: 'Settings', icon: <FaStore className="w-5 h-5" /> },
       ]
     },
     // Support
@@ -582,16 +587,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto w-full">
-            <div className="w-full h-full">
+          <main className="flex-1 overflow-y-auto w-full relative">
+            <div className={`w-full h-full transition-all duration-300 ${shouldBlockContent ? 'blur-md pointer-events-none select-none' : ''}`}>
               {children}
             </div>
+            
+            <SubscriptionModal 
+              isOpen={shouldBlockContent} 
+              isInline={true} 
+              expiryDate={subStatus.expiryDate} 
+            />
           </main>
         </div>
       </div>
-
-      {/* Global Account Restriction Modal */}
-      <SubscriptionModal isOpen={isRestricted} />
 
       {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal 

@@ -16,9 +16,11 @@ import toast from 'react-hot-toast';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
+  isInline?: boolean;
+  expiryDate?: string | null;
 }
 
-export default function SubscriptionModal({ isOpen }: SubscriptionModalProps) {
+export default function SubscriptionModal({ isOpen, isInline = false, expiryDate }: SubscriptionModalProps) {
   const { user } = useAuth();
   const [copied, setCopied] = React.useState(false);
 
@@ -35,13 +37,13 @@ export default function SubscriptionModal({ isOpen }: SubscriptionModalProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className={`${isInline ? 'absolute' : 'fixed'} inset-0 z-[9999] flex items-center justify-center p-4`}>
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-md"
+          className={`absolute inset-0 ${isInline ? 'bg-white/50 backdrop-blur-md' : 'bg-black/60 backdrop-blur-md'}`}
         />
 
         {/* Modal */}
@@ -73,39 +75,37 @@ export default function SubscriptionModal({ isOpen }: SubscriptionModalProps) {
               <p className="text-gray-500 font-medium leading-relaxed">
                 {user?.subscription?.status === 'inactive' 
                   ? 'Your account has been deactivated. Please contact the superadmin for reactivation.'
-                  : 'Your trial or plan has ended. To continue using DigitalMenu, please renew your subscription.'}
+                  : `Your subscription ended on ${expiryDate || 'recently'}. To continue using DigitalMenu, please renew your subscription via the options below.`}
               </p>
             </div>
 
-            {/* Price Card */}
-            <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 mb-8 relative group overflow-hidden">
-              <div className="absolute -top-4 -right-4 w-20 h-20 bg-amber-200/50 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500" />
-              
-              <div className="flex items-center justify-between relative z-10">
-                <div>
-                  <p className="text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Premium Plan</p>
-                  <div className="flex items-baseline">
-                    <span className="text-4xl font-black text-gray-900">₹500</span>
-                    <span className="text-gray-500 font-bold ml-1">/year</span>
-                  </div>
+            {/* Instructions list */}
+            <div className="bg-white border-2 border-indigo-50 rounded-3xl p-6 mb-8 text-left shadow-sm">
+              <h3 className="text-sm font-black text-gray-800 mb-4 flex items-center gap-2">
+                <FaCrown className="text-indigo-500" /> How to Subscribe
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">1</div>
+                  <p className="text-sm font-medium text-gray-600">Contact us via WhatsApp or Email below</p>
                 </div>
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-lg text-amber-500">
-                  <FaCrown className="text-2xl" />
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">2</div>
+                  <p className="text-sm font-medium text-gray-600">Share your Restaurant ID for verification</p>
                 </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {['Unlimited Orders', 'Priority Support', 'Digital QR Menu', 'Sales Analytics'].map((feat, i) => (
-                  <div key={feat} className="flex items-center text-amber-800 text-xs font-bold">
-                    <span className="w-4 h-4 rounded-full bg-amber-200 flex items-center justify-center mr-2 text-[10px]">✓</span>
-                    {feat}
-                  </div>
-                ))}
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">3</div>
+                  <p className="text-sm font-medium text-gray-600">Pay ₹500/year (UPI/Bank Transfer)</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">4</div>
+                  <p className="text-sm font-medium text-gray-600">Activation within 10 minutes</p>
+                </div>
               </div>
             </div>
 
             {/* Restaurant ID Section */}
-            <div className="mb-8">
+            <div className="mb-8 text-left">
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 px-1">
                 Your Restaurant ID
               </label>
@@ -120,6 +120,14 @@ export default function SubscriptionModal({ isOpen }: SubscriptionModalProps) {
                   {copied ? <FaCheck className="text-green-500" /> : <FaCopy />}
                 </button>
               </div>
+              {user?.createdAt && (
+                <div className="mt-3 px-1 flex justify-between items-center text-xs text-gray-500 font-medium">
+                  <span>Account Created:</span>
+                  <span className="font-bold text-gray-700">
+                    {new Date(user.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
               <p className="text-[11px] text-gray-400 mt-2 px-1 font-medium">
                 Please provide this ID when contacting us for activation.
               </p>
