@@ -594,17 +594,17 @@ export default function MarketingHomeClient() {
                   {/* Divider */}
                   <div className="border-t border-gray-200 mb-5" />
 
-                  {/* Feature 1: Email Export */}
+                  {/* Feature 1: Instant Download */}
                   <div className="flex items-start gap-3 sm:gap-4 mb-4 group/item">
                     <div className="w-9 h-9 md:w-10 md:h-10 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0 group-hover/item:bg-indigo-600 transition-colors">
                       <FaEnvelope className="text-indigo-600 group-hover/item:text-white transition-colors text-sm" aria-hidden="true" />
                     </div>
                     <div>
                       <div className="font-black text-gray-900 text-sm tracking-tight">
-                        {lang === 'bn' ? 'ইমেইলে এক্সপোর্ট করুন যেকোনো সময়' : lang === 'hi' ? 'कभी भी ईमेल एक्सपोर्ट करें' : 'Email Export — Anytime'}
+                        {lang === 'bn' ? 'তাৎক্ষণিক ডাউনলোড' : lang === 'hi' ? 'तुरंत डाउनलोड' : 'Instant Download'}
                       </div>
                       <div className="text-xs text-gray-400 font-medium mt-0.5">
-                        {lang === 'bn' ? 'আপনার সব অর্ডার ও রিপোর্ট ইনস্ট্যান্টলি পাঠানো হবে।' : lang === 'hi' ? 'अपने सभी ऑर्डर और रिपोर्ट तुरंत प्राप्त करें।' : 'All orders & reports sent to your inbox instantly.'}
+                        {lang === 'bn' ? 'আপনার সব অর্ডার ও রিপোর্ট তাৎক্ষণিকভাবে ডাউনলোড করুন।' : lang === 'hi' ? 'अपने सभी ऑर्डर और रिपोर्ट तुरंत डाउनलोड करें।' : 'Download all orders & reports instantly.'}
                       </div>
                     </div>
                     <span className="ml-auto text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full whitespace-nowrap self-start">
