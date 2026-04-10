@@ -79,7 +79,6 @@ export default function OrdersPage() {
   const [selectedDate, setSelectedDate] = useState(() => getTodayISTDateString());
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
 
   // Build SWR key based on query parameters
@@ -323,18 +322,6 @@ export default function OrdersPage() {
     }
   };
 
-  const handleSendEmail = async () => {
-    setIsSendingEmail(true);
-    const loadingToast = toast.loading('Sending report...');
-    try {
-      const response = await api.post('/ledger/exportreporttomail');
-      toast.success(response.data.message || 'Report sent successfully!', { id: loadingToast });
-    } catch (error: any) {
-      toast.error('Failed to send report.', { id: loadingToast });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
 
   const filteredOrders = orderFilter === 'all'
     ? orders
@@ -436,9 +423,6 @@ export default function OrdersPage() {
               <span className="text-[9px] font-black uppercase tracking-widest">Add Order</span>
             </Button>
 
-            <Button variant="outline" onClick={handleSendEmail} isLoading={isSendingEmail} className="!py-1.5 !px-3.5 border-gray-200" leftIcon={<FaEnvelope className="text-indigo-500 text-[10px]" />}>
-              <span className="text-[9px] font-black uppercase tracking-widest">Email Report</span>
-            </Button>
           </div>
         </div>
 

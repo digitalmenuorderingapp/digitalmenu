@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import api from '@/services/api';
+import useSWR, { mutate } from 'swr';
+import { fetcher } from '@/services/swr';
 import toast from 'react-hot-toast';
 import { socketService } from '@/services/socket';
 import {
@@ -38,8 +40,13 @@ interface MenuItem {
 }
 
 export default function MenuManagementPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, isLoading, mutate: mutateMenu } = useSWR<{ data: MenuItem[] }>('/menu/admin/all', fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    shouldRetryOnError: false,
+  });
+
+  const menuItems = data?.data || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,20 +69,6 @@ export default function MenuManagementPage() {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [removedImages, setRemovedImages] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchMenuItems();
-  }, []);
-
-  const fetchMenuItems = async () => {
-    try {
-      const response = await api.get('/menu/admin/all');
-      setMenuItems(response.data.data);
-    } catch (error) {
-      toast.error('Failed to load menu items');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -195,7 +188,7 @@ export default function MenuManagementPage() {
         socketService.emit('menuUpdated', { restaurantId: response.data.data?.restaurantId });
       }
       closeModal();
-      fetchMenuItems();
+      mutateMenu();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Operation failed');
     } finally {
@@ -211,7 +204,7 @@ export default function MenuManagementPage() {
     try {
       await api.delete(`/menu/${id}`);
       toast.success('Menu item deleted');
-      fetchMenuItems();
+      mutateMenu();
       
       // Emit socket event to notify customers of menu change
       socketService.emit('menuUpdated', { restaurantId: menuItems.find(i => i._id === id)?.restaurantId });
@@ -229,7 +222,7 @@ export default function MenuManagementPage() {
     try {
       await api.patch(`/menu/toggle/${item._id}`);
       toast.success(`Item ${item.isActive ? 'deactivated' : 'activated'}`);
-      fetchMenuItems();
+      mutateMenu();
       
       // Emit socket event to notify customers of menu change
       socketService.emit('menuUpdated', { restaurantId: item.restaurantId });

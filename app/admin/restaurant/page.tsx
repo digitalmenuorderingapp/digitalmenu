@@ -59,7 +59,6 @@ export default function RestaurantPage() {
   const [captchaText, setCaptchaText] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isExportingReport, setIsExportingReport] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: '',
@@ -115,21 +114,6 @@ export default function RestaurantPage() {
     setDeleteReason('');
   };
 
-  const handleExportReport = async () => {
-    setIsExportingReport(true);
-    const loadingToast = toast.loading(t?.export_report_sending || 'Generating Report...');
-    try {
-      const response = await api.post('/ledger/exportreporttomail');
-      if (response.data.success) {
-        toast.success(response.data.message || t?.export_report_success || 'Report sent successfully', { id: loadingToast });
-      }
-    } catch (error: any) {
-      console.error('Failed to export report:', error);
-      toast.error(error.response?.data?.message || t?.export_report_error || 'Failed to generate report', { id: loadingToast });
-    } finally {
-      setIsExportingReport(false);
-    }
-  };
 
   const confirmDeleteAccount = async () => {
     if (captchaText !== 'DELETE') {
@@ -565,18 +549,6 @@ export default function RestaurantPage() {
               >
                 <FaEnvelope className="text-gray-400" />
                 <span>Subscribe via Email</span>
-              </button>
-              <button
-                onClick={handleExportReport}
-                disabled={isExportingReport}
-                className="w-full flex items-center justify-center space-x-2 py-3 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
-              >
-                {isExportingReport ? (
-                  <FaSpinner className="animate-spin" />
-                ) : (
-                  <FaChartLine className="text-indigo-400" />
-                )}
-                <span>Export Report</span>
               </button>
             </div>
           </div>

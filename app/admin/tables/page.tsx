@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import type { RestaurantAdmin } from '@/context/AuthContext';
 import CryptoJS from 'crypto-js';
 import api from '@/services/api';
+import useSWR, { mutate } from 'swr';
+import { fetcher } from '@/services/swr';
 import toast from 'react-hot-toast';
 import {
   FaPlus,
@@ -183,8 +185,13 @@ const QRSticker = ({
 
 export default function TableManagementPage() {
   const { user } = useAuth();
-  const [tables, setTables] = useState<Table[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, isLoading, mutate: mutateTables } = useSWR<{ data: Table[] }>('/table', fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    shouldRetryOnError: false,
+  });
+
+  const tables = data?.data || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [tableNumber, setTableNumber] = useState('');
@@ -226,20 +233,6 @@ export default function TableManagementPage() {
     return `${window.location.origin}/customer?q=${encrypted}`;
   };
 
-  useEffect(() => {
-    fetchTables();
-  }, []);
-
-  const fetchTables = async () => {
-    try {
-      const response = await api.get('/table');
-      setTables(response.data.data);
-    } catch (error) {
-      toast.error('Failed to load tables');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,7 +248,7 @@ export default function TableManagementPage() {
       setTableNumber('');
       setSeats('4');
       setIsModalOpen(false);
-      fetchTables();
+      mutateTables();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to create table');
     } finally {
@@ -269,7 +262,7 @@ export default function TableManagementPage() {
     try {
       await api.delete(`/table/${id}`);
       toast.success('Table deleted');
-      fetchTables();
+      mutateTables();
     } catch (error) {
       toast.error('Failed to delete table');
     }

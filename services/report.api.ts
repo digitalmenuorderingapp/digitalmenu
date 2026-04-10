@@ -19,11 +19,3 @@ export interface AvailableMonth {
   month: number;
 }
 
-/**
- * Request email report via POST /ledger/exportreporttomail
- * Sends detailed monthly report (month start to today) to user's email
- */
-export const requestEmailReport = async (): Promise<void> => {
-  const response = await api.post(`${API_BASE_URL}/ledger/exportreporttomail`);
-  return response.data;
-};

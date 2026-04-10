@@ -115,7 +115,6 @@ interface Ledger {
 
 export default function LedgerPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'transactions'>('today');
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [userCreatedAt, setUserCreatedAt] = useState<string>('');
 
@@ -155,22 +154,6 @@ export default function LedgerPage() {
     mutateTransactions();
   }, [mutateTransactions]);
 
-  const handleSendEmail = async () => {
-    setIsSendingEmail(true);
-    const loadingToast = toast.loading('Generating and sending your monthly financial report...');
-    try {
-      const response = await api.post('/ledger/exportreporttomail');
-      if (response.data.success) {
-        toast.success(response.data.message || 'Financial report sent successfully!', { id: loadingToast });
-      }
-    } catch (error: any) {
-      console.error('Failed to send ledger report:', error);
-      toast.error(error.response?.data?.message || 'Failed to send report. Please try again.', { id: loadingToast });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-  
   const handleRecalculate = async () => {
     setIsRecalculating(true);
     const loadingToast = toast.loading('Syncing all orders and transactions...');
@@ -274,15 +257,6 @@ export default function LedgerPage() {
               </button>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={handleSendEmail}
-              isLoading={isSendingEmail}
-              className="h-10 px-4"
-              leftIcon={<FaEnvelope className="text-indigo-500 text-xs" />}
-            >
-              <span className="text-[10px] font-black uppercase tracking-widest">Email Report</span>
-            </Button>
 
             <Link href="/admin/reports">
               <Button
