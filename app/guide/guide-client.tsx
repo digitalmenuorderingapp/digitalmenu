@@ -212,7 +212,7 @@ export default function GuideClient() {
       <footer className="bg-slate-900 py-16 text-center text-white mt-12">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-black mb-8">Ready to start?</h2>
-          <Link href="/auth?mode=register" className="inline-block bg-indigo-600 px-12 py-5 rounded-2xl font-black text-xl hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-500/20">
+          <Link href="/auth" className="inline-block bg-indigo-600 px-12 py-5 rounded-2xl font-black text-xl hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-500/20">
             {t.nav_getStarted}
           </Link>
         </div>

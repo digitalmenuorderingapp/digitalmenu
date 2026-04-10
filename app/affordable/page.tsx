@@ -84,7 +84,7 @@ export default function AffordablePage() {
                     <Link href="/auth" className="px-5 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
                       {t.nav_login}
                     </Link>
-                    <Link href="/auth?mode=register" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block">
+                    <Link href="/auth" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block">
                       {t.nav_getStarted}
                     </Link>
                   </>
@@ -162,7 +162,7 @@ export default function AffordablePage() {
         </section>
 
         <div className="mt-20 pt-10 border-t border-gray-100 text-center">
-          <Link href="/auth?mode=register" className="inline-flex items-center gap-3 px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">
+          <Link href="/auth" className="inline-flex items-center gap-3 px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">
             {t.nav_getStarted} <FaArrowRight className="text-sm" />
           </Link>
         </div>

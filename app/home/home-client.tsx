@@ -249,7 +249,7 @@ export default function MarketingHomeClient() {
                     <Link href="/auth" className="px-5 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
                       {t.nav_login}
                     </Link>
-                    <Link href="/auth?mode=register" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block min-w-[150px] text-center">
+                    <Link href="/auth" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block min-w-[150px] text-center">
                       {t.nav_getStarted}
                     </Link>
                   </>
@@ -310,7 +310,7 @@ export default function MarketingHomeClient() {
                     </p>
                     <div className="flex flex-col sm:flex-row flex-wrap gap-5 sm:gap-6">
                       <motion.div whileHover={{ y: -5 }} whileTap={{ scale: 0.98 }}>
-                        <Link href="/auth?mode=register" className="bg-white text-indigo-600 px-6 sm:px-10 md:px-12 py-3.5 sm:py-5 md:py-6 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl transition-all shadow-2xl flex items-center justify-center w-full sm:w-auto">
+                        <Link href="/auth" className="bg-white text-indigo-600 px-6 sm:px-10 md:px-12 py-3.5 sm:py-5 md:py-6 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl transition-all shadow-2xl flex items-center justify-center w-full sm:w-auto">
                           {HERO_SLIDES[currentSlide].cta}
                           <FaArrowRight className="ml-3" aria-hidden="true" />
                         </Link>
@@ -417,7 +417,7 @@ export default function MarketingHomeClient() {
                 </div>
 
                 <div className="block">
-                  <Link href="/auth?mode=register" className="inline-block w-full md:w-auto px-10 md:px-16 py-5 md:py-6 bg-indigo-600 text-white rounded-2xl md:rounded-[2rem] font-black text-xl md:text-2xl hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-100 mb-6 md:mb-8">
+                  <Link href="/auth" className="inline-block w-full md:w-auto px-10 md:px-16 py-5 md:py-6 bg-indigo-600 text-white rounded-2xl md:rounded-[2rem] font-black text-xl md:text-2xl hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-100 mb-6 md:mb-8">
                     {t.offer_cta}
                   </Link>
                 </div>
@@ -713,7 +713,7 @@ export default function MarketingHomeClient() {
 
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 relative z-10">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
-                  <Link href="/auth?mode=register" className="group relative px-6 sm:px-10 py-3 sm:py-5 bg-white text-indigo-600 rounded-2xl sm:rounded-3xl font-black text-base sm:text-lg md:text-xl shadow-2xl hover:shadow-3xl hover:bg-gray-50 transition-all flex items-center justify-center w-full sm:w-auto overflow-hidden">
+                  <Link href="/auth" className="group relative px-6 sm:px-10 py-3 sm:py-5 bg-white text-indigo-600 rounded-2xl sm:rounded-3xl font-black text-base sm:text-lg md:text-xl shadow-2xl hover:shadow-3xl hover:bg-gray-50 transition-all flex items-center justify-center w-full sm:w-auto overflow-hidden">
                     <span className="relative z-10">{t.cta_btn}</span>
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>

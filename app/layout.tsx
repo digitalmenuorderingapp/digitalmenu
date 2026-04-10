@@ -58,11 +58,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`scroll-smooth ${bricolage.variable} ${dmSans.variable} ${notoDevanagari.variable} ${notoBengali.variable}`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`scroll-smooth ${bricolage.variable} ${dmSans.variable} ${notoDevanagari.variable} ${notoBengali.variable}`}>
       <body className="font-sans antialiased text-gray-900 overflow-x-hidden">
         <LayoutClient>
           {children}
         </LayoutClient>
+        {/* Google Identity Services */}
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
       </body>
     </html>
   );

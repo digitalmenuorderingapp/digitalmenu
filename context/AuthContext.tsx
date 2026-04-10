@@ -64,7 +64,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ notVerified?: boolean }>;
-  googleSignIn: (credential: string) => Promise<void>;
+  googleSignIn: (idToken: string, deviceId: string, deviceName: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -204,13 +204,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const googleSignIn = async (credential: string) => {
+  const googleSignIn = async (idToken: string, deviceId: string, deviceName: string) => {
     try {
-      const deviceInfo = getAdminDeviceInfo();
       const response = await api.post('/auth/google-signin', {
-        credential,
-        deviceId: deviceInfo.deviceId,
-        deviceName: deviceInfo.deviceName
+        idToken,
+        deviceId: deviceId,
+        deviceName: deviceName
       });
 
       if (response.data.success) {
