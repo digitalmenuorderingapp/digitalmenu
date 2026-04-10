@@ -9,7 +9,8 @@ import {
   FaInfoCircle, 
   FaMoneyBillWave, 
   FaCreditCard,
-  FaBan
+  FaBan,
+  FaRedo
 } from 'react-icons/fa';
 import Button from './Button';
 
