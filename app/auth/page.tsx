@@ -54,11 +54,14 @@ function AuthPageContent() {
                     client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
                     scope: 'openid email profile',
                     ux_mode: 'popup',
-                    callback: (response: any) => {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                    callback: async (response: any) => {
                         if (response.code) {
                             const { getAdminDeviceInfo } = require('@/utils/device');
                             const deviceInfo = getAdminDeviceInfo();
-                            googleSignIn(response.code, deviceInfo.deviceId, deviceInfo.deviceName);
+                            await googleSignIn(response.code, deviceInfo.deviceId, deviceInfo.deviceName);
+                            router.push('/admin/dashboard');
                         }
                     },
                 });
