@@ -27,12 +27,20 @@ interface MonthData {
   cloudinaryUrl?: string;
 }
 
+interface DownloadActivity {
+  id: string;
+  monthName: string;
+  timestamp: Date;
+  status: 'success' | 'failed';
+}
+
 export default function ReportsPage() {
   const [months, setMonths] = useState<MonthData[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [availableReports, setAvailableReports] = useState<Record<string, string>>({});
+  const [recentActivity, setRecentActivity] = useState<DownloadActivity[]>([]);
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
@@ -128,10 +136,29 @@ export default function ReportsPage() {
       window.URL.revokeObjectURL(url);
       
       toast.success(`Report downloaded successfully!`, { id: loadingToast });
+      
+      // Add to recent activity
+      const newActivity: DownloadActivity = {
+        id: Math.random().toString(36).substr(2, 9),
+        monthName: monthData.monthName,
+        timestamp: new Date(),
+        status: 'success'
+      };
+      setRecentActivity(prev => [newActivity, ...prev].slice(0, 5));
+      
       fetchAvailableReports(); // Refresh available list
     } catch (error) {
       console.error('Download failed:', error);
       toast.error('Failed to download report.', { id: loadingToast });
+      
+      // Add failed attempt
+      const newActivity: DownloadActivity = {
+        id: Math.random().toString(36).substr(2, 9),
+        monthName: monthData.monthName,
+        timestamp: new Date(),
+        status: 'failed'
+      };
+      setRecentActivity(prev => [newActivity, ...prev].slice(0, 5));
     } finally {
       setIsDownloading(false);
     }
@@ -264,9 +291,30 @@ export default function ReportsPage() {
                </div>
                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Recent Activity</h3>
              </div>
-             <p className="text-[11px] text-gray-500 leading-relaxed italic">
-               No recent downloads recorded in this session. Your download history is cleared when you refresh the page.
-             </p>
+             
+             {recentActivity.length > 0 ? (
+               <div className="space-y-4">
+                 {recentActivity.map((activity) => (
+                   <div key={activity.id} className="flex items-start space-x-3 group">
+                     <div className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${
+                       activity.status === 'success' ? 'bg-green-500' : 'bg-red-500'
+                     }`} />
+                     <div className="flex-1 min-w-0">
+                       <p className="text-[11px] font-black text-gray-800 uppercase tracking-tight truncate">
+                         {activity.monthName}
+                       </p>
+                       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                         {activity.status === 'success' ? 'Download Success' : 'Download Failed'} • {activity.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       </p>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             ) : (
+               <p className="text-[11px] text-gray-500 leading-relaxed italic">
+                 No recent downloads recorded in this session. Your download history is cleared when you refresh the page.
+               </p>
+             )}
           </div>
         </div>
       </div>
