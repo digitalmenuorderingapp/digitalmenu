@@ -179,7 +179,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         status: 'PLACED'
       };
 
-      await api.post('/order', orderData);
+      await api.post('/order/create-admin', orderData);
       toast.success('Order created successfully!');
       
       // Reset form

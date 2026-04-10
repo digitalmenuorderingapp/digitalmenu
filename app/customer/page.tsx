@@ -330,6 +330,10 @@ function CustomerPageContent() {
 
       // Listen for general order updates (for any other changes)
       socketService.on('orderUpdate', (order: Order) => {
+        console.log('[Socket] Order update received:', order.orderNumber || order._id);
+        toast.success('Order updated successfully! 🔄');
+        playNotificationSound();
+
         // 🔄 SYNC STATE
         mutateOrders(
           (currentData: any) => {

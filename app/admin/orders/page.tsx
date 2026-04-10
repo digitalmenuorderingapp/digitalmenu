@@ -75,6 +75,8 @@ interface Order {
     submittedAt?: string;
   };
   transactions?: any[];
+  createdBy?: string;
+  source?: 'admin' | 'customer';
 }
 
 type OrderStatus = 'all' | 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'DUES';
@@ -148,20 +150,23 @@ export default function OrdersPage() {
       socketService.join(userIdStr);
 
       const handleNewOrder = (order: Order) => {
+        // Skip notification if this admin created the order themselves
+        if (order.createdBy === user._id || order.source === 'admin') {
+          return;
+        }
+
         // Only process orders for this admin - check restaurant field matches user._id
         const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
         if (!isForThisAdmin) {
           console.log('[Socket] Order not for this admin. Order restaurant:', order.restaurant, 'User ID:', userIdStr);
           return;
         }
-        
+
         // Deduplication check
         const eventKey = `newOrder-${order._id}`;
         if (isDuplicateEvent(eventKey)) return;
-        
+
         console.log('[Socket] New order received:', order.orderNumber || order._id);
-        toast.success(`New order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber}!`);
-        playNewOrderSound();
         
         // Optimistically update the orders list
         mutateOrders(

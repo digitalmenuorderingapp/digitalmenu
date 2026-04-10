@@ -138,8 +138,10 @@ export default function DashboardPage() {
       socketService.join(user._id);
 
       const handleNewOrder = (order: any) => {
-        toast.success(`New order from Table #${order.tableNumber}!`);
-        playNewOrderSound();
+        // Skip notification if this admin created the order themselves
+        if (order.createdBy === user._id || order.source === 'admin') {
+          return;
+        }
         fetchStats();
         fetchLedger(selectedDate);
       };

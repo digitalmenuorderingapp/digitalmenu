@@ -99,6 +99,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       const handleOrderUpdate = (order: any) => {
         console.log('📝 Order update received via socket:', order);
+        // Skip notification if this admin updated the order themselves
+        if (order.updatedBy === user._id) {
+          return;
+        }
+        toast.success(`Order #${order.orderNumber || order._id.slice(-6)} updated! 🔄`);
+        playNewOrderSound();
       };
 
       socketService.on('accountStatusUpdate', handleStatusUpdate);
