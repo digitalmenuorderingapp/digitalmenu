@@ -892,21 +892,30 @@ export default function RestaurantPage() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          whileHover={{ y: -4 }}
+          whileHover={user?.loginMethod === 'google' ? { y: -4 } : {}}
           className={`rounded-3xl shadow-sm border p-6 flex flex-col items-center justify-center space-y-3 relative overflow-hidden transition-all duration-300 ${isDragging
               ? 'border-indigo-500 bg-indigo-50 ring-4 ring-indigo-500/10'
               : 'bg-white border-gray-100 shadow-sm hover:shadow-xl'
             }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          onDragOver={user?.loginMethod === 'google' ? handleDragOver : undefined}
+          onDragLeave={user?.loginMethod === 'google' ? handleDragLeave : undefined}
+          onDrop={user?.loginMethod === 'google' ? handleDrop : undefined}
         >
           {/* Background Decorative Element */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-slate-50 rounded-full translate-x-1/3 -translate-y-1/3 -z-10 opacity-60" />
 
+          {user?.loginMethod !== 'google' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 mb-4 w-full text-left">
+              <FaInfoCircle className="text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-amber-800 font-bold uppercase tracking-wider">
+                Logo update is only available for Google sign-in users.
+              </p>
+            </div>
+          )}
+
           <div className="relative group">
             <div className={`w-36 h-36 rounded-3xl overflow-hidden bg-white border-4 p-1 shadow-2xl flex items-center justify-center transition-all duration-300 ${isDragging ? 'border-indigo-400 scale-105' : 'border-gray-50'
-              }`}>
+              } ${user?.loginMethod !== 'google' ? 'opacity-50 grayscale-[0.5]' : ''}`}>
               {logoPreview ? (
                 <img
                   src={logoPreview}
@@ -935,14 +944,16 @@ export default function RestaurantPage() {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingLogo}
-              className="absolute -bottom-4 -right-4 w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl hover:bg-indigo-700 hover:scale-110 transition-all disabled:opacity-50 z-20 group-hover:shadow-indigo-200"
-            >
-              <FaCamera className="w-6 h-6" />
-            </button>
+            {user?.loginMethod === 'google' && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingLogo}
+                className="absolute -bottom-4 -right-4 w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl hover:bg-indigo-700 hover:scale-110 transition-all disabled:opacity-50 z-20 group-hover:shadow-indigo-200"
+              >
+                <FaCamera className="w-6 h-6" />
+              </button>
+            )}
 
             <input
               type="file"
@@ -961,24 +972,32 @@ export default function RestaurantPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-6 py-2.5 bg-white border-2 border-gray-100 text-indigo-600 rounded-xl text-sm font-bold hover:border-indigo-100 hover:bg-indigo-50 transition-all shadow-sm flex items-center gap-2"
-              >
-                <span>Change Logo</span>
-              </button>
-              {logoPreview && (
+            {user?.loginMethod === 'google' ? (
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
                 <button
                   type="button"
-                  onClick={handleRemoveLogo}
-                  className="px-4 py-2 text-red-500 text-sm font-bold hover:text-red-700 transition-all hover:bg-red-50 rounded-xl"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-6 py-2.5 bg-white border-2 border-gray-100 text-indigo-600 rounded-xl text-sm font-bold hover:border-indigo-100 hover:bg-indigo-50 transition-all shadow-sm flex items-center gap-2"
                 >
-                  Remove Logo
+                  <span>Change Logo</span>
                 </button>
-              )}
-            </div>
+                {logoPreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="px-4 py-2 text-red-500 text-sm font-bold hover:text-red-700 transition-all hover:bg-red-50 rounded-xl"
+                  >
+                    Remove Logo
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="pt-2">
+                <span className="px-6 py-2 bg-gray-50 border border-gray-200 text-gray-400 rounded-xl text-xs font-bold uppercase tracking-widest inline-block">
+                  Editing Locked
+                </span>
+              </div>
+            )}
 
             <div className="pt-2">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Supports JPG, PNG up to 5MB</span>
