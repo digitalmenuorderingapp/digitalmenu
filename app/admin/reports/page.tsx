@@ -74,7 +74,7 @@ export default function ReportsPage() {
         year++;
       }
     }
-    setMonths(monthList.reverse());
+    setMonths(monthList);
     setIsLoading(false);
   };
 
