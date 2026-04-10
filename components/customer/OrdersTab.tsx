@@ -482,12 +482,14 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
                       {/* Verification Link/Button */}
                       {!isOrderPaid(order) && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && (
                         <>
-                          {/* Max retries reached - show Pay at Counter */}
-                          {(order.retryCount || 0) >= 3 ? (
-                            <div className="w-full sm:w-auto px-4 py-3 bg-amber-100 text-amber-700 rounded-xl text-xs font-bold uppercase tracking-wider flex-shrink-0 min-w-[100px] text-center">
-                              <FaMoneyBillWave className="inline w-4 h-4 mr-1" />
-                              Pay at Counter
-                            </div>
+                          {/* Max retries reached - show Exceeded status */}
+                          {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 ? (
+                            <button 
+                              disabled
+                              className="w-full sm:w-auto px-4 py-3 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-wider flex-shrink-0 min-w-[100px] text-center border border-red-100 opacity-80"
+                            >
+                              Retry Count Exceeded
+                            </button>
                           ) : /* Verification pending - show loading state */
                           (order.paymentVerificationRequestbycustomer?.applied) ? (
                             <button 
@@ -639,7 +641,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
 
               <div className="p-8">
                 {/* Check if max retries reached */}
-                {(orderToVerify.retryCount || 0) >= 3 ? (
+                {(orderToVerify.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 ? (
                   <div className="space-y-6">
                     <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
                       <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">

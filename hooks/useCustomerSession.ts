@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import api from '@/services/api';
 
 interface CustomerSession {
@@ -42,7 +43,7 @@ export function useCustomerSession() {
     // Get persistent device ID
     let deviceId = localStorage.getItem('deviceId');
     if (!deviceId) {
-      deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      deviceId = uuidv4();
       localStorage.setItem('deviceId', deviceId);
     }
 
@@ -62,7 +63,7 @@ export function useCustomerSession() {
     });
   }, []);
 
-  const updateSession = (updates: Partial<CustomerSession>) => {
+  const updateSession = useCallback((updates: Partial<CustomerSession>) => {
     // Update localStorage (exclude deviceId and sessionId)
     Object.entries(updates).forEach(([key, value]) => {
       if (key === 'deviceId' || key === 'sessionId') return; // Don't save to localStorage
@@ -76,18 +77,18 @@ export function useCustomerSession() {
 
     // Update state
     setSession(prev => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const clearSession = () => {
+  const clearSession = useCallback(() => {
     // Clear all session data
     const keys = ['restaurantName', 'restaurantId', 'tableNumber', 'tableCapacity', 'customerName', 'mobileNumber', 'numberOfPersons'];
     keys.forEach(key => localStorage.removeItem(key));
     setSession({});
-  };
+  }, []);
 
-  const hasValidSession = () => {
+  const hasValidSession = useCallback(() => {
     return !!(session.restaurantName && session.tableNumber && session.deviceId);
-  };
+  }, [session.restaurantName, session.tableNumber, session.deviceId]);
 
   const fetchRestaurantById = async (restaurantId: string): Promise<RestaurantDetails | null> => {
     try {

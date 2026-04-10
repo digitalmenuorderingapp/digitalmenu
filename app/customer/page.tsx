@@ -89,14 +89,6 @@ function CustomerPageContent() {
     hasInitialized.current = true;
 
     const initializeSession = async () => {
-      let currentDeviceId = session.deviceId;
-      
-      // Initialize device ID if not exists
-      if (!currentDeviceId) {
-        currentDeviceId = uuidv4();
-        updateSession({ deviceId: currentDeviceId });
-      }
-
       // Handle QR code
       if (qrParam) {
         try {
@@ -182,10 +174,10 @@ function CustomerPageContent() {
 
   // Update table capacity in session when menu data changes
   useEffect(() => {
-    if (menuData?.data?.tableCapacity) {
+    if (menuData?.data?.tableCapacity && menuData.data.tableCapacity !== session.tableCapacity) {
       updateSession({ tableCapacity: menuData.data.tableCapacity });
     }
-  }, [menuData, updateSession]);
+  }, [menuData, updateSession, session.tableCapacity]);
 
   const refreshMenu = useCallback(() => {
     mutateMenu();
@@ -254,10 +246,12 @@ function CustomerPageContent() {
         };
 
         const message = statusMessages[order.status] || `Your order status: ${order.status}`;
+        const toastId = `order-${order._id}-${order.status}`;
 
         // Special handling for rejected/cancelled orders with reasons
         if (order.status === 'REJECTED' && order.rejectionReason) {
           toast.error(`Order rejected: ${order.rejectionReason}`, {
+            id: toastId,
             duration: 8000,
             style: {
               borderRadius: '12px',
@@ -267,6 +261,7 @@ function CustomerPageContent() {
           });
         } else if (order.status === 'CANCELLED' && order.cancellationReason) {
           toast.error(`Order cancelled: ${order.cancellationReason}`, {
+            id: toastId,
             duration: 8000,
             style: {
               borderRadius: '12px',
@@ -276,6 +271,7 @@ function CustomerPageContent() {
           });
         } else {
           toast(message, {
+            id: toastId,
             icon: order.status === 'REJECTED' || order.status === 'CANCELLED' ? '❌' : '🔔',
             duration: order.status === 'REJECTED' || order.status === 'CANCELLED' ? 8000 : 6000,
             style: {

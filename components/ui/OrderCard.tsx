@@ -424,60 +424,95 @@ const OrderCard = ({
 
         <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-100">
           
-          {/* Step 1: Order Arrival */}
-          {order.status?.toUpperCase() === 'PLACED' && (
-            <>
-              <Button 
-                size="md" 
-                onClick={() => handleAction('ACCEPT_ORDER')} 
-                isLoading={isLoading('ACCEPT_ORDER')}
-                disabled={isAnyLoading}
-                leftIcon={<FaCheck className="w-4 h-4" />}
-              >
-                Accept
-              </Button>
-              <Button 
-                size="md" 
-                variant="danger" 
-                onClick={() => setModalType('REJECT_ORDER')}
-                isLoading={isLoading('REJECT_ORDER')}
-                disabled={isAnyLoading}
-                leftIcon={<FaExclamationCircle className="w-4 h-4" />}
-              >
-                Reject
-              </Button>
-            </>
-          )}
+          {/* Unified Payment Actions - Only visible if not verified */}
+          {(() => {
+            // Robust field detection using case-insensitive search
+            const orderKeys = Object.keys(order);
+            const targetKey = orderKeys.find(k => k.toLowerCase() === 'paymentverificationrequestbycustomer');
+            const paymentObj = targetKey ? (order as any)[targetKey] : null;
 
-          {/* Step 2: After ACCEPT */}
-          {order.status?.toUpperCase() === 'ACCEPTED' && (
-            <>
-              {(order.paymentMethod?.toUpperCase() === 'ONLINE' || order.collectedVia?.toUpperCase() === 'ONLINE') && order.paymentStatus?.toUpperCase() !== 'VERIFIED' && (
-                isMaxRetryReached(order) ? (
+            const hasApplied = !!paymentObj?.applied || String(paymentObj?.applied) === 'true';
+            const hasUTR = !!order.utr || !!order.submittedUtr || !!paymentObj?.appliedUTR;
+            const isRetry = order.paymentStatus?.toUpperCase() === 'RETRY';
+            const showVerify = hasApplied || hasUTR || isRetry;
+            
+            console.log(`[DEBUG:OrderCard:${order.orderNumber || order._id?.slice(-6)}]`, { 
+              showVerify,
+              detectedKey: targetKey,
+              paymentObj,
+              hasApplied,
+              hasUTR,
+              isRetry,
+              orderKeys,
+              fullOrderSample: JSON.stringify(order).slice(0, 300)
+            });
+            
+            if (paid || order.status?.toUpperCase() === 'REJECTED' || order.status?.toUpperCase() === 'CANCELLED') {
+              return null;
+            }
+
+            return (
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                {/* Case 1: Payment Verification Needed (Applied) */}
+                {showVerify ? (
+                  <>
+                    <Button 
+                      size="md" 
+                      variant="success"
+                      onClick={() => setModalType('VERIFY_PAYMENT')}
+                      isLoading={isLoading('VERIFY_PAYMENT')}
+                      disabled={isAnyLoading}
+                      leftIcon={<FaCheckCircle className="w-4 h-4" />}
+                      fullWidth
+                    >
+                      Verify Payment
+                    </Button>
+                  </>
+                ) : (
+                  /* Case 2: Regular Payment Collection */
                   <Button 
                     size="md" 
                     variant="success" 
                     onClick={() => setModalType('COLLECT_PAYMENT')}
                     isLoading={isLoading('COLLECT_PAYMENT')}
                     disabled={isAnyLoading}
+                    className="flex-1 sm:flex-none"
                     leftIcon={<FaMoneyBillWave className="w-4 h-4" />}
                   >
-                    Collect Payment
+                    {order.paymentDueStatus?.toUpperCase() === 'DUE' ? 'Clear Due' : 'Collect Payment'}
                   </Button>
-                ) : (
-                  <Button 
-                    size="md" 
-                    variant="success" 
-                    onClick={() => setModalType('VERIFY_PAYMENT')}
-                    isLoading={isLoading('VERIFY_PAYMENT')}
-                    disabled={isAnyLoading}
-                    leftIcon={<FaCheckCircle className="w-4 h-4" />}
-                  >
-                    {order.paymentStatus?.toUpperCase() === 'RETRY' ? 'Verify Retry' : 'Verify Payment'}
-                  </Button>
-                )
-              )}
-              
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Status-based Actions (Accept, Reject, Serve, Mark Unpaid) */}
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            {order.status?.toUpperCase() === 'PLACED' && (
+              <>
+                <Button 
+                  size="md" 
+                  onClick={() => handleAction('ACCEPT_ORDER')} 
+                  isLoading={isLoading('ACCEPT_ORDER')}
+                  disabled={isAnyLoading}
+                  leftIcon={<FaCheck className="w-4 h-4" />}
+                >
+                  Accept
+                </Button>
+                <Button 
+                  size="md" 
+                  variant="danger" 
+                  onClick={() => setModalType('REJECT_ORDER')}
+                  isLoading={isLoading('REJECT_ORDER')}
+                  disabled={isAnyLoading}
+                  leftIcon={<FaExclamationCircle className="w-4 h-4" />}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
+
+            {order.status?.toUpperCase() === 'ACCEPTED' && (
               <Button 
                 size="md" 
                 variant="primary" 
@@ -488,114 +523,22 @@ const OrderCard = ({
               >
                 Serve
               </Button>
+            )}
 
-              {(order.paymentMethod?.toUpperCase() === 'CASH' || order.collectedVia?.toUpperCase() === 'CASH') && order.paymentStatus?.toUpperCase() !== 'VERIFIED' && (
-                <Button 
-                  size="md" 
-                  variant="success"
-                  onClick={() => setModalType('COLLECT_PAYMENT')}
-                  isLoading={isLoading('COLLECT_PAYMENT')}
-                  disabled={isAnyLoading}
-                  leftIcon={<FaMoneyBillWave className="w-4 h-4" />}
-                >
-                  Collect Payment
-                </Button>
-              )}
-            </>
-          )}
-
-          {/* Special: RETRY Status - Show Verify button unless max retries reached */}
-          {order.paymentStatus?.toUpperCase() === 'RETRY' && order.status?.toUpperCase() !== 'COMPLETED' && (
-            isMaxRetryReached(order) ? (
+            {order.status?.toUpperCase() === 'COMPLETED' && !paid && order.paymentStatus?.toUpperCase() !== 'UNPAID' && (
               <Button 
                 size="md" 
-                variant="success" 
-                onClick={() => setModalType('COLLECT_PAYMENT')}
-                isLoading={isLoading('COLLECT_PAYMENT')}
-                disabled={isAnyLoading}
-                leftIcon={<FaMoneyBillWave className="w-4 h-4" />}
-              >
-                Collect Payment
-              </Button>
-            ) : (
-              <Button 
-                size="md" 
-                variant="amber" 
-                onClick={() => setModalType('VERIFY_PAYMENT')}
-                isLoading={isLoading('VERIFY_PAYMENT')}
+                variant="danger" 
+                onClick={() => setModalType('MARK_UNPAID')}
+                isLoading={isLoading('MARK_UNPAID')}
                 disabled={isAnyLoading}
                 leftIcon={<FaExclamationTriangle className="w-4 h-4" />}
               >
-                Verify Retry ({order.retryCount || 0}/3)
+                Mark Unpaid
               </Button>
-            )
-          )}
+            )}
+          </div>
 
-          {/* Step 3 & 4: Post-Serve Actions */}
-          {order.status?.toUpperCase() === 'COMPLETED' && order.paymentStatus?.toUpperCase() !== 'VERIFIED' && (
-            <>
-              {/* Show Verify button if customer submitted UTR for verification - but hide if max retries reached */}
-              {(order.paymentMethod?.toUpperCase() === 'ONLINE' || 
-                order.collectedVia?.toUpperCase() === 'ONLINE' ||
-                order.paymentVerificationRequestbycustomer?.applied) && 
-               !isMaxRetryReached(order) && (
-                <Button 
-                  size="md" 
-                  variant="success" 
-                  onClick={() => setModalType('VERIFY_PAYMENT')}
-                  isLoading={isLoading('VERIFY_PAYMENT')}
-                  disabled={isAnyLoading}
-                  leftIcon={<FaCheckCircle className="w-4 h-4" />}
-                >
-                  Verify Payment
-                </Button>
-              )}
-              
-              {order.paymentStatus?.toUpperCase() !== 'UNPAID' && (
-                <Button 
-                  size="md" 
-                  variant="danger" 
-                  onClick={() => setModalType('MARK_UNPAID')}
-                  isLoading={isLoading('MARK_UNPAID')}
-                  disabled={isAnyLoading}
-                  leftIcon={<FaExclamationTriangle className="w-4 h-4" />}
-                >
-                  Mark Unpaid
-                </Button>
-              )}
-
-              {(order.paymentMethod?.toUpperCase() === 'ONLINE' || 
-                order.collectedVia?.toUpperCase() === 'ONLINE') && 
-               isMaxRetryReached(order) && (
-                <Button 
-                  size="md" 
-                  variant="success" 
-                  onClick={() => setModalType('COLLECT_PAYMENT')}
-                  isLoading={isLoading('COLLECT_PAYMENT')}
-                  disabled={isAnyLoading}
-                  leftIcon={<FaMoneyBillWave className="w-4 h-4" />}
-                >
-                  Collect Payment
-                </Button>
-              )}
-
-              {(order.paymentMethod?.toUpperCase() === 'CASH' || 
-                order.collectedVia?.toUpperCase() === 'CASH' || 
-                order.paymentDueStatus?.toUpperCase() === 'DUE' || 
-                order.paymentStatus?.toUpperCase() === 'UNPAID') && (
-                <Button 
-                  size="md" 
-                  variant="success" 
-                  onClick={() => setModalType('COLLECT_PAYMENT')}
-                  isLoading={isLoading('COLLECT_PAYMENT')}
-                  disabled={isAnyLoading}
-                  leftIcon={<FaMoneyBillWave className="w-4 h-4" />}
-                >
-                  {order.paymentDueStatus?.toUpperCase() === 'DUE' ? 'Clear Due' : 'Collect Payment'}
-                </Button>
-              )}
-            </>
-          )}
         </div>
       </div>
 

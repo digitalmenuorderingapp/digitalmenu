@@ -61,6 +61,12 @@ interface Order {
   utr?: string;
   rejectionReason?: string;
   cancellationReason?: string;
+  paymentVerificationRequestbycustomer?: {
+    applied?: boolean;
+    appliedUTR?: string;
+    retrycount?: number;
+    adminAskedretry?: boolean;
+  };
   createdAt: string;
   updatedAt?: string;
   feedback?: {

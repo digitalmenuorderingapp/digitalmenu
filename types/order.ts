@@ -60,5 +60,7 @@ export interface Order {
     paymentVerificationRequestbycustomer?: {
         applied?: boolean;
         appliedUTR?: string;
+        retrycount?: number;
+        adminAskedretry?: boolean;
     };
 }

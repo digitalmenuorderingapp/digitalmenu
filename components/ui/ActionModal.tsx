@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fa';
 import Button from './Button';
 
-export type ActionType = 'VERIFY_PAYMENT' | 'REJECT_ORDER' | 'MARK_UNPAID' | 'COLLECT_PAYMENT';
+export type ActionType = 'VERIFY_PAYMENT' | 'REJECT_ORDER' | 'MARK_UNPAID' | 'COLLECT_PAYMENT' | 'REQUEST_RETRY';
 
 interface ActionModalProps {
   isOpen: boolean;
@@ -63,6 +63,7 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
       case 'REJECT_ORDER': return 'Reject Order';
       case 'MARK_UNPAID': return 'Mark as Unpaid';
       case 'COLLECT_PAYMENT': return 'Collect Payment';
+      case 'REQUEST_RETRY': return 'Request Payment Retry';
       default: return 'Confirm Action';
     }
   };
@@ -73,6 +74,7 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
       case 'REJECT_ORDER': return <FaBan className="text-red-600" />;
       case 'MARK_UNPAID': return <FaExclamationTriangle className="text-amber-600" />;
       case 'COLLECT_PAYMENT': return <FaMoneyBillWave className="text-indigo-600" />;
+      case 'REQUEST_RETRY': return <FaRedo className="text-amber-600" />;
       default: return <FaInfoCircle className="text-blue-600" />;
     }
   };
@@ -81,7 +83,7 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
     setLoading(true);
     try {
       const payload: any = {
-        actionOverride: overrideAction // Used to distinguish between APPROVE and RETRY in VERIFY_PAYMENT
+        actionOverride: type === 'REQUEST_RETRY' ? 'REQUEST_RETRY' : overrideAction // Used to distinguish between APPROVE and RETRY in VERIFY_PAYMENT
       };
       
       if (type === 'VERIFY_PAYMENT') {
@@ -257,6 +259,24 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
                 </div>
               )}
 
+              {type === 'REQUEST_RETRY' && (
+                <div className="space-y-4 bg-amber-50 rounded-2xl p-5 border border-amber-100">
+                  <div className="flex items-center gap-3 text-amber-600 mb-2">
+                    <FaExclamationTriangle className="text-xl" />
+                    <span className="font-black uppercase tracking-widest text-xs">Action Required</span>
+                  </div>
+                  <p className="text-sm font-bold text-amber-900 leading-relaxed">
+                    This will ask the customer to check their payment status and re-enter their UTR. The "Applied" status will be reset, and the customer will be notified to try again.
+                  </p>
+                  {submittedUtr && (
+                    <div className="mt-3 pt-3 border-t border-amber-200/50">
+                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Customer Submitted UTR</p>
+                      <p className="font-mono text-sm font-black text-amber-800 tracking-widest">{submittedUtr}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
 
             {/* Footer */}
@@ -283,7 +303,7 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
               )}
 
               <Button
-                variant={type === 'REJECT_ORDER' || type === 'MARK_UNPAID' ? 'danger' : 'primary'}
+                variant={type === 'REJECT_ORDER' || type === 'MARK_UNPAID' || type === 'REQUEST_RETRY' ? 'danger' : 'primary'}
                 fullWidth
                 onClick={() => handleConfirm(type === 'VERIFY_PAYMENT' ? 'VERIFY_PAYMENT' : undefined)}
                 isLoading={loading}
@@ -293,7 +313,8 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
                   ((type === 'REJECT_ORDER' || type === 'MARK_UNPAID') && reason === 'Other (Specify below)' && !customReason)
                 }
               >
-                {type === 'VERIFY_PAYMENT' ? 'Approve Payment' : 'Confirm'}
+                {type === 'VERIFY_PAYMENT' ? 'Approve Payment' : 
+                 type === 'REQUEST_RETRY' ? 'Ask Customer to Retry' : 'Confirm'}
               </Button>
             </div>
           </motion.div>
