@@ -598,12 +598,7 @@ export default function RestaurantPage() {
         className="grid lg:grid-cols-1 gap-6 items-start"
       >
         {/* Restaurant Details Form */}
-        {(() => {
-          const deviceInfo = getAdminDeviceInfo();
-          const currentDeviceToken = user?.refreshTokens?.find(token => token.deviceId === deviceInfo.deviceId);
-          const isGoogleUser = currentDeviceToken?.loginMethod === 'google';
-          return isGoogleUser;
-        })() ? (
+        {user?.loginMethod === 'google' ? (
           <div className="bg-white rounded-3xl shadow-xl shadow-slate-100 border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 h-full flex flex-col">
             <div className="p-8 border-b border-gray-100 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full translate-x-1/2 -translate-y-1/2 -z-10 opacity-50" />
@@ -995,12 +990,7 @@ export default function RestaurantPage() {
           {/* Security Settings Section */}
 
       <div>
-        {(() => {
-          const deviceInfo = getAdminDeviceInfo();
-          const currentDeviceToken = user?.refreshTokens?.find(token => token.deviceId === deviceInfo.deviceId);
-          const isGoogleUser = currentDeviceToken?.loginMethod === 'google';
-          return isGoogleUser;
-        })() ? (
+        {user?.loginMethod === 'google' ? (
           <div className="bg-white rounded-3xl shadow-xl shadow-slate-100 border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500">
             <div className="p-6 border-b border-gray-100 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full translate-x-1/2 -translate-y-1/2 -z-10 opacity-50" />

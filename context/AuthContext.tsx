@@ -29,6 +29,7 @@ interface RefreshToken {
 interface AuthMeResponse {
   success: boolean;
   user?: RestaurantAdmin | null;
+  loginMethod?: 'local' | 'google';
 }
 
 export interface RestaurantAdmin {
@@ -57,6 +58,7 @@ export interface RestaurantAdmin {
   createdAt?: string | Date;
   updatedAt?: string | Date;
   lastActivity?: string | Date;
+  loginMethod?: 'local' | 'google' | 'password';
 }
 
 interface AuthContextType {
@@ -96,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   );
 
-  const user = data?.success && data.user ? data.user : null;
+  const user = data?.success && data.user ? { ...data.user, loginMethod: data.loginMethod } : null;
 
   const login = async (email: string, password: string) => {
     try {
