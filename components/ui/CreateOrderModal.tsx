@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import useSWR from 'swr';
+import { fetcher } from '@/services/swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
@@ -31,6 +33,7 @@ interface MenuItem {
   description?: string;
   ingredients?: string;
   preparationMethod?: string;
+  images?: string[];
   image?: string;
   isActive: boolean;
 }
@@ -47,9 +50,7 @@ interface CreateOrderModalProps {
 
 export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrderModalProps) {
   const { user } = useAuth();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -62,37 +63,17 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     specialInstructions: ''
   });
 
-  useEffect(() => {
-    if (isOpen && user) {
-      fetchMenuItems();
+  const restaurantId = user?.id || user?._id;
+  const { data: menuData, isLoading } = useSWR<{ data: MenuItem[] }>(
+    isOpen && restaurantId ? `/menu/${restaurantId}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
     }
-  }, [isOpen, user]);
+  );
 
-  const fetchMenuItems = async () => {
-    try {
-      setIsLoading(true);
-      const restaurantId = user?.id || user?._id;
-      console.log('Fetching menu for restaurantId:', restaurantId);
-      console.log('User object:', user);
-      if (!restaurantId) {
-        toast.error('Restaurant ID not found. Please login again.');
-        return;
-      }
-      const response = await api.get(`/menu/${restaurantId}`);
-      console.log('Full API response:', response);
-      console.log('Response data:', response.data);
-      console.log('Response data.data:', response.data?.data);
-      const items = response.data?.data || [];
-      console.log('Items before filter:', items);
-      console.log('Items after isActive filter:', items.filter((item: MenuItem) => item.isActive));
-      setMenuItems(items.filter((item: MenuItem) => item.isActive));
-    } catch (error: any) {
-      console.error('Failed to load menu items:', error);
-      toast.error(error.response?.data?.message || 'Failed to load menu items');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const menuItems = menuData?.data?.filter((item: MenuItem) => item.isActive) || [];
 
   const addToCart = (item: MenuItem) => {
     setCart(prevCart => {
@@ -206,9 +187,6 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     return acc;
   }, {} as Record<string, MenuItem[]>);
 
-  // Debug logging
-  console.log('Menu items:', menuItems);
-  console.log('Grouped items:', groupedItems);
 
   return (
     <AnimatePresence>
@@ -280,10 +258,10 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                 >
                                   <div className="flex items-start justify-between p-4">
                                     <div className="flex-1 min-w-0">
-                                      {item.image && (
+                                      {(item.images?.length || 0) > 0 || item.image ? (
                                         <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-gray-100">
                                           <img
-                                            src={item.image}
+                                            src={item.images?.[0] || item.image || ''}
                                             alt={item.name}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
@@ -291,7 +269,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                             }}
                                           />
                                         </div>
-                                      )}
+                                      ) : null}
                                       <div className="flex items-center gap-2 mb-2">
                                         <h5 className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors">
                                           {item.name}
