@@ -275,11 +275,23 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                               return (
                                 <div
                                   key={item._id}
-                                  className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-indigo-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer group"
+                                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer group"
                                   onClick={() => addToCart(item)}
                                 >
-                                  <div className="flex items-start justify-between">
+                                  <div className="flex items-start justify-between p-4">
                                     <div className="flex-1 min-w-0">
+                                      {item.image && (
+                                        <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-gray-100">
+                                          <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                            }}
+                                          />
+                                        </div>
+                                      )}
                                       <div className="flex items-center gap-2 mb-2">
                                         <h5 className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors">
                                           {item.name}
