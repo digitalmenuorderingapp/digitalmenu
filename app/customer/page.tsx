@@ -283,7 +283,7 @@ function CustomerPageContent() {
 
         playNotificationSound();
 
-        // 🔄 SYNC STATE: If notification has order data, update orders list
+        // 🔄 SYNC STATE: If notification has order data, update orders list and refetch
         if (notification.metadata?.orderData) {
           const order = notification.metadata.orderData;
           mutateOrders(
@@ -299,6 +299,8 @@ function CustomerPageContent() {
             },
             false
           );
+          // Refetch orders from server to ensure order card is updated
+          mutateOrders();
         }
       });
       
