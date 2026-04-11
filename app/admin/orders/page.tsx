@@ -286,10 +286,10 @@ export default function OrdersPage() {
     }
   }, [user?._id, refreshOrders]);
 
-  // Keyboard shortcut for Add Order (Ctrl+N)
+  // Keyboard shortcut for Add Order (Alt+N)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      if (e.altKey && e.key === 'n') {
         e.preventDefault();
         setCreateOrderModalOpen(true);
       }
@@ -408,7 +408,7 @@ export default function OrdersPage() {
 
             <Button variant="primary" onClick={() => setCreateOrderModalOpen(true)} className="!py-1.5 !px-3.5" leftIcon={<FaPlus className="text-white text-[10px]" />}>
               <span className="text-[9px] font-black uppercase tracking-widest">Add Order</span>
-              <span className="ml-2 text-[8px] text-white/70 font-normal">Ctrl+N</span>
+              <span className="ml-2 text-[8px] text-white/70 font-normal">Alt+N</span>
             </Button>
 
           </div>
