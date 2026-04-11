@@ -19,6 +19,7 @@ import { FaSpinner, FaUtensils, FaShoppingCart, FaClipboardList, FaUser, FaQrcod
 import { socketService } from '@/services/socket';
 import { playNotificationSound } from '@/utils/notifications';
 import { Order, MenuItem, CartItem } from '@/types/order';
+import { Notification } from '@/types/notification';
 
 // Encryption key - must match the one used in tables page
 const ENCRYPTION_KEY = 'dm-2026';
@@ -36,6 +37,8 @@ function CustomerPageContent() {
     numberOfPersons: 1,
     customerPhone: ''
   });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const qrParam = searchParams.get('q') || searchParams.get('qr'); // Support both new and old param
   const tableNumber = searchParams.get('table');
@@ -226,131 +229,80 @@ function CustomerPageContent() {
   useEffect(() => {
     if (session.deviceId) {
       socketService.connect();
-      socketService.join(session.deviceId);
+      socketService.join(`customer:${session.deviceId}`);
       
       // Also join restaurant room for menu updates
       if (session.restaurantId) {
-        socketService.join(session.restaurantId);
+        socketService.join(`restaurant:${session.restaurantId}`);
         console.log('[Socket] Joined restaurant room:', session.restaurantId);
       }
 
-      socketService.on('orderStatusUpdate', (order: Order) => {
+      // Fetch initial notifications
+      const fetchNotifications = async () => {
+        try {
+          const res = await api.get(`/notifications/public?deviceId=${session.deviceId}&recipientType=CUSTOMER`);
+          setNotifications(res.data.data || []);
+          setUnreadNotifications(res.data.unreadCount || 0);
+        } catch (error) {
+          console.error('Failed to fetch customer notifications:', error);
+        }
+      };
+      
+      fetchNotifications();
+
+      // Unified Notification Listener
+      socketService.on('notification', (notification: Notification) => {
+        console.log('[Socket] New notification received:', notification);
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadNotifications(prev => prev + 1);
+
+        // Map notification status to toast message
         const statusMessages: Record<string, string> = {
-          PLACED: 'Order placed successfully! 📝',
-          ACCEPTED: 'Your order is being prepared! 🍳',
-          COMPLETED: 'Your order has been served! 🍽️',
-          REJECTED: 'Sorry, your order was rejected. ❌',
-          CANCELLED: 'Your order has been cancelled. 🚫',
-          RETRY: 'Verification failed. Please retry payment. 🔁',
-          paymentVerified: 'Payment verified successfully! ✅',
+          'ORDER_NEW': 'Order placed successfully! 📝',
+          'ORDER_ACCEPTED': 'Your order is being prepared! 🍳',
+          'ORDER_COMPLETED': 'Your order has been served! 🍽️',
+          'ORDER_REJECTED': 'Sorry, your order was rejected. ❌',
+          'ORDER_CANCELLED': 'Your order has been cancelled. 🚫',
+          'PAYMENT_RETRY': 'Verification failed. Please retry payment. 🔁',
+          'PAYMENT_VERIFIED': 'Payment verified successfully! ✅',
         };
 
-        const message = statusMessages[order.status] || `Your order status: ${order.status}`;
-        const toastId = `order-${order._id}-${order.status}`;
+        const message = statusMessages[notification.type] || notification.message;
+        const isError = ['ORDER_REJECTED', 'ORDER_CANCELLED', 'PAYMENT_RETRY'].includes(notification.type);
 
-        // Special handling for rejected/cancelled orders with reasons
-        if (order.status === 'REJECTED' && order.rejectionReason) {
-          toast.error(`Order rejected: ${order.rejectionReason}`, {
-            id: toastId,
-            duration: 8000,
-            style: {
-              borderRadius: '12px',
-              background: '#dc2626',
-              color: '#fff',
-            },
-          });
-        } else if (order.status === 'CANCELLED' && order.cancellationReason) {
-          toast.error(`Order cancelled: ${order.cancellationReason}`, {
-            id: toastId,
-            duration: 8000,
-            style: {
-              borderRadius: '12px',
-              background: '#dc2626',
-              color: '#fff',
-            },
-          });
-        } else {
-          toast(message, {
-            id: toastId,
-            icon: order.status === 'REJECTED' || order.status === 'CANCELLED' ? '❌' : '🔔',
-            duration: order.status === 'REJECTED' || order.status === 'CANCELLED' ? 8000 : 6000,
-            style: {
-              borderRadius: '12px',
-              background: order.status === 'REJECTED' || order.status === 'CANCELLED' ? '#dc2626' : '#1e293b',
-              color: '#fff',
-            },
-          });
-        }
-
-        playNotificationSound();
-
-        // 🔄 SYNC STATE: Update the orders list immediately without a network fetch
-        mutateOrders(
-          (currentData: any) => {
-            const existingOrders = currentData?.data || [];
-            const index = existingOrders.findIndex((o: Order) => o._id === order._id);
-            if (index !== -1) {
-              const newOrders = [...existingOrders];
-              newOrders[index] = order;
-              return { ...currentData, data: newOrders };
-            }
-            return { ...currentData, data: [order, ...existingOrders] };
-          },
-          false // Don't revalidate yet
-        );
-      });
-
-      // Listen for payment verified
-      socketService.on('paymentVerified', (order: Order) => {
-        toast.success('Payment verified successfully! ✅', {
-          duration: 6000,
+        toast(message, {
+          id: `notif-${notification._id}`,
+          icon: isError ? '❌' : '🔔',
+          duration: isError ? 8000 : 5000,
           style: {
             borderRadius: '12px',
-            background: '#10b981',
+            background: isError ? '#dc2626' : '#1e293b',
             color: '#fff',
           },
         });
+
         playNotificationSound();
 
-        // Update orders list
-        mutateOrders(
-          (currentData: any) => {
-            const existingOrders = currentData?.data || [];
-            const index = existingOrders.findIndex((o: Order) => o._id === order._id);
-            if (index !== -1) {
-              const newOrders = [...existingOrders];
-              newOrders[index] = order;
-              return { ...currentData, data: newOrders };
-            }
-            return currentData;
-          },
-          false
-        );
+        // 🔄 SYNC STATE: If notification has order data, update orders list
+        if (notification.metadata?.orderData) {
+          const order = notification.metadata.orderData;
+          mutateOrders(
+            (currentData: any) => {
+              const existingOrders = currentData?.data || [];
+              const index = existingOrders.findIndex((o: Order) => o._id === order._id);
+              if (index !== -1) {
+                const newOrders = [...existingOrders];
+                newOrders[index] = order;
+                return { ...currentData, data: newOrders };
+              }
+              return { ...currentData, data: [order, ...existingOrders] };
+            },
+            false
+          );
+        }
       });
-
-      // Listen for general order updates (for any other changes)
-      socketService.on('orderUpdate', (order: Order) => {
-        console.log('[Socket] Order update received:', order.orderNumber || order._id);
-        toast.success('Order updated successfully! 🔄');
-        playNotificationSound();
-
-        // 🔄 SYNC STATE
-        mutateOrders(
-          (currentData: any) => {
-            const existingOrders = currentData?.data || [];
-            const index = existingOrders.findIndex((o: Order) => o._id === order._id);
-            if (index !== -1) {
-              const newOrders = [...existingOrders];
-              newOrders[index] = order;
-              return { ...currentData, data: newOrders };
-            }
-            return { ...currentData, data: [order, ...existingOrders] };
-          },
-          false
-        );
-      });
-
-      // Listen for menu updates from admin
+      
+      // Keep other system-wide listeners (like menu updates)
       socketService.on('menuUpdated', (data: { restaurantId: string }) => {
         console.log('[Socket] Menu updated by admin, refetching...');
         // Refetch menu items for current restaurant
@@ -368,9 +320,7 @@ function CustomerPageContent() {
       });
 
       return () => {
-        socketService.off('orderStatusUpdate');
-        socketService.off('orderUpdate');
-        socketService.off('paymentVerified');
+        socketService.off('notification');
         socketService.off('menuUpdated');
       };
     }
@@ -380,8 +330,16 @@ function CustomerPageContent() {
     setActiveTab(tab);
 
     // Refresh orders when switching to orders tab
+    // Refresh orders and mark notifications as read when switching to orders tab
     if (tab === 'orders') {
       refreshOrders();
+      if (unreadNotifications > 0) {
+        setUnreadNotifications(0);
+        api.post('/notifications/public/mark-read', {
+          deviceId: session.deviceId,
+          recipientType: 'CUSTOMER'
+        }).catch(err => console.error('Failed to clear notifications:', err));
+      }
     }
   };
 
@@ -483,8 +441,14 @@ function CustomerPageContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <FaSpinner className="w-8 h-8 animate-spin text-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div className="mesh-gradient" />
+        <div className="flex flex-col items-center gap-6 relative z-10">
+          <div className="w-16 h-16 bg-white rounded-3xl shadow-2xl flex items-center justify-center border border-indigo-50">
+             <FaSpinner className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Loading Experience</p>
+        </div>
       </div>
     );
   }
@@ -510,14 +474,16 @@ function CustomerPageContent() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Fixed Header */}
-      <header className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100 sticky top-0 z-40 h-[72px] flex items-center">
+    <div className="min-h-screen relative pb-24 overflow-x-hidden">
+      <div className="mesh-gradient" />
+      
+      {/* Fixed Premium Header */}
+      <header className="glass shadow-sm border-b border-white/40 fixed top-0 left-0 right-0 z-[100] h-[72px] flex items-center">
         <div className="max-w-4xl w-full mx-auto px-4">
           <div className="flex items-center justify-between">
             {/* Left: Current Tab Identity */}
             <div className="flex items-center space-x-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${headerConfig.color} flex items-center justify-center text-white shadow-lg overflow-hidden`}>
+              <div className={`w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-lg overflow-hidden border border-white/20`}>
                 {restaurantInfo?.logo ? (
                   <img 
                     src={restaurantInfo.logo} 
@@ -529,35 +495,28 @@ function CustomerPageContent() {
                 )}
               </div>
               <div>
-                <h1 className="text-lg font-black text-gray-900 leading-tight">
+                <h1 className="text-base font-black text-slate-900 leading-tight uppercase tracking-tight">
                   {headerConfig.title}
                 </h1>
-                <p className="text-[10px] uppercase tracking-tighter text-gray-400 font-black">
-                  Digital Menu
+                <p className="text-[9px] uppercase tracking-[0.2em] text-indigo-500 font-black">
+                  Digital Menu Pro
                 </p>
               </div>
             </div>
 
             {/* Right: Restaurant & Table (Compact) */}
             <div className="flex items-center space-x-2">
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl px-3 py-1.5 flex items-center space-x-3 shadow-inner">
+              <div className="glass p-1.5 pr-3 rounded-2xl flex items-center space-x-3 shadow-inner border-gray-200">
                 {restaurantInfo && (
-                  <div className="flex items-center space-x-2 pr-3 border-r border-gray-200">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
-                    {restaurantInfo.logo && (
-                      <img 
-                        src={restaurantInfo.logo} 
-                        alt="Restaurant Logo" 
-                        className="w-5 h-5 rounded-md object-cover border border-gray-200 shadow-sm"
-                      />
-                    )}
-                    <span className="text-[11px] font-bold text-gray-700 max-w-[80px] truncate">{restaurantInfo.name}</span>
+                  <div className="flex items-center space-x-2 pr-4 border-r border-gray-100">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+                    <span className="text-sm font-black text-slate-800 max-w-[120px] truncate uppercase tracking-tight">{restaurantInfo.name}</span>
                   </div>
                 )}
                 {session.tableNumber && (
-                   <div className="flex items-center space-x-1.5 pl-1">
-                    <span className="text-[10px] font-black text-indigo-400">#</span>
-                    <span className="text-xs font-black text-indigo-600">{session.tableNumber}</span>
+                   <div className="flex items-center space-x-1.5 pl-2">
+                    <span className="text-xs font-black text-indigo-400">#</span>
+                    <span className="text-xl font-black text-indigo-600 tabular-nums leading-none">{session.tableNumber}</span>
                   </div>
                 )}
               </div>
@@ -566,7 +525,7 @@ function CustomerPageContent() {
         </div>
       </header>
 
-      <div className="w-full">
+      <div className="w-full pt-[72px]">
         <div className={activeTab === 'menu' ? 'block' : 'hidden'}>
           <MenuTab
             menuItems={menuItems}
@@ -612,6 +571,7 @@ function CustomerPageContent() {
 
       <BottomNav
         cartCount={cart.reduce((total, item) => total + item.quantity, 0)}
+        notificationCount={unreadNotifications}
         onTabChange={handleTabChange}
         activeTab={activeTab}
       />
@@ -623,67 +583,68 @@ function CustomerPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[150] flex items-center justify-center p-6"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+              initial={{ scale: 0.9, y: 40, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 40, opacity: 0 }}
+              className="glass-card rounded-xl shadow-2xl w-full max-w-md overflow-hidden border-white/50 flex flex-col"
             >
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white">
-                <h2 className="text-xl font-black">Welcome! 👋</h2>
-                <p className="text-sm opacity-90 mt-1">Please tell us about yourself</p>
+              <div className="bg-gradient-to-br from-indigo-900 via-slate-950 to-indigo-950 px-6 py-5 text-white relative">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse" />
+                 <h2 className="text-3xl font-black tracking-tight leading-none mb-1">Welcome! 👋</h2>
+                 <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.25em] mt-3">Start your dining journey</p>
               </div>
 
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Your Name <span className="text-red-500">*</span>
+              <div className="px-6 py-5 space-y-7 overflow-y-auto max-h-[80vh] scrollbar-hide">
+                <div className="space-y-3">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                    Your Full Name <span className="text-indigo-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={customerFormData.customerName}
                     onChange={(e) => setCustomerFormData(prev => ({ ...prev, customerName: e.target.value }))}
                     placeholder="Enter your name"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-6 py-4.5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 text-sm font-black shadow-inner outline-none transition-all placeholder:text-slate-300"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Number of Persons <span className="text-red-500">*</span>
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                    Group Size <span className="text-indigo-500">*</span>
                   </label>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-4 bg-slate-50 p-2 rounded-[1.5rem] border border-slate-100 shadow-inner">
                     <button
                       onClick={() => setCustomerFormData(prev => ({ ...prev, numberOfPersons: Math.max(1, prev.numberOfPersons - 1) }))}
-                      className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-700"
+                      className="w-14 h-14 rounded-2xl bg-white hover:bg-indigo-50 flex items-center justify-center text-xl font-black text-slate-900 shadow-sm transition-all border border-slate-100"
                     >
                       -
                     </button>
-                    <span className="text-xl font-black text-indigo-600 w-8 text-center">
+                    <span className="text-2xl font-black text-indigo-600 flex-1 text-center tabular-nums">
                       {customerFormData.numberOfPersons}
                     </span>
                     <button
                       onClick={() => setCustomerFormData(prev => ({ ...prev, numberOfPersons: prev.numberOfPersons + 1 }))}
-                      className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-700"
+                      className="w-14 h-14 rounded-2xl bg-white hover:bg-indigo-50 flex items-center justify-center text-xl font-black text-slate-900 shadow-sm transition-all border border-slate-100"
                     >
                       +
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Mobile Number <span className="text-gray-400 font-normal">(optional)</span>
+                <div className="space-y-3">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                    Mobile Sync <span className="text-slate-300 font-bold uppercase tracking-widest ml-1">(Optional)</span>
                   </label>
                   <input
                     type="tel"
                     value={customerFormData.customerPhone}
                     onChange={(e) => setCustomerFormData(prev => ({ ...prev, customerPhone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
-                    placeholder="10 digit mobile number"
+                    placeholder="10 digit number"
                     maxLength={10}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-6 py-4.5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 text-sm font-black shadow-inner outline-none transition-all placeholder:text-slate-300"
                   />
                 </div>
 
@@ -699,7 +660,6 @@ function CustomerPageContent() {
                       mobileNumber: customerFormData.customerPhone || undefined
                     });
                     
-                    // Update DB for active orders (first popup only)
                     try {
                       if (session.deviceId) {
                         await api.put('/order/device/profile', {
@@ -710,16 +670,16 @@ function CustomerPageContent() {
                         });
                       }
                     } catch (error) {
-                      console.error('Failed to sync initial profile to orders:', error);
+                      console.error('Failed to sync initial profile:', error);
                     }
                     
                     setShowCustomerInfoModal(false);
-                    toast.success('Welcome! You can now place your order.');
+                    toast.success('Ready to explore! 🍽️');
                   }}
                   disabled={!customerFormData.customerName.trim()}
-                  className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-black rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-5 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.3em] rounded-[1.5rem] shadow-2xl hover:bg-black transition-all active:scale-[0.98] disabled:opacity-30 disabled:grayscale"
                 >
-                  Start Ordering 🍽️
+                  Start Experience
                 </button>
               </div>
             </motion.div>

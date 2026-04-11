@@ -9,7 +9,9 @@ import { socketService } from '@/services/socket';
 import { useGlobalShortcuts } from '@/hooks/useKeyboardShortcuts';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import toast from 'react-hot-toast';
-import { playNewOrderSound } from '@/utils/notifications';
+import { playNewOrderSound, playNotificationSound } from '@/utils/notifications';
+import NotificationDrawer from '@/components/ui/NotificationDrawer';
+import { Notification } from '@/types/notification';
 import {
   FaUtensils,
   FaTable,
@@ -33,7 +35,8 @@ import {
   FaCrown,
   FaLifeRing,
   FaMobileAlt,
-  FaFileAlt
+  FaFileAlt,
+  FaBell
 } from 'react-icons/fa';
 import api from '@/services/api';
 import { UserProfileSkeleton } from '@/components/ui/Skeleton';
@@ -50,7 +53,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deviceCount, setDeviceCount] = useState(0);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
-  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [newOrdersCount, setNewOrdersCount] = useState(0); // Kept for legacy compatibility if needed, but driven by notifications now
   
   // Initialize global keyboard shortcuts
   const shortcuts = useGlobalShortcuts(() => setShortcutsModalOpen(true));
@@ -69,55 +75,93 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     fetchDevices();
   }, [isAuthenticated]);
 
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!isAuthenticated || !user?._id) return;
+    try {
+      const response = await api.get('/notifications');
+      setNotifications(response.data.data || []);
+      setUnreadCount(response.data.unreadCount || 0);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [isAuthenticated, user?._id]);
+
   // Real-time account status monitoring
   useEffect(() => {
     if (isAuthenticated && user?._id) {
       socketService.connect();
-      socketService.join(user._id);
+      socketService.join(`restaurant:${user._id}`);
 
       const handleStatusUpdate = (data: any) => {
         console.log('🔄 Account status updated via socket:', data);
         refreshUser();
       };
 
+      const handleIncomingNotification = (notification: Notification) => {
+        console.log('🔔 New notification received:', notification);
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        
+        // Show specific toast based on type
+        if (notification.type === 'ORDER_NEW') {
+          toast.success(notification.message, { icon: '📦' });
+          playNewOrderSound();
+          if (!pathname.includes('/admin/orders')) {
+            setNewOrdersCount(prev => prev + 1);
+          }
+        } else {
+          toast(notification.message, { icon: '🔔' });
+          playNotificationSound();
+        }
+      };
+
       const handleNewOrder = (order: any) => {
-        console.log('📦 New order received via socket:', order);
-        
-        // Skip notification if this admin created the order themselves
-        if (order.createdBy === user._id || order.source === 'admin') {
-          return;
-        }
-        
-        toast.success(`New order from Table #${order.tableNumber || 'N/A'}!`);
-        playNewOrderSound();
-        
-        // Increment badge if not on orders page
-        if (!pathname.includes('/admin/orders')) {
-          setNewOrdersCount(prev => prev + 1);
-        }
+        // We now use generic 'notification' event for everything, 
+        // but keeping this for safety if backend still emits 'newOrder'
+        console.log('📦 New order event received:', order);
       };
 
       const handleOrderUpdate = (order: any) => {
-        console.log('📝 Order update received via socket:', order);
-        // Skip notification if this admin updated the order themselves
-        if (order.updatedBy === user._id) {
-          return;
-        }
-        toast.success(`Order #${order.orderNumber || order._id.slice(-6)} updated! 🔄`);
-        playNewOrderSound();
+        console.log('📝 Order update event received:', order);
       };
 
       socketService.on('accountStatusUpdate', handleStatusUpdate);
+      socketService.on('notification', handleIncomingNotification);
       socketService.on('newOrder', handleNewOrder);
       socketService.on('orderUpdate', handleOrderUpdate);
 
       return () => {
         socketService.off('accountStatusUpdate', handleStatusUpdate);
+        socketService.off('notification', handleIncomingNotification);
         socketService.off('newOrder', handleNewOrder);
         socketService.off('orderUpdate', handleOrderUpdate);
       };
     }
-  }, [isAuthenticated, user?._id, refreshUser]);
+  }, [isAuthenticated, user?._id, refreshUser, pathname]);
+
+  const handleMarkAsRead = async (id?: string) => {
+    try {
+      await api.post('/notifications/mark-read', {
+        notificationIds: id ? [id] : notifications.filter(n => !n.isRead).map(n => n._id),
+        recipientType: 'ADMIN'
+      });
+      
+      if (id) {
+        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } else {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to mark notifications as read:', error);
+    }
+  };
 
   // Clear new orders badge when navigating to orders page
   useEffect(() => {
@@ -269,6 +313,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* Navigation with Sections */}
+          <div className="px-4 mb-2">
+            <button 
+              onClick={() => setIsNotificationOpen(true)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <FaBell className="w-5 h-5 text-gray-500 group-hover:text-indigo-600 transition-colors" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                  )}
+                </div>
+                <span className="text-sm font-bold text-gray-700 group-hover:text-gray-900">Notifications</span>
+              </div>
+              {unreadCount > 0 && (
+                <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           <nav className="flex-1 px-4 py-2 space-y-3 overflow-y-auto">
             {navItems.map((section, sectionIdx) => (
               <div key={section.section} className="space-y-1">
@@ -297,9 +363,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {item.icon}
                         </span>
                         <span className="font-medium text-sm">{item.label}</span>
-                        {item.href === '/admin/orders' && newOrdersCount > 0 && (
+                        {item.href === '/admin/orders' && unreadCount > 0 && (
                           <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                            {newOrdersCount}
+                            {unreadCount}
                           </span>
                         )}
                         {isActive && <FaChevronRight className="w-3 h-3 ml-auto opacity-70" />}
@@ -462,9 +528,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 {item.icon}
                               </span>
                               <span className="font-medium text-sm">{item.label}</span>
-                              {item.href === '/admin/orders' && newOrdersCount > 0 && (
+                              {item.href === '/admin/orders' && unreadCount > 0 && (
                                 <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                                  {newOrdersCount}
+                                  {unreadCount}
                                 </span>
                               )}
                               {isActive && <FaChevronRight className="w-3 h-3 ml-auto opacity-70" />}
@@ -571,23 +637,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-gray-900">DigitalMenu</span>
-                    {user?.restaurantName && (
-                      <div className="flex items-center space-x-1">
-                        {user?.logo && (
-                          <img 
-                            src={user.logo} 
-                            alt={user.restaurantName} 
-                            className="w-3 h-3 rounded object-cover border border-gray-200"
-                          />
-                        )}
-                        <span className="text-xs text-gray-600 truncate max-w-[80px]">
-                          {user.restaurantName}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </Link>
-                <div className="w-9" />
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsNotificationOpen(true)}
+                    className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-100 rounded-lg relative"
+                  >
+                    <FaBell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white shadow-sm" />
+                    )}
+                  </motion.button>
+                  <div className="w-1" />
+                </div>
               </div>
             </div>
           </header>
@@ -611,6 +676,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <KeyboardShortcutsModal 
         isOpen={shortcutsModalOpen} 
         onClose={() => setShortcutsModalOpen(false)} 
+      />
+
+      {/* Notification Drawer */}
+      <NotificationDrawer 
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onMarkAsRead={handleMarkAsRead}
       />
     </div>
   );

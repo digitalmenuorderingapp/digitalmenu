@@ -1,0 +1,43 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0e7ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main circle background -->
+  <circle cx="100" cy="100" r="90" fill="url(#bgGradient)"/>
+  
+  <!-- Stylized menu card -->
+  <rect x="55" y="45" width="90" height="110" rx="8" fill="url(#iconGradient)" opacity="0.95"/>
+  
+  <!-- Menu lines representing content -->
+  <rect x="70" y="60" width="60" height="6" rx="3" fill="#6366f1"/>
+  <rect x="70" y="75" width="45" height="4" rx="2" fill="#a5b4fc"/>
+  <rect x="70" y="85" width="50" height="4" rx="2" fill="#a5b4fc"/>
+  
+  <rect x="70" y="100" width="60" height="6" rx="3" fill="#6366f1"/>
+  <rect x="70" y="115" width="40" height="4" rx="2" fill="#a5b4fc"/>
+  <rect x="70" y="125" width="55" height="4" rx="2" fill="#a5b4fc"/>
+  
+  <!-- Digital element - small dots representing digital/pixels -->
+  <circle cx="125" y="55" r="4" fill="#f472b6"/>
+  <circle cx="135" y="55" r="4" fill="#f472b6"/>
+  <circle cx="145" y="55" r="4" fill="#f472b6"/>
+  
+  <!-- Fork icon on the side -->
+  <path d="M45 130 L45 150 M45 130 L35 120 M45 130 L55 120" stroke="url(#iconGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Spoon icon on the side -->
+  <ellipse cx="155" cy="125" rx="8" ry="12" stroke="url(#iconGradient)" stroke-width="3" fill="none"/>
+  <path d="M155 137 L155 150" stroke="url(#iconGradient)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Text "DigiMenu" below -->
+  <text x="100" y="175" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#4f46e5">DigiMenu</text>
+</svg>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaQrcode, FaUtensils, FaChartLine, FaMobileAlt, FaClock,
@@ -51,6 +52,8 @@ export default function MarketingHomeClient() {
       cta: t.hero_cta_1,
       secondaryCta: t.hero_secondary_1,
       gradient: "from-blue-600 to-indigo-700",
+      image: "/mobile-menu.png",
+      type: 'mobile'
     },
     {
       id: 2,
@@ -59,6 +62,8 @@ export default function MarketingHomeClient() {
       cta: t.hero_cta_2,
       secondaryCta: t.hero_secondary_2,
       gradient: "from-indigo-600 to-purple-600",
+      image: "/admin-orders.png",
+      type: 'dashboard'
     },
     {
       id: 3,
@@ -67,6 +72,8 @@ export default function MarketingHomeClient() {
       cta: t.hero_cta_3,
       secondaryCta: t.hero_secondary_3,
       gradient: "from-purple-600 to-pink-600",
+      image: "/admin-ledger.png",
+      type: 'dashboard'
     }
   ];
 
@@ -290,62 +297,205 @@ export default function MarketingHomeClient() {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentSlide}
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -40 }}
-                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
+                      exit: { opacity: 0, x: -20, transition: { duration: 0.4 } }
+                    }}
                   >
-                    <motion.span
-                      initial={{ scale: 0.9 }}
-                      animate={{ scale: 1 }}
-                      className={`inline-block px-4 py-1.5 bg-white/10 text-white text-[10px] font-black rounded-full mb-6 md:mb-8 uppercase backdrop-blur-sm border border-white/10 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}
+                    <motion.div 
+                      variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                      }}
                     >
-                      {t.hero_badge}
-                    </motion.span>
-                    <h1 className={`text-5xl sm:text-6xl md:text-7xl  font-black text-white leading-[1.15] md:leading-[1.05] mb-6 md:mb-8 tracking-[-0.04em] ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}>
+                      <motion.span
+                        initial={{ scale: 0.9 }}
+                        animate={{ scale: 1 }}
+                        className={`inline-block px-4 py-1.5 bg-white/10 text-white text-[10px] font-black rounded-full mb-6 md:mb-8 uppercase backdrop-blur-sm border border-white/10 ${lang === 'en' ? 'tracking-[0.25em]' : 'tracking-normal'}`}
+                      >
+                        {t.hero_badge}
+                      </motion.span>
+                    </motion.div>
+
+                    <motion.h1 
+                      variants={{
+                        hidden: { opacity: 0, x: -30 },
+                        visible: { opacity: 1, x: 0 }
+                      }}
+                      className={`text-5xl sm:text-6xl md:text-7xl font-black text-white leading-[1.15] md:leading-[1.05] mb-6 md:mb-8 tracking-[-0.04em] ${lang !== 'en' ? 'indic-heading-spacing' : ''}`}
+                    >
                       {HERO_SLIDES[currentSlide].headline}
-                    </h1>
-                    <p className={`text-xl sm:text-2xl md:text-3xl text-indigo-50/80 mb-10 md:mb-12 max-w-xl font-medium ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}>
+                    </motion.h1>
+
+                    <motion.p 
+                      variants={{
+                        hidden: { opacity: 0, y: 20 },
+                        visible: { opacity: 1, y: 0 }
+                      }}
+                      className={`text-xl sm:text-2xl md:text-3xl text-indigo-50/80 mb-10 md:mb-12 max-w-xl font-medium ${lang !== 'en' ? 'indic-spacing' : 'leading-relaxed'}`}
+                    >
                       {HERO_SLIDES[currentSlide].subtext}
-                    </p>
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-5 sm:gap-6">
-                      <motion.div whileHover={{ y: -5 }} whileTap={{ scale: 0.98 }}>
-                        <Link href="/auth" className="bg-white text-indigo-600 px-6 sm:px-10 md:px-12 py-3.5 sm:py-5 md:py-6 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl transition-all shadow-2xl flex items-center justify-center w-full sm:w-auto">
+                    </motion.p>
+
+                    <motion.div 
+                      variants={{
+                        hidden: { opacity: 0, scale: 0.9 },
+                        visible: { opacity: 1, scale: 1 }
+                      }}
+                      className="flex flex-col sm:flex-row flex-wrap gap-5 sm:gap-6"
+                    >
+                      <motion.div whileHover={{ y: -5, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Link href="/auth" className="bg-white text-indigo-600 px-6 sm:px-10 md:px-12 py-3.5 sm:py-5 md:py-6 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl transition-all shadow-2xl flex items-center justify-center w-full sm:w-auto hover:shadow-white/20">
                           {HERO_SLIDES[currentSlide].cta}
                           <FaArrowRight className="ml-3" aria-hidden="true" />
                         </Link>
                       </motion.div>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 </AnimatePresence>
               </div>
 
               <div className="relative hidden lg:block" aria-hidden="true">
-                <motion.div
-                  initial={{ scale: 0.9, rotate: -2, opacity: 0 }}
-                  animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                  transition={{ duration: 1.5, ease: "circOut" }}
-                  className="relative z-10"
-                >
-                  <div className="bg-white/60 backdrop-blur-3xl border border-white/40 p-12 rounded-[5rem] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.18)] relative overflow-hidden">
-                    <div className="flex justify-between items-center mb-10">
-                      <div className="flex space-x-3">
-                        <div className="w-4 h-4 bg-red-400 rounded-full" />
-                        <div className="w-4 h-4 bg-yellow-400 rounded-full" />
-                        <div className="w-4 h-4 bg-green-400 rounded-full" />
-                      </div>
-                      <div className="text-xs text-gray-400 font-bold uppercase tracking-widest bg-gray-100/50 px-4 py-1.5 rounded-full">digitalmenuorder.vercel.app</div>
-                    </div>
-                    <div className="space-y-8">
-                      <div className="h-6 bg-gray-200/50 rounded-full w-3/4" />
-                      <div className="grid grid-cols-2 gap-8">
-                        <div className="h-40 bg-indigo-500/5 rounded-[2.5rem]" />
-                        <div className="h-40 bg-purple-500/5 rounded-[2.5rem]" />
-                      </div>
-                      <div className="h-60 bg-gray-50 rounded-[3rem]" />
-                    </div>
-                  </div>
-                </motion.div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentSlide}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={{
+                      hidden: { opacity: 0, x: 30 },
+                      visible: { opacity: 1, x: 0 },
+                      exit: { opacity: 0, x: -30, transition: { duration: 0.5 } }
+                    }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative w-full h-full flex items-center justify-center pt-8"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -15, 0] }}
+                      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                      whileHover={{ scale: 1.02, rotateY: 5, rotateX: -2 }}
+                      className="relative z-10 w-full perspective-1000"
+                    >
+                      {HERO_SLIDES[currentSlide].type === 'mobile' ? (
+                        <div className="relative flex items-center justify-center py-10">
+                          {/* Floating Elements Background */}
+                          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                            <motion.div 
+                              animate={{ 
+                                scale: [1, 1.2, 1],
+                                rotate: [0, 90, 0]
+                              }}
+                              transition={{ duration: 20, repeat: Infinity }}
+                              className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 blur-[100px] rounded-full" 
+                            />
+                            <motion.div 
+                               animate={{ 
+                                 scale: [1.2, 1, 1.2],
+                                 rotate: [0, -45, 0]
+                               }}
+                               transition={{ duration: 15, repeat: Infinity }}
+                               className="absolute -bottom-20 -left-20 w-80 h-80 bg-indigo-500/10 blur-[100px] rounded-full" 
+                            />
+                          </div>
+
+                          {/* Dashboard context background for mobile - subtle glass background */}
+                          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 scale-[1.15] opacity-10 blur-[2px] rounded-[3rem] overflow-hidden grayscale aspect-video mix-blend-overlay">
+                            <Image 
+                              src="/admin-orders.png" 
+                              alt="Context" 
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          
+                          {/* iPhone Style Device Frame */}
+                          <div className="relative z-20 group">
+                             {/* Frame Shine/Glow */}
+                             <div className="absolute -inset-4 bg-gradient-to-tr from-white/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                             
+                             <div className="relative mx-auto border-gray-900 bg-gray-900 border-[12px] rounded-[3.5rem] h-[720px] w-[350px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
+                                {/* Side Buttons */}
+                                <div className="absolute -left-[15px] top-[100px] w-1 h-12 bg-gray-800 rounded-l-md" />
+                                <div className="absolute -left-[15px] top-[160px] w-1 h-16 bg-gray-800 rounded-l-md" />
+                                <div className="absolute -left-[15px] top-[230px] w-1 h-16 bg-gray-800 rounded-l-md" />
+                                <div className="absolute -right-[15px] top-[180px] w-1 h-24 bg-gray-800 rounded-r-md" />
+                                
+                                {/* Screen Contents */}
+                                <div className="rounded-[2.8rem] overflow-hidden w-full h-full bg-white relative">
+                                   {/* Notch/Dynamic Island Mockup */}
+                                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-gray-900 rounded-b-3xl z-30" />
+                                   
+                                   <Image 
+                                     src="/mobile-menu.png" 
+                                     alt="DigitalMenu Customer Interface" 
+                                     fill
+                                     className="object-cover"
+                                     priority
+                                   />
+
+                                   {/* Glass Shine Effect */}
+                                   <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent pointer-events-none z-40" />
+                                </div>
+                             </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative z-10 w-full max-w-5xl px-4">
+                           {/* Browser Window Frame */}
+                           <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden group">
+                              {/* Top Bar / Traffic Lights */}
+                              <div className="h-10 bg-white/5 border-b border-white/10 flex items-center px-6 gap-2">
+                                 <div className="flex gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-red-500/30 group-hover:bg-red-500 transition-colors" />
+                                    <div className="w-3 h-3 rounded-full bg-yellow-500/30 group-hover:bg-yellow-500 transition-colors" />
+                                    <div className="w-3 h-3 rounded-full bg-green-500/30 group-hover:bg-green-500 transition-colors" />
+                                 </div>
+                                 <div className="flex-1 max-w-sm mx-auto h-6 bg-white/5 rounded-full border border-white/10 flex items-center px-3">
+                                    <div className="w-2 h-2 bg-indigo-400 rounded-full mr-2" />
+                                    <div className="text-[10px] text-white/30 font-bold tracking-widest uppercase">digitalmenu.app/admin</div>
+                                 </div>
+                              </div>
+                              
+                              {/* Main Window Content */}
+                              <div className="relative aspect-[16/10] bg-slate-800 overflow-hidden">
+                                 <Image 
+                                   src={HERO_SLIDES[currentSlide].image!} 
+                                   alt="DigitalMenu Dashboard" 
+                                   fill
+                                   className="object-cover"
+                                   priority
+                                 />
+                                 {/* Overlay Vignette */}
+                                 <div className="absolute inset-0 shadow-[inner_0_0_100px_rgba(0,0,0,0.2)] pointer-events-none" />
+                              </div>
+                           </div>
+                           
+                           {/* Floating Badge/Tag for dashboard slides */}
+                           <motion.div
+                             animate={{ y: [0, -10, 0] }}
+                             transition={{ duration: 4, repeat: Infinity }}
+                             className="absolute -top-6 -right-6 bg-white px-6 py-3 rounded-2xl shadow-2xl border border-gray-100 flex items-center gap-3 z-30"
+                           >
+                              <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg">
+                                 {HERO_SLIDES[currentSlide].id === 2 ? <FaChartLine /> : <FaDatabase />}
+                              </div>
+                              <div className="text-left">
+                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Status</p>
+                                 <p className="text-xs font-black text-gray-900 leading-none">Live Syncing...</p>
+                              </div>
+                           </motion.div>
+                        </div>
+                      )}
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Decorative Highlights */}
+                <div className="absolute -top-20 -left-20 w-80 h-80 bg-white/10 blur-[120px] rounded-full pointer-events-none" />
               </div>
             </div>
           </div>
