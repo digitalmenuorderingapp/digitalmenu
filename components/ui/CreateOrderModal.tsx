@@ -521,7 +521,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                 <div className="flex items-center gap-2 mb-2">
                                   <h5 className="font-semibold text-gray-900">{item.name}</h5>
                                   {hasDiscount && (
-                                    <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
+                                    <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full flex items-center justify-center">
                                       {Math.round((1 - item.offerPrice! / item.price) * 100)}% OFF
                                     </span>
                                   )}
