@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -9,7 +9,7 @@ import { socketService } from '@/services/socket';
 import { useGlobalShortcuts } from '@/hooks/useKeyboardShortcuts';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import toast from 'react-hot-toast';
-import { playNewOrderSound, playNotificationSound } from '@/utils/notifications';
+import { playNewOrderSound, playNotificationSound, playPaymentVerifiedSound, playCancelledSound } from '@/utils/notifications';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
 import { Notification } from '@/types/notification';
 import {
@@ -56,7 +56,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [newOrdersCount, setNewOrdersCount] = useState(0); // Kept for legacy compatibility if needed, but driven by notifications now
+  const [newOrdersCount, setNewOrdersCount] = useState(0); 
+  
+  // Track processed notification IDs for deduplication
+  const processedNotificationsRef = useRef<Set<string>>(new Set());
   
   // Initialize global keyboard shortcuts
   const shortcuts = useGlobalShortcuts(() => setShortcutsModalOpen(true));
@@ -103,8 +106,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       };
 
       const handleIncomingNotification = (notification: Notification) => {
+        if (!notification._id) return;
+        
+        // Deduplication check
+        if (processedNotificationsRef.current.has(notification._id)) {
+          console.log('🚫 Duplicate notification ignored:', notification._id);
+          return;
+        }
+        
+        // Mark as processed
+        processedNotificationsRef.current.add(notification._id);
+        
+        // Keep the set size manageable (last 50 IDs)
+        if (processedNotificationsRef.current.size > 50) {
+          const firstItem = processedNotificationsRef.current.values().next().value;
+          if (firstItem) processedNotificationsRef.current.delete(firstItem);
+        }
+
         console.log('🔔 New notification received:', notification);
-        setNotifications(prev => [notification, ...prev]);
+        
+        setNotifications(prev => {
+          // Double check state for the ID as a safety measure
+          if (prev.some(n => n._id === notification._id)) return prev;
+          return [notification, ...prev];
+        });
+        
         setUnreadCount(prev => prev + 1);
         
         // Show specific toast based on type
@@ -114,6 +140,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           if (!pathname.includes('/admin/orders')) {
             setNewOrdersCount(prev => prev + 1);
           }
+        } else if (notification.type === 'PAYMENT_VERIFIED') {
+          toast.success(notification.message, { icon: '💰' });
+          playPaymentVerifiedSound();
+        } else if (notification.type === 'ORDER_CANCELLED' || notification.type === 'ORDER_REJECTED') {
+          toast.error(notification.message, { icon: '❌' });
+          playCancelledSound();
+        } else if (notification.type === 'PAYMENT_RETRY') {
+          toast.error(notification.message, { icon: '⚠️' });
+          playCancelledSound(); // Use error sound for retry
         } else {
           toast(notification.message, { icon: '🔔' });
           playNotificationSound();
@@ -160,6 +195,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }
     } catch (error) {
       console.error('Failed to mark notifications as read:', error);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await api.delete('/notifications/clear-all');
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to clear notifications:', error);
     }
   };
 
@@ -327,9 +372,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
                 <span className="text-sm font-bold text-gray-700 group-hover:text-gray-900">Notifications</span>
               </div>
-              {unreadCount > 0 && (
+              {newOrdersCount > 0 && (
                 <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">
-                  {unreadCount}
+                  {newOrdersCount}
                 </span>
               )}
             </button>
@@ -363,9 +408,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {item.icon}
                         </span>
                         <span className="font-medium text-sm">{item.label}</span>
-                        {item.href === '/admin/orders' && unreadCount > 0 && (
+                        {item.href === '/admin/orders' && newOrdersCount > 0 && (
                           <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                            {unreadCount}
+                            {newOrdersCount}
                           </span>
                         )}
                         {isActive && <FaChevronRight className="w-3 h-3 ml-auto opacity-70" />}
@@ -647,7 +692,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-100 rounded-lg relative"
                   >
                     <FaBell className="w-5 h-5" />
-                    {unreadCount > 0 && (
+                    {newOrdersCount > 0 && (
                       <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white shadow-sm" />
                     )}
                   </motion.button>
@@ -685,6 +730,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         notifications={notifications}
         unreadCount={unreadCount}
         onMarkAsRead={handleMarkAsRead}
+        onClearAll={handleClearAll}
       />
     </div>
   );

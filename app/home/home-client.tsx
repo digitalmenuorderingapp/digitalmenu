@@ -175,12 +175,16 @@ export default function MarketingHomeClient() {
   }, [isDesktop, activeSection, scrollToSection]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className={`min-h-screen bg-white text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden ${lang === 'hi' ? 'font-hindi' : lang === 'bn' ? 'font-bengali' : 'font-sans'}`}
-    >
+    <>
+      {isLoading ? (
+        <BrandLoader />
+      ) : (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className={`min-h-screen bg-white text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden ${lang === 'hi' ? 'font-hindi' : lang === 'bn' ? 'font-bengali' : 'font-sans'}`}
+        >
 
       {/* Side dot navigation — desktop only */}
       {isDesktop && (
@@ -224,13 +228,9 @@ export default function MarketingHomeClient() {
               </motion.div>
 
               <div className="hidden lg:flex items-center space-x-10">
-                <NavItem href="#platform" label={t.nav_platform} />
-                <NavItem href="#features" label={t.nav_features} />
-                <NavItem href="#trust" label={t.nav_trust} />
                 <Link href="/guide" className="text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors">
                   {lang === 'hi' ? 'यूज़र गाइड' : lang === 'bn' ? 'ইউজার গাইড' : 'User Guide'}
                 </Link>
-                <NavItem href="#pricing" label={t.nav_pricing} />
               </div>
 
               <motion.div
@@ -240,23 +240,23 @@ export default function MarketingHomeClient() {
               >
                 {/* Language Toggle - Desktop Only */}
                 <div className="hidden md:flex bg-gray-100 rounded-lg p-1 mr-2">
-                  <button onClick={() => handleLanguageChange('en')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>EN</button>
-                  <button onClick={() => handleLanguageChange('hi')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>HI</button>
-                  <button onClick={() => handleLanguageChange('bn')} className={`w-10 py-1 text-[10px] font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>BN</button>
+                  <button onClick={() => handleLanguageChange('en')} className={`w-16 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'en' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>English</button>
+                  <button onClick={() => handleLanguageChange('hi')} className={`w-16 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'hi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>हिन्दी</button>
+                  <button onClick={() => handleLanguageChange('bn')} className={`w-16 py-1.5 text-xs font-bold rounded-md transition-all ${lang === 'bn' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-800'}`}>বাংলা</button>
                 </div>
 
                 {isLoading ? (
                   <Skeleton width={100} height={40} className="rounded-xl" />
                 ) : isAuthenticated ? (
-                  <Link href="/admin/dashboard" className="flex items-center justify-center px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
+                  <Link href="/admin/dashboard" className="flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
                     {t.nav_dashboard}
                   </Link>
                 ) : (
                   <>
-                    <Link href="/auth" className="px-5 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
+                    <Link href="/auth" className="px-4 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
                       {t.nav_login}
                     </Link>
-                    <Link href="/auth" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block min-w-[150px] text-center">
+                    <Link href="/auth" className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block min-w-[120px] text-center">
                       {t.nav_getStarted}
                     </Link>
                   </>
@@ -998,6 +998,8 @@ export default function MarketingHomeClient() {
       </div>
 
     </motion.div>
+      )}
+    </>
   );
 }
 

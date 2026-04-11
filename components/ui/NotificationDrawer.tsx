@@ -10,6 +10,7 @@ interface NotificationDrawerProps {
   onClose: () => void;
   notifications: Notification[];
   onMarkAsRead: (id?: string) => void;
+  onClearAll: () => void;
   unreadCount: number;
 }
 
@@ -18,6 +19,7 @@ export default function NotificationDrawer({
   onClose,
   notifications,
   onMarkAsRead,
+  onClearAll,
   unreadCount
 }: NotificationDrawerProps) {
   
@@ -157,10 +159,12 @@ export default function NotificationDrawer({
             {/* Footer */}
             <div className="p-6 bg-gray-50/50 border-t border-gray-100">
               <button 
-                onClick={onClose}
-                className="w-full py-3.5 bg-white text-gray-900 border border-gray-200 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm"
+                onClick={onClearAll}
+                disabled={notifications.length === 0}
+                className="w-full py-3.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Close Panel
+                <FaTrash className="w-3 h-3" />
+                Clear All Notifications
               </button>
             </div>
           </motion.div>

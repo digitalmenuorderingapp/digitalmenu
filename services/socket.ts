@@ -44,12 +44,6 @@ class SocketService {
                     this.socket?.emit('join', room);
                     console.log(`[Socket] Re-joined room on connect: ${room}`);
                 });
-                // Re-attach all stored handlers to the new socket instance
-                this.handlers.forEach((handlers, event) => {
-                    handlers.forEach(handler => {
-                        this.socket?.on(event, handler);
-                    });
-                });
             });
 
             this.socket.on('connect_error', (error) => {

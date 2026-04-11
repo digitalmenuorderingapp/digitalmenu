@@ -194,13 +194,7 @@ export default function OrdersPage() {
         const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
         if (!isForThisAdmin) return;
         
-        // Deduplication check
-        const eventKey = `cancelled-${order._id}`;
-        if (isDuplicateEvent(eventKey)) return;
-        
         console.log('[Socket] Order cancelled:', order.orderNumber || order._id);
-        toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was cancelled`);
-        playCancelledSound();
         refreshOrders();
       };
 
@@ -209,13 +203,7 @@ export default function OrdersPage() {
         const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
         if (!isForThisAdmin) return;
         
-        // Deduplication check
-        const eventKey = `rejected-${order._id}`;
-        if (isDuplicateEvent(eventKey)) return;
-        
         console.log('[Socket] Order rejected:', order.orderNumber || order._id);
-        toast.error(`Order #${order.orderNumber || order._id.slice(-6)} from Table #${order.tableNumber} was rejected`);
-        playCancelledSound();
         refreshOrders();
       };
 
@@ -224,13 +212,7 @@ export default function OrdersPage() {
         const isForThisAdmin = order.restaurant?.toString() === userIdStr || order.adminId?.toString() === userIdStr || order.deviceId === userIdStr;
         if (!isForThisAdmin) return;
         
-        // Deduplication check
-        const eventKey = `verified-${order._id}`;
-        if (isDuplicateEvent(eventKey)) return;
-        
         console.log('[Socket] Payment verified:', order.orderNumber || order._id);
-        toast.success(`Payment verified for order #${order.orderNumber || order._id.slice(-8)}!`);
-        playPaymentVerifiedSound();
         refreshOrders();
       };
 
@@ -239,35 +221,7 @@ export default function OrdersPage() {
         const isForThisAdmin = updatedOrder.restaurant?.toString() === userIdStr || updatedOrder.adminId?.toString() === userIdStr || updatedOrder.deviceId === userIdStr;
         if (!isForThisAdmin) return;
         
-        // Deduplication check for status change toasts
-        const eventKey = `update-${updatedOrder._id}-${updatedOrder.status}`;
-        if (isDuplicateEvent(eventKey)) {
-          return;
-        }
-        
         console.log('[Socket] Order update received:', updatedOrder.orderNumber || updatedOrder._id, 'Status:', updatedOrder.status);
-        
-        // Only show toast for meaningful status changes (not every update)
-        const prevOrder = orders.find((o: Order) => o._id === updatedOrder._id);
-        const prevStatus = prevOrder?.status;
-        const newStatus = updatedOrder.status;
-        
-        // Show toast only for actual status transitions
-        if (prevStatus && prevStatus !== newStatus) {
-          if (newStatus === 'ACCEPTED' && prevStatus === 'PLACED') {
-            toast.success(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} accepted! Being prepared 🍳`);
-            playNewOrderSound();
-          } else if (newStatus === 'COMPLETED') {
-            toast.success(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} completed! 🎉`);
-            playPaymentVerifiedSound();
-          } else if (newStatus === 'REJECTED') {
-            toast.error(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} was rejected`);
-            playCancelledSound();
-          } else if (newStatus === 'CANCELLED') {
-            toast.error(`Order #${updatedOrder.orderNumber || updatedOrder._id.slice(-6)} was cancelled`);
-            playCancelledSound();
-          }
-        }
         
         // Ensure updatedAt is set for proper key generation
         const orderWithTimestamp = {
@@ -325,8 +279,7 @@ export default function OrdersPage() {
   const handleAction = async (orderId: string, action: string, payload: any = {}) => {
     try {
       const finalAction = payload?.actionOverride || action;
-      const response = await api.post(`/order/${orderId}/action`, { action: finalAction, payload });
-      toast.success(response.data.message || 'Action completed');
+      await api.post(`/order/${orderId}/action`, { action: finalAction, payload });
       refreshOrders();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to complete action');

@@ -97,23 +97,6 @@ export default function BottomNav({ cartCount = 0, notificationCount = 0, onTabC
                   </AnimatePresence>
                 )}
 
-                {/* Notifications Badge */}
-                {item.id === 'orders' && (notificationCount ?? 0) > 0 && (
-                  <AnimatePresence mode="popLayout">
-                    <motion.span
-                      key={notificationCount}
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.5, opacity: 0 }}
-                      className={`absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1.5 rounded-xl flex items-center justify-center text-[10px] font-black border-2 shadow-lg transition-colors ${isActive
-                        ? 'bg-rose-500 text-white border-slate-900'
-                        : 'bg-rose-600 text-white border-white animate-pulse'
-                        }`}
-                    >
-                      {notificationCount}
-                    </motion.span>
-                  </AnimatePresence>
-                )}
               </div>
             </button>
           );
