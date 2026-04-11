@@ -277,7 +277,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                       </div>
                                     )}
                                     {hasDiscount && (
-                                      <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                                      <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center justify-center">
                                         {Math.round((1 - item.offerPrice! / item.price) * 100)}% OFF
                                       </div>
                                     )}
