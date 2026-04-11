@@ -145,9 +145,9 @@ export default function OrdersPage() {
   useEffect(() => {
     if (user?._id) {
       const userIdStr = user._id.toString();
-      console.log('[Socket] Connecting and joining room:', userIdStr);
+      console.log('[Socket] Connecting and joining restaurant room:', userIdStr);
       socketService.connect();
-      socketService.join(userIdStr);
+      socketService.join(`restaurant:${userIdStr}`);
 
       const handleNewOrder = (order: Order) => {
         // Skip notification if this admin created the order themselves
