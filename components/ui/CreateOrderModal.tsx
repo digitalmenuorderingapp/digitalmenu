@@ -244,8 +244,11 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                     <div className="space-y-6">
                       {Object.entries(groupedItems).map(([category, items]) => (
                         <div key={category}>
-                          <h4 className="font-medium text-gray-700 mb-3">{category}</h4>
-                          <div className="grid grid-cols-1 gap-3">
+                          <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                            {category}
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {items.map(item => {
                               const price = item.offerPrice || item.price;
                               const hasDiscount = item.offerPrice && item.offerPrice < item.price;
@@ -253,60 +256,55 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                               return (
                                 <div
                                   key={item._id}
-                                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer group"
+                                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-400 hover:scale-[1.02] transition-all duration-200 cursor-pointer group"
                                   onClick={() => addToCart(item)}
                                 >
-                                  <div className="flex items-start justify-between p-4">
-                                    <div className="flex-1 min-w-0">
-                                      {(item.images?.length || 0) > 0 || item.image ? (
-                                        <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-gray-100">
-                                          <img
-                                            src={item.images?.[0] || item.image || ''}
-                                            alt={item.name}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                              e.currentTarget.style.display = 'none';
-                                            }}
-                                          />
-                                        </div>
-                                      ) : null}
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <h5 className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors">
-                                          {item.name}
-                                        </h5>
+                                  <div className="relative">
+                                    {(item.images?.length || 0) > 0 || item.image ? (
+                                      <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+                                        <img
+                                          src={item.images?.[0] || item.image || ''}
+                                          alt={item.name}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                        <FaUtensils className="text-4xl text-gray-300" />
+                                      </div>
+                                    )}
+                                    {hasDiscount && (
+                                      <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                                        {Math.round((1 - item.offerPrice! / item.price) * 100)}% OFF
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="p-4">
+                                    <h5 className="font-semibold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">
+                                      {item.name}
+                                    </h5>
+                                    {item.description && (
+                                      <p className="text-xs text-gray-500 mb-3 line-clamp-2">{item.description}</p>
+                                    )}
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-lg font-bold text-indigo-600">₹{price}</span>
                                         {hasDiscount && (
-                                          <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full font-medium">
-                                            {Math.round((1 - item.offerPrice! / item.price) * 100)}% OFF
-                                          </span>
+                                          <span className="text-sm text-gray-400 line-through">₹{item.price}</span>
                                         )}
                                       </div>
-                                      {item.description && (
-                                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
-                                      )}
-                                      <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-lg font-bold text-indigo-600">₹{price}</span>
-                                          {hasDiscount && (
-                                            <span className="text-sm text-gray-400 line-through">₹{item.price}</span>
-                                          )}
-                                        </div>
-                                        {item.category && (
-                                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                                            {item.category}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div className="ml-4 flex-shrink-0">
                                       <button
                                         type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           addToCart(item);
                                         }}
-                                        className="w-10 h-10 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center group-hover:scale-110"
+                                        className="w-8 h-8 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center shadow-md hover:shadow-lg"
                                       >
-                                        <FaPlus className="text-sm" />
+                                        <FaPlus className="text-xs" />
                                       </button>
                                     </div>
                                   </div>
