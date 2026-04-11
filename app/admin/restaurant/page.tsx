@@ -50,7 +50,6 @@ export default function RestaurantPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, logout, refreshUser, isLoading: authLoading } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
