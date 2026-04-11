@@ -202,6 +202,7 @@ export const TRANSLATIONS = {
       }
     ],
     support_shortcuts: [
+      { key: 'Ctrl + N', description: 'Add New Order' },
       { key: 'Alt + D', description: 'Go to Dashboard' },
       { key: 'Alt + O', description: 'Go to Orders' },
       { key: 'Alt + L', description: 'Go to Ledger' },
@@ -467,6 +468,7 @@ export const TRANSLATIONS = {
       }
     ],
     support_shortcuts: [
+      { key: 'Ctrl + N', description: 'नया ऑर्डर जोड़ें' },
       { key: 'Alt + D', description: 'डैशबोर्ड पर जाएं' },
       { key: 'Alt + O', description: 'ऑर्डर्स पर जाएं' },
       { key: 'Alt + L', description: 'लेजर पर जाएं' },
@@ -732,6 +734,7 @@ export const TRANSLATIONS = {
       }
     ],
     support_shortcuts: [
+      { key: 'Ctrl + N', description: 'নতুন অর্ডার যোগ করুন' },
       { key: 'Alt + D', description: 'ড্যাশবোর্ডে যান' },
       { key: 'Alt + O', description: 'অর্ডারে যান' },
       { key: 'Alt + L', description: 'লেজারে যান' },

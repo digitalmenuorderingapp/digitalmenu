@@ -11,7 +11,6 @@ import {
   FaMinus,
   FaTrash,
   FaUtensils,
-  FaMoneyBillWave,
   FaUser,
   FaPhone,
   FaHashtag,
@@ -19,7 +18,6 @@ import {
   FaShoppingBag,
   FaTruck,
   FaCommentDots,
-  FaCreditCard,
   FaUsers
 } from 'react-icons/fa';
 
@@ -61,8 +59,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     tableNumber: '',
     numberOfPersons: '1',
     orderType: 'dine-in' as 'dine-in' | 'takeaway' | 'delivery',
-    specialInstructions: '',
-    paymentMethod: 'CASH' as 'CASH' | 'ONLINE'
+    specialInstructions: ''
   });
 
   useEffect(() => {
@@ -190,8 +187,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         tableNumber: '',
         numberOfPersons: '1',
         orderType: 'dine-in',
-        specialInstructions: '',
-        paymentMethod: 'CASH'
+        specialInstructions: ''
       });
       
       onOrderCreated();
@@ -441,40 +437,6 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                         </div>
                       </>
                     )}
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Payment Method
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, paymentMethod: 'CASH' })}
-                          className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[80px] active:scale-95 ${
-                            formData.paymentMethod === 'CASH'
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:shadow-md'
-                          }`}
-                        >
-                          <FaMoneyBillWave className="w-6 h-6" />
-                          <span className="text-sm font-semibold">Cash</span>
-                          <span className="text-xs opacity-80">Pay at counter</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, paymentMethod: 'ONLINE' })}
-                          className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[80px] active:scale-95 ${
-                            formData.paymentMethod === 'ONLINE'
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:shadow-md'
-                          }`}
-                        >
-                          <FaCreditCard className="w-6 h-6" />
-                          <span className="text-sm font-semibold">Online</span>
-                          <span className="text-xs opacity-80">UPI/Card/NetBanking</span>
-                        </button>
-                      </div>
-                    </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
