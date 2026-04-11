@@ -5,15 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    FaEnvelope, FaLock, FaSpinner, FaArrowRight, FaUser,
-    FaKey, FaShieldAlt, FaRedo, FaUtensils, FaTimes, FaInfoCircle
+    FaEnvelope, FaLock, FaSpinner, FaArrowRight, FaUtensils, FaInfoCircle
 } from 'react-icons/fa';
 import MathCaptcha from '@/components/auth/MathCaptcha';
 import Link from 'next/link';
 
 function AuthPageContent() {
-    const [showOtp, setShowOtp] = useState(false);
-    const [otpEmail, setOtpEmail] = useState('');
 
     // Login States
     const [email, setEmail] = useState('');
@@ -26,24 +23,13 @@ function AuthPageContent() {
     const [loginCaptchaValid, setLoginCaptchaValid] = useState(false);
     const [captchaKey, setCaptchaKey] = useState(0); // Used to force refresh captcha
 
-    // OTP States
-    const [otp, setOtp] = useState('');
-    const [otpTimer, setOtpTimer] = useState(30);
-    const [resendingOtp, setResendingOtp] = useState(false);
 
     const {
-        login, googleSignIn, verifyOtp, resendOtp
+        login, googleSignIn
     } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    useEffect(() => {
-        const initialEmail = searchParams.get('email');
-        if (initialEmail) {
-            setOtpEmail(initialEmail);
-            setShowOtp(true);
-        }
-    }, [searchParams]);
 
     // GIS Client state
     const [googleAuthClient, setGoogleAuthClient] = useState<any>(null);
@@ -87,33 +73,6 @@ function AuthPageContent() {
         }
     };
 
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            await verifyOtp(otpEmail, otp);
-            router.push('/admin/dashboard');
-        } catch (err) {
-            setIsLoading(false);
-        }
-    };
-
-    const handleResendOtp = async () => {
-        if (otpTimer > 0) return;
-        setResendingOtp(true);
-        try {
-            await resendOtp(otpEmail);
-            setOtpTimer(30);
-        } catch (err) {
-            // Handled in context
-        } finally {
-            setResendingOtp(false);
-        }
-    };
-
-    const handleOtpChange = (value: string) => {
-        setOtp(value.replace(/\D/g, '').slice(0, 6));
-    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -124,14 +83,8 @@ function AuthPageContent() {
         setIsLoading(true);
         setError('');
         try {
-            const result = await login(email, password);
-            if (result?.notVerified) {
-                setOtpEmail(email);
-                setShowOtp(true);
-                setIsLoading(false);
-            } else {
-                router.push('/admin/dashboard');
-            }
+            await login(email, password);
+            router.push('/admin/dashboard');
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Login failed');
             setCaptchaKey(prev => prev + 1);
@@ -282,63 +235,6 @@ function AuthPageContent() {
                 </Link>
             </div>
 
-            {/* OTP Overlay */}
-            <AnimatePresence>
-                {showOtp && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="fixed inset-0 z-[110] bg-white flex flex-col justify-center items-center p-6 md:p-12 text-center"
-                    >
-                        <button
-                            onClick={() => setShowOtp(false)}
-                            className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors"
-                        >
-                            <FaTimes size={24} />
-                        </button>
-                        <FaShieldAlt className="text-4xl md:text-5xl text-indigo-600 mb-6" />
-                        <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">Verify OTP</h2>
-                        <p className="text-slate-500 mb-8 text-sm md:text-base">Code sent to {otpEmail}</p>
-
-                        <form onSubmit={handleVerifyOtp} className="max-w-md w-full space-y-8">
-                            <div className="flex flex-col gap-4">
-                                <input
-                                    type="text"
-                                    value={otp}
-                                    onChange={(e) => handleOtpChange(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-5 text-center text-3xl font-bold tracking-[1.2em] text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-                                    placeholder="000000"
-                                    maxLength={6}
-                                />
-                                <p className="text-xs text-slate-400 font-medium">Please enter the numeric code precisely</p>
-                            </div>
-                            <button
-                                type="submit"
-                                disabled={isLoading || otp.length !== 6}
-                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
-                            >
-                                {isLoading ? <FaSpinner className="animate-spin" /> : "Verify & Continue"}
-                            </button>
-
-                            <div className="text-sm">
-                                {otpTimer > 0 ? (
-                                    <span className="text-slate-400">Resend in {otpTimer}s</span>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={handleResendOtp}
-                                        disabled={resendingOtp}
-                                        className="text-indigo-600 font-bold hover:underline flex items-center gap-2 mx-auto"
-                                    >
-                                        {resendingOtp ? <FaSpinner className="animate-spin" /> : <FaRedo size={12} />} Resend Code
-                                    </button>
-                                )}
-                            </div>
-                        </form>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }

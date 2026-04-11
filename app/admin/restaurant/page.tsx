@@ -49,7 +49,7 @@ interface RestaurantFormData {
 export default function RestaurantPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -380,6 +380,15 @@ export default function RestaurantPage() {
   };
 
   const subStatus = getSubscriptionStatus();
+  
+  if (authLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8">
+        <FaSpinner className="w-8 h-8 animate-spin text-indigo-600 mb-4" />
+        <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Verifying Identity...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
