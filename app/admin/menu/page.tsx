@@ -179,13 +179,9 @@ export default function MenuManagementPage() {
       if (editingItem) {
         await api.put(`/menu/${editingItem._id}`, data);
         toast.success('Menu item updated');
-        // Emit socket event to notify customers
-        socketService.emit('menuUpdated', { restaurantId: editingItem.restaurantId });
       } else {
         const response = await api.post('/menu', data);
         toast.success('Menu item created');
-        // Emit socket event to notify customers
-        socketService.emit('menuUpdated', { restaurantId: response.data.data?.restaurantId });
       }
       closeModal();
       mutateMenu();
@@ -199,15 +195,12 @@ export default function MenuManagementPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
     if (deletingItemId) return;
-    
+
     setDeletingItemId(id);
     try {
       await api.delete(`/menu/${id}`);
       toast.success('Menu item deleted');
       mutateMenu();
-      
-      // Emit socket event to notify customers of menu change
-      socketService.emit('menuUpdated', { restaurantId: menuItems.find(i => i._id === id)?.restaurantId });
     } catch (error) {
       toast.error('Failed to delete item');
     } finally {
@@ -218,14 +211,11 @@ export default function MenuManagementPage() {
   const handleToggle = async (item: MenuItem) => {
     if (togglingItemId) return; // Prevent multiple clicks
     setTogglingItemId(item._id);
-    
+
     try {
       await api.patch(`/menu/toggle/${item._id}`);
       toast.success(`Item ${item.isActive ? 'deactivated' : 'activated'}`);
       mutateMenu();
-      
-      // Emit socket event to notify customers of menu change
-      socketService.emit('menuUpdated', { restaurantId: item.restaurantId });
     } catch (error) {
       toast.error('Failed to toggle item');
     } finally {
