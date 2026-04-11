@@ -230,11 +230,11 @@ function CustomerPageContent() {
     if (session.deviceId) {
       socketService.connect();
       socketService.join(`customer:${session.deviceId}`);
-      
-      // Also join restaurant room for menu updates
+
+      // Join restaurant room only for menu updates (not for admin notifications)
       if (session.restaurantId) {
         socketService.join(`restaurant:${session.restaurantId}`);
-        console.log('[Socket] Joined restaurant room:', session.restaurantId);
+        console.log('[Socket] Joined restaurant room for menu updates:', session.restaurantId);
       }
 
       // Fetch initial notifications
@@ -247,11 +247,27 @@ function CustomerPageContent() {
           console.error('Failed to fetch customer notifications:', error);
         }
       };
-      
+
       fetchNotifications();
 
+      // Track processed notification IDs to prevent duplicates
+      const processedNotifications = new Set<string>();
+
       // Unified Notification Listener
-      socketService.on('notification', (notification: Notification) => {
+      const handleNotification = (notification: Notification) => {
+        // Filter out admin notifications - only process customer notifications
+        if (notification.recipientType !== 'CUSTOMER') {
+          console.log('[Socket] Ignored non-customer notification:', notification.recipientType);
+          return;
+        }
+
+        // Prevent duplicate processing of the same notification
+        if (processedNotifications.has(notification._id)) {
+          console.log('[Socket] Duplicate notification ignored:', notification._id);
+          return;
+        }
+        processedNotifications.add(notification._id);
+
         console.log('[Socket] New notification received:', notification);
         setNotifications(prev => [notification, ...prev]);
         setUnreadNotifications(prev => prev + 1);
@@ -283,29 +299,17 @@ function CustomerPageContent() {
 
         playNotificationSound();
 
-        // 🔄 SYNC STATE: If notification has order data, update orders list and refetch
+        // 🔄 SYNC STATE: If notification has order data, refetch orders from server
         if (notification.metadata?.orderData) {
-          const order = notification.metadata.orderData;
-          mutateOrders(
-            (currentData: any) => {
-              const existingOrders = currentData?.data || [];
-              const index = existingOrders.findIndex((o: Order) => o._id === order._id);
-              if (index !== -1) {
-                const newOrders = [...existingOrders];
-                newOrders[index] = order;
-                return { ...currentData, data: newOrders };
-              }
-              return { ...currentData, data: [order, ...existingOrders] };
-            },
-            false
-          );
-          // Refetch orders from server to ensure order card is updated
+          // Trigger server refetch to ensure order card is updated
           mutateOrders();
         }
-      });
-      
+      };
+
+      socketService.on('notification', handleNotification);
+
       // Keep other system-wide listeners (like menu updates)
-      socketService.on('menuUpdated', (data: { restaurantId: string }) => {
+      const handleMenuUpdated = (data: { restaurantId: string }) => {
         console.log('[Socket] Menu updated by admin, refetching...');
         // Refetch menu items for current restaurant
         if (session.restaurantId && data.restaurantId === session.restaurantId) {
@@ -319,11 +323,13 @@ function CustomerPageContent() {
             },
           });
         }
-      });
+      };
+
+      socketService.on('menuUpdated', handleMenuUpdated);
 
       return () => {
-        socketService.off('notification');
-        socketService.off('menuUpdated');
+        socketService.off('notification', handleNotification);
+        socketService.off('menuUpdated', handleMenuUpdated);
       };
     }
   }, [session.deviceId, session.restaurantId]);

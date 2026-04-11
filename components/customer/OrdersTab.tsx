@@ -220,7 +220,8 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
   };
 
   const getItemImage = (itemId: string) => {
-    return menuItems.find(item => item._id === itemId)?.image;
+    const menuItem = menuItems.find(item => item._id === itemId);
+    return menuItem?.image || (menuItem?.images && menuItem.images.length > 0 ? menuItem.images[0] : null);
   };
 
   const isOrderPaid = (order: Order) => {
