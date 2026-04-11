@@ -299,8 +299,8 @@ function CustomerPageContent() {
 
         playNotificationSound();
 
-        // 🔄 SYNC STATE: If notification has order data, refetch orders from server
-        if (notification.metadata?.orderData) {
+        // 🔄 SYNC STATE: Refetch orders on any order-related notification
+        if (notification.type?.startsWith('ORDER_') || notification.type === 'PAYMENT_VERIFIED' || notification.type === 'PAYMENT_RETRY') {
           // Trigger server refetch to ensure order card is updated
           mutateOrders();
         }
