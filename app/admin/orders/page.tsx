@@ -260,11 +260,20 @@ export default function OrdersPage() {
         }, 100);
       };
 
+      const handleNotification = (notification: any) => {
+        console.log('[Admin Orders] Notification received:', notification);
+        // Refresh orders on payment-related notifications
+        if (notification.type === 'PAYMENT_RETRY' || notification.type?.startsWith('ORDER_')) {
+          refreshOrders();
+        }
+      };
+
       socketService.on('newOrder', handleNewOrder);
       socketService.on('orderCancelled', handleOrderCancelled);
       socketService.on('orderRejected', handleOrderRejected);
       socketService.on('paymentVerified', handlePaymentVerified);
       socketService.on('orderUpdate', handleOrderUpdate);
+      socketService.on('notification', handleNotification);
 
       return () => {
         socketService.off('newOrder', handleNewOrder);
@@ -272,6 +281,7 @@ export default function OrdersPage() {
         socketService.off('orderRejected', handleOrderRejected);
         socketService.off('paymentVerified', handlePaymentVerified);
         socketService.off('orderUpdate', handleOrderUpdate);
+        socketService.off('notification', handleNotification);
       };
     }
   }, [user?._id, refreshOrders]);
