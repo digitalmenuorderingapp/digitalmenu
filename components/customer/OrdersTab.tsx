@@ -141,15 +141,29 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
       {/* Instructions */}
       <div className="bg-white/50 rounded-xl p-3 border border-amber-200/50">
         <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 1:</span> 
+          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 1:</span>
           Pay via Cash/UPI at the restaurant counter.
         </p>
         <div className="h-px bg-amber-200/30 my-2" />
         <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 2:</span> 
+          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 2:</span>
           Pay online via any UPI app and enter the last 6 digits of your UTR below.
         </p>
       </div>
+
+      {/* Retry Count Display */}
+      {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && (
+        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-3 text-center">
+          <p className="text-xs font-bold text-indigo-800">
+            Retry Attempts: <span className="text-indigo-900">{order.paymentVerificationRequestbycustomer?.retrycount || 0}</span>
+          </p>
+          <p className="text-[10px] text-indigo-600 mt-1">
+            {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3
+              ? 'Maximum retries reached. Please visit counter.'
+              : 'Please ensure correct UTR before submitting.'}
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
