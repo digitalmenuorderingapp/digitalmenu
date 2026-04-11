@@ -455,7 +455,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
                         </div>
                       </div>
                       
-                      {!isOrderPaid(order) && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && (
+                      {!isOrderPaid(order) && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status === 'ACCEPTED' && (
                         <div className="flex-shrink-0">
                           {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 ? (
                             <div className="px-6 py-3 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-rose-100 text-center">
