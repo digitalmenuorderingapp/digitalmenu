@@ -470,7 +470,7 @@ export default function MenuTab({
                       <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/cart:translate-y-0 transition-transform duration-500" />
                       <FaShoppingCart className="relative z-10 w-6 h-6" />
                       {totalCartCount > 0 && (
-                        <span className="absolute -top-2 -right-2 w-8 h-8 bg-red-600 text-white text-[12px] font-black rounded-full flex items-center justify-center border-4 border-white shadow-xl tabular-nums animate-bounce-slow">
+                        <span className="absolute top-0 right-0 -mt-1 -mr-1 w-7 h-7 bg-red-600 text-white text-[11px] font-black rounded-full flex items-center justify-center border-3 border-white shadow-xl tabular-nums animate-bounce-slow">
                           {totalCartCount}
                         </span>
                       )}
