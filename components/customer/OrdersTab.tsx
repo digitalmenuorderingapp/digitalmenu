@@ -80,7 +80,8 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
 function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session: any; onRefresh?: () => void }) {
   const [utr, setUtr] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPending, setIsPending] = useState(order.paymentStatus === 'RETRY' || order.utr);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [isPending, setIsPending] = useState(order.paymentVerificationRequestbycustomer?.applied || false);
 
   const handleVerify = async () => {
     if (!utr || utr.length < 6) {
@@ -107,7 +108,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
   };
 
   // If already submitted and waiting for admin
-  if (isPending || order.paymentStatus === 'RETRY' || order.utr) {
+  if (isPending || order.paymentVerificationRequestbycustomer?.applied) {
     return (
       <div className="space-y-4">
         <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-center">
@@ -123,13 +124,20 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
           )}
         </div>
         <button
-          onClick={() => onRefresh?.()}
-          disabled={isSubmitting}
+          onClick={async () => {
+            setIsCheckingStatus(true);
+            try {
+              await onRefresh?.();
+            } finally {
+              setIsCheckingStatus(false);
+            }
+          }}
+          disabled={isCheckingStatus}
           className="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
         >
           <div className="flex items-center justify-center gap-2">
-            <FaSpinner className={`animate-spin ${!isSubmitting && 'hidden'}`} />
-            Check Status
+            {(isCheckingStatus || isSubmitting) && <FaSpinner className="animate-spin" />}
+            {isCheckingStatus ? 'Updating...' : 'Check Status'}
           </div>
         </button>
       </div>
@@ -180,7 +188,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
 
       <button
         onClick={handleVerify}
-        disabled={isSubmitting || utr.length < 6 || (order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3}
+        disabled={isSubmitting || utr.length < 6 || (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
         className="w-full py-4 bg-gray-900 text-white rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-black active:scale-95 transition-all disabled:opacity-50 shadow-lg touch-manipulation"
       >
         {isSubmitting ? (
@@ -479,16 +487,16 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
                             <div className="flex flex-col items-center gap-2">
                               <button 
                                 onClick={() => setOrderToVerify(order)}
-                                disabled={(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3}
+                                disabled={(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
                                 className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${
-                                  (order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3 
+                                  (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 
                                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
                                     : 'bg-slate-900 text-white hover:bg-black shadow-slate-200'
                                 }`}
                               >
                                 Verify UPI Now {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer?.retrycount}/3)`}
                               </button>
-                              {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3 && (
+                              {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 && (
                                 <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
                                   Visit Counter to Pay
                                 </span>

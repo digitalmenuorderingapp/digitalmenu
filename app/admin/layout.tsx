@@ -56,11 +56,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [newOrdersCount, setNewOrdersCount] = useState(0); 
-  
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+
   // Track processed notification IDs for deduplication
   const processedNotificationsRef = useRef<Set<string>>(new Set());
-  
+
   // Initialize global keyboard shortcuts
   const shortcuts = useGlobalShortcuts(() => setShortcutsModalOpen(true));
 
@@ -107,16 +107,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       const handleIncomingNotification = (notification: Notification) => {
         if (!notification._id) return;
-        
+
         // Deduplication check
         if (processedNotificationsRef.current.has(notification._id)) {
           console.log('🚫 Duplicate notification ignored:', notification._id);
           return;
         }
-        
+
         // Mark as processed
         processedNotificationsRef.current.add(notification._id);
-        
+
         // Keep the set size manageable (last 50 IDs)
         if (processedNotificationsRef.current.size > 50) {
           const firstItem = processedNotificationsRef.current.values().next().value;
@@ -124,15 +124,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         }
 
         console.log('🔔 New notification received:', notification);
-        
+
         setNotifications(prev => {
           // Double check state for the ID as a safety measure
           if (prev.some(n => n._id === notification._id)) return prev;
           return [notification, ...prev];
         });
-        
+
         setUnreadCount(prev => prev + 1);
-        
+
         // Show specific toast based on type
         if (notification.type === 'ORDER_NEW') {
           toast.success(notification.message, { icon: '📦' });
@@ -185,7 +185,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         notificationIds: id ? [id] : notifications.filter(n => !n.isRead).map(n => n._id),
         recipientType: 'ADMIN'
       });
-      
+
       if (id) {
         setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -216,36 +216,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [pathname]);
   const getSubscriptionStatus = () => {
     if (!user?.subscription) {
-       return { name: 'Basic', daysLeft: 0, isExpired: false, status: 'Inactive', expiryDate: 'N/A' };
+      return { name: 'Basic', daysLeft: 0, isExpired: false, status: 'Inactive', expiryDate: 'N/A' };
     }
 
     const { type, status, expiryDate } = user.subscription;
 
     if (type === 'free') {
-        return { name: 'Premium (Free)', daysLeft: null, isExpired: false, status: 'Active', expiryDate: 'Lifetime' };
-     }
+      return { name: 'Premium (Free)', daysLeft: null, isExpired: false, status: 'Active', expiryDate: 'Lifetime' };
+    }
 
     if (type === 'trial') {
-       const expiry = expiryDate ? new Date(expiryDate) : null;
-       const diffDays = expiry ? Math.ceil((expiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
-       return { 
-          name: 'Free Trial', 
-          daysLeft: expiry ? Math.max(0, diffDays) : null, 
-          isExpired: (expiry && diffDays <= 0) || status === 'expired', 
-          status: status || 'Active', 
-          expiryDate: expiry ? expiry.toLocaleDateString() : 'Continuous' 
-       };
+      const expiry = expiryDate ? new Date(expiryDate) : null;
+      const diffDays = expiry ? Math.ceil((expiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      return {
+        name: 'Free Trial',
+        daysLeft: expiry ? Math.max(0, diffDays) : null,
+        isExpired: (expiry && diffDays <= 0) || status === 'expired',
+        status: status || 'Active',
+        expiryDate: expiry ? expiry.toLocaleDateString() : 'Continuous'
+      };
     }
 
     if (!expiryDate) {
-       return { name: 'Basic', daysLeft: 0, isExpired: false, status: 'Inactive', expiryDate: 'N/A' };
+      return { name: 'Basic', daysLeft: 0, isExpired: false, status: 'Inactive', expiryDate: 'N/A' };
     }
 
     const today = new Date();
     const expiry = new Date(expiryDate);
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return {
       name: 'Premium Plan',
       daysLeft: Math.max(0, diffDays),
@@ -257,7 +257,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const subStatus = getSubscriptionStatus();
   const isRestricted = !isLoading && isAuthenticated && (user?.subscription?.status === 'inactive' || subStatus.isExpired);
-  
+
   const blockedPaths = ['/admin/orders'];
   const shouldBlockContent = isRestricted && blockedPaths.some(p => pathname.startsWith(p));
 
@@ -341,9 +341,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   {user?.restaurantName && (
                     <div className="flex items-center space-x-1">
                       {user?.logo && (
-                        <img 
-                          src={user.logo} 
-                          alt={user.restaurantName} 
+                        <img
+                          src={user.logo}
+                          alt={user.restaurantName}
                           className="w-4 h-4 rounded object-cover border border-gray-200"
                         />
                       )}
@@ -359,7 +359,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Navigation with Sections */}
           <div className="px-4 mb-2">
-            <button 
+            <button
               onClick={() => setIsNotificationOpen(true)}
               className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-all group"
             >
@@ -389,7 +389,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {section.section}
                   </span>
                 </div>
-                
+
                 {/* Section Items */}
                 <div className="space-y-0.5">
                   {section.items.map((item) => {
@@ -398,11 +398,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`group flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
-                          isActive
+                        className={`group flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${isActive
                             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 font-semibold'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
+                          }`}
                       >
                         <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
                           {item.icon}
@@ -418,7 +417,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     );
                   })}
                 </div>
-                
+
                 {/* Section Divider */}
                 {sectionIdx < navItems.length - 1 && (
                   <div className="pt-2 border-b border-gray-100" />
@@ -430,7 +429,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* User section */}
           <div className="p-4 border-t border-gray-200">
             {/* Logged Devices Badge */}
-            <Link 
+            <Link
               href="/admin/devices"
               className="flex items-center justify-between px-3 py-2.5 mb-3 bg-indigo-50/50 hover:bg-indigo-50 rounded-xl border border-indigo-100/50 transition-colors group"
             >
@@ -514,9 +513,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       {user?.restaurantName && (
                         <div className="flex items-center space-x-1">
                           {user?.logo && (
-                            <img 
-                              src={user.logo} 
-                              alt={user.restaurantName} 
+                            <img
+                              src={user.logo}
+                              alt={user.restaurantName}
                               className="w-4 h-4 rounded object-cover border border-gray-200"
                             />
                           )}
@@ -548,7 +547,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {section.section}
                       </span>
                     </div>
-                    
+
                     {/* Section Items */}
                     <div className="space-y-0.5">
                       {section.items.map((item, index) => {
@@ -563,11 +562,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             <Link
                               href={item.href}
                               onClick={() => setSidebarOpen(false)}
-                              className={`group flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
-                                isActive
+                              className={`group flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${isActive
                                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 font-semibold'
                                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                              }`}
+                                }`}
                             >
                               <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
                                 {item.icon}
@@ -584,7 +582,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         );
                       })}
                     </div>
-                    
+
                     {/* Section Divider */}
                     {sectionIdx < navItems.length - 1 && (
                       <div className="pt-2 border-b border-gray-100" />
@@ -601,7 +599,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 className="p-4 border-t border-gray-200"
               >
                 {/* Logged Devices Badge */}
-                <Link 
+                <Link
                   href="/admin/devices"
                   onClick={() => setSidebarOpen(false)}
                   className="flex items-center justify-between px-3 py-2.5 mb-3 bg-indigo-50/50 hover:bg-indigo-50 rounded-xl border border-indigo-100/50 transition-colors group"
@@ -707,24 +705,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className={`w-full h-full transition-all duration-300 ${shouldBlockContent ? 'blur-md pointer-events-none select-none' : ''}`}>
               {children}
             </div>
-            
-            <SubscriptionModal 
-              isOpen={shouldBlockContent} 
-              isInline={true} 
-              expiryDate={subStatus.expiryDate} 
+
+            <SubscriptionModal
+              isOpen={shouldBlockContent}
+              isInline={true}
+              expiryDate={subStatus.expiryDate}
             />
           </main>
         </div>
       </div>
 
       {/* Keyboard Shortcuts Modal */}
-      <KeyboardShortcutsModal 
-        isOpen={shortcutsModalOpen} 
-        onClose={() => setShortcutsModalOpen(false)} 
+      <KeyboardShortcutsModal
+        isOpen={shortcutsModalOpen}
+        onClose={() => setShortcutsModalOpen(false)}
       />
 
       {/* Notification Drawer */}
-      <NotificationDrawer 
+      <NotificationDrawer
         isOpen={isNotificationOpen}
         onClose={() => setIsNotificationOpen(false)}
         notifications={notifications}
