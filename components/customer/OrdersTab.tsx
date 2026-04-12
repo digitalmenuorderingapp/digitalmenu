@@ -180,7 +180,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
 
       <button
         onClick={handleVerify}
-        disabled={isSubmitting || utr.length < 6}
+        disabled={isSubmitting || utr.length < 6 || (order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3}
         className="w-full py-4 bg-gray-900 text-white rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-black active:scale-95 transition-all disabled:opacity-50 shadow-lg touch-manipulation"
       >
         {isSubmitting ? (
@@ -188,7 +188,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
             <FaSpinner className="animate-spin" />
             Submitting...
           </div>
-        ) : 'Submit UTR for Verification'}
+        ) : `Submit UTR for Verification ${(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 ? `(${order.paymentVerificationRequestbycustomer?.retrycount}/3)` : ''}`}
       </button>
     </div>
   );
@@ -471,21 +471,29 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
                       
                       {!isOrderPaid(order) && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status === 'ACCEPTED' && (
                         <div className="flex-shrink-0">
-                          {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 ? (
-                            <div className="px-6 py-3 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-rose-100 text-center">
-                              Visit Counter to Pay
-                            </div>
-                          ) : (order.paymentVerificationRequestbycustomer?.applied) ? (
+                          {order.paymentVerificationRequestbycustomer?.applied ? (
                             <button disabled className="w-full sm:w-auto px-8 py-3.5 bg-indigo-400 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3">
-                              <FaSpinner className="animate-spin" /> Verifying...
+                              <FaSpinner className="animate-spin" /> Verifying... {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer.retrycount}/3)`}
                             </button>
                           ) : (
-                            <button 
-                              onClick={() => setOrderToVerify(order)}
-                              className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95"
-                            >
-                              Verify UPI Now
-                            </button>
+                            <div className="flex flex-col items-center gap-2">
+                              <button 
+                                onClick={() => setOrderToVerify(order)}
+                                disabled={(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3}
+                                className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${
+                                  (order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3 
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
+                                    : 'bg-slate-900 text-white hover:bg-black shadow-slate-200'
+                                }`}
+                              >
+                                Verify UPI Now {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer?.retrycount}/3)`}
+                              </button>
+                              {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 3 && (
+                                <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+                                  Visit Counter to Pay
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
