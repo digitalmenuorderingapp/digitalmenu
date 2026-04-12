@@ -45,7 +45,7 @@ export default function BottomNav({ cartCount = 0, notificationCount = 0, onTabC
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', damping: 25, stiffness: 120, delay: 0.1 }}
-        className="glass-card border-white/40 shadow-2xl rounded-[3rem] px-5 py-2 flex items-center gap-8 pointer-events-auto"
+        className="glass-card border-white/40 shadow-2xl rounded-[3rem] px-5 py-2 flex items-center gap-6 pointer-events-auto"
       >
         {navItems.map((item) => {
           const isActive = activeTab === item.id;

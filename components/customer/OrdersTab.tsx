@@ -37,11 +37,11 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
   };
 
   return (
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <h4 className="text-sm font-medium text-gray-900 mb-3">Rate Your Experience</h4>
+    <div className="bg-gray-50 p-3 rounded-lg">
+      <h4 className="text-xs font-medium text-gray-900 mb-2">Rate Your Experience</h4>
 
       {/* Star Rating */}
-      <div className="flex items-center space-x-1 mb-3">
+      <div className="flex items-center space-x-1 mb-2">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
@@ -49,7 +49,7 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
             className="focus:outline-none"
           >
             <FaStar
-              className={`w-6 h-6 ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+              className={`w-4 h-4 ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
             />
           </button>
         ))}
@@ -60,17 +60,17 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
         value={feedback}
         onChange={(e) => setFeedback(e.target.value.slice(0, 500))}
         placeholder="Share your experience with this order..."
-        rows={3}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm resize-none mb-3"
+        rows={2}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs resize-none mb-2"
       />
-      <p className="text-xs text-gray-500 mb-3 text-right">
+      <p className="text-[10px] text-gray-500 mb-2 text-right">
         {feedback.length}/500
       </p>
 
       <button
         onClick={handleSubmit}
         disabled={isSubmitting}
-        className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+        className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
       >
         {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
       </button>
@@ -111,15 +111,15 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
   // If already submitted and waiting for admin
   if (isPending || order.paymentVerificationRequestbycustomer?.applied) {
     return (
-      <div className="space-y-4">
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-center">
-          <FaClock className="w-8 h-8 text-amber-500 mx-auto mb-2 animate-pulse" />
-          <p className="text-sm font-bold text-amber-800">Verification Pending</p>
-          <p className="text-xs text-amber-600 mt-1">
+      <div className="space-y-3">
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 text-center">
+          <FaClock className="w-6 h-6 text-amber-500 mx-auto mb-1 animate-pulse" />
+          <p className="text-xs font-bold text-amber-800">Verification Pending</p>
+          <p className="text-[10px] text-amber-600 mt-0.5">
             Your UTR has been submitted. Waiting for admin to verify.
           </p>
           {order.utr && (
-            <p className="text-xs text-gray-500 mt-2 font-mono">
+            <p className="text-[10px] text-gray-500 mt-1 font-mono">
               UTR: ••••••{order.utr.slice(-4)}
             </p>
           )}
@@ -134,7 +134,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
             }
           }}
           disabled={isCheckingStatus}
-          className="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
+          className="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
         >
           <div className="flex items-center justify-center gap-2">
             {(isCheckingStatus || isSubmitting) && <FaSpinner className="animate-spin" />}
@@ -146,15 +146,15 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Instructions */}
-      <div className="bg-white/50 rounded-xl p-3 border border-amber-200/50">
-        <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+      <div className="bg-white/50 rounded-lg p-2 border border-amber-200/50">
+        <p className="text-[10px] text-amber-800 leading-relaxed font-medium">
           <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 1:</span>
           Pay via Cash/UPI at the restaurant counter.
         </p>
-        <div className="h-px bg-amber-200/30 my-2" />
-        <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+        <div className="h-px bg-amber-200/30 my-1" />
+        <p className="text-[10px] text-amber-800 leading-relaxed font-medium">
           <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 2:</span>
           Pay online via any UPI app and enter the last 6 digits of your UTR below.
         </p>
@@ -162,11 +162,11 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
 
       {/* Retry Count Display */}
       {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && (
-        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-3 text-center">
-          <p className="text-xs font-bold text-indigo-800">
+        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-2 text-center">
+          <p className="text-[10px] font-bold text-indigo-800">
             Retry Attempts: <span className="text-indigo-900">{order.paymentVerificationRequestbycustomer?.retrycount || 0}</span>
           </p>
-          <p className="text-[10px] text-indigo-600 mt-1">
+          <p className="text-[9px] text-indigo-600 mt-0.5">
             {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3
               ? 'Maximum retries reached. Please visit counter.'
               : 'Please ensure correct UTR before submitting.'}
@@ -182,7 +182,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
             onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="000000"
             disabled={isSubmitting}
-            className="w-full px-4 py-3.5 bg-white border-2 border-indigo-50 rounded-xl text-center text-xl font-black font-mono tracking-widest focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
+            className="w-full px-3 py-2 bg-white border-2 border-indigo-50 rounded-lg text-center text-lg font-black font-mono tracking-widest focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
           />
         </div>
       </div>
@@ -190,7 +190,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
       <button
         onClick={handleVerify}
         disabled={isSubmitting || utr.length < 6 || (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
-        className="w-full py-4 bg-gray-900 text-white rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-black active:scale-95 transition-all disabled:opacity-50 shadow-lg touch-manipulation"
+        className="w-full py-2 bg-gray-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-black active:scale-95 transition-all disabled:opacity-50 shadow-lg touch-manipulation"
       >
         {isSubmitting ? (
           <div className="flex items-center justify-center gap-2">
@@ -290,70 +290,70 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
   return (
     <>
-      <main className="max-w-4xl mx-auto px-4 pt-8 pb-36 relative min-h-screen">
+      <main className="max-w-4xl mx-auto px-4 pt-4 pb-36 relative min-h-screen">
         <div className="mesh-gradient" />
         
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-4">
            <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Order History</h2>
-              <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-1">Track your recent delites</p>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Order History</h2>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Track your recent delites</p>
            </div>
         </div>
 
         {orders.length === 0 ? (
-          <div className="text-center py-16 glass-card rounded-2xl border-white/50 p-12">
-            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-               <FaClipboardList className="w-10 h-10 text-slate-300 mx-auto" />
+          <div className="text-center py-8 glass-card rounded-xl border-white/50 p-6">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+               <FaClipboardList className="w-6 h-6 text-slate-300 mx-auto" />
             </div>
-            <h3 className="text-xl font-black text-slate-900">No orders yet</h3>
-            <p className="text-slate-500 mt-2 font-medium">Your delicious journey is just one click away!</p>
+            <h3 className="text-lg font-black text-slate-900">No orders yet</h3>
+            <p className="text-slate-500 mt-1 text-sm font-medium">Your delicious journey is just one click away!</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-4">
             {orders.map((order) => (
-              <div key={order._id} className="glass-card rounded-[2.5rem] shadow-2xl border-white/60 hover:shadow-indigo-100 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+              <div key={order._id} className="glass-card rounded-xl shadow-2xl border-white/60 hover:shadow-indigo-100 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                 {/* Order Header */}
-                <div className={`relative px-6 py-6 border-b border-gray-100/50 ${
+                <div className={`relative px-4 py-3 border-b border-gray-100/50 ${
                   order.status === 'REJECTED' ? 'bg-red-50/50' :
                   order.status === 'CANCELLED' ? 'bg-orange-50/50' :
                   order.status === 'COMPLETED' ? 'bg-emerald-50/50' :
                   order.status === 'ACCEPTED' ? 'bg-indigo-50/50' :
                   'bg-white/50'
                 }`}>
-                  <div className="flex items-start justify-between gap-4 relative z-10">
+                  <div className="flex items-start justify-between gap-3 relative z-10">
                     <div className="min-w-0">
-                      <div className="flex items-center space-x-3 mb-2 flex-wrap gap-y-2">
-                        <div className={`p-2 rounded-xl glass ${
+                      <div className="flex items-center space-x-2 mb-1 flex-wrap gap-y-1">
+                        <div className={`p-1.5 rounded-lg glass ${
                            order.status === 'COMPLETED' ? 'text-emerald-600' :
                            order.status === 'ACCEPTED' ? 'text-indigo-600' :
                            order.status === 'PLACED' ? 'text-amber-600' : 'text-slate-600'
                         }`}>
                           {getStatusIcon(order.status)}
                         </div>
-                        <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] ${getStatusColor(order.status)} border border-white/50`}>
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-[0.15em] ${getStatusColor(order.status)} border border-white/50`}>
                           {order.status}
                         </span>
                       </div>
-                      <h3 className="text-2xl font-black text-slate-900 truncate tracking-tight">
+                      <h3 className="text-base font-black text-slate-900 truncate tracking-tight">
                         Order #{order.orderNumber || order._id.slice(-6)}
                       </h3>
-                      <p className="text-[10px] text-slate-400 mt-1 font-black uppercase tracking-widest">
+                      <p className="text-[9px] text-slate-400 mt-0.5 font-black uppercase tracking-widest">
                         {formatDate(order.createdAt)}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-3xl font-black text-indigo-600 tabular-nums">
+                      <p className="text-xl font-black text-indigo-600 tabular-nums">
                         ₹{order.totalAmount.toFixed(0)}
                       </p>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Paid</p>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Total Paid</p>
                     </div>
                   </div>
                   
                   {/* Status Stepper - Overhauled */}
-                  <div className="mt-8 px-4">
+                  <div className="mt-3 px-3">
                     <div className="relative flex items-center justify-between">
                       {/* Progress Line */}
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1.5 bg-gray-200/50 rounded-full z-0 overflow-hidden">
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200/50 rounded-full z-0 overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-[1.5s] ease-out"
                           style={{ 
@@ -377,19 +377,19 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
                         return (
                           <div key={step.key} className="relative z-10 flex flex-col items-center">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 border-2 ${
+                            <div className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-500 border-2 ${
                               isCurrent ? 'bg-indigo-600 border-indigo-400 text-white scale-110 shadow-xl shadow-indigo-200' :
                               isPast ? 'bg-emerald-500 border-emerald-300 text-white' :
                               'bg-white border-gray-200 text-gray-400 shadow-inner'
                             }`}>
                               {isCurrent && (
-                                <div className="absolute inset-0 rounded-2xl border-2 border-indigo-400 animate-ping opacity-30" />
+                                <div className="absolute inset-0 rounded-xl border-2 border-indigo-400 animate-ping opacity-30" />
                               )}
-                              <div className="text-sm">
+                              <div className="text-xs">
                                 {isPast ? <FaCheckCircle /> : step.icon}
                               </div>
                             </div>
-                            <span className={`absolute -bottom-6 text-[10px] font-black uppercase tracking-widest transition-colors duration-500 ${
+                            <span className={`absolute -bottom-4 text-[8px] font-black uppercase tracking-widest transition-colors duration-500 ${
                               isCurrent ? 'text-indigo-600' : isPast ? 'text-emerald-600' : 'text-gray-400'
                             }`}>
                               {step.label}
@@ -402,20 +402,20 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                 </div>
 
                 {/* Order Content */}
-                <div className="p-8 space-y-6">
+                <div className="p-4 space-y-3">
                   {/* Order Items */}
-                  <div className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 shadow-inner">
-                    <h4 className="font-black text-slate-400 text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
-                      <span className="w-4 h-1 bg-indigo-500 rounded-full mr-2"></span>
+                  <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 shadow-inner">
+                    <h4 className="font-black text-slate-400 text-[9px] uppercase tracking-[0.2em] mb-2 flex items-center">
+                      <span className="w-3 h-0.5 bg-indigo-500 rounded-full mr-2"></span>
                       Items in this Order
                     </h4>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {order.items.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between py-3 border-b border-indigo-100/30 last:border-b-0 gap-4">
-                          <div className="flex items-center space-x-4 min-w-0">
+                        <div key={index} className="flex items-center justify-between py-2 border-b border-indigo-100/30 last:border-b-0 gap-3">
+                          <div className="flex items-center space-x-2 min-w-0">
                             {/* Item Image with Quantity Badge */}
                             <div className="relative flex-shrink-0">
-                              <span className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg z-20 border-2 border-white tabular-nums">
+                              <span className="absolute -top-1 -right-1 w-4 h-4 bg-slate-900 rounded-full flex items-center justify-center text-[8px] font-black text-white shadow-lg z-20 border border-white tabular-nums">
                                 {item.quantity}
                               </span>
                               {(() => {
@@ -424,22 +424,22 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                                   <img 
                                     src={itemImg} 
                                     alt={item.name} 
-                                    className="w-14 h-14 object-cover rounded-2xl border border-white shadow-md"
+                                    className="w-10 h-10 object-cover rounded-lg border border-white shadow-md"
                                   />
                                 ) : (
-                                  <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-indigo-50 shadow-md">
-                                    <span className="text-xl font-black text-indigo-200 uppercase">{item.name.charAt(0)}</span>
+                                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-indigo-50 shadow-md">
+                                    <span className="text-sm font-black text-indigo-200 uppercase">{item.name.charAt(0)}</span>
                                   </div>
                                 );
                               })()}
                             </div>
                             <div className="min-w-0">
-                              <span className="text-slate-900 font-black block truncate text-base uppercase tracking-tight">{item.name}</span>
-                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5 opacity-60">₹{(item.price / item.quantity).toFixed(0)} PER UNIT</p>
+                              <span className="text-slate-900 font-black block truncate text-xs uppercase tracking-tight">{item.name}</span>
+                              <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest mt-0.5 opacity-60">₹{(item.price / item.quantity).toFixed(0)} PER UNIT</p>
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <span className="font-black text-slate-900 block text-lg tabular-nums">
+                            <span className="font-black text-slate-900 block text-sm tabular-nums">
                               ₹{(item.price).toFixed(0)}
                             </span>
                           </div>
@@ -450,25 +450,25 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
                   {/* Special Instructions */}
                   {order.specialInstructions && (
-                    <div className="mt-4 p-4 glass border border-amber-200 rounded-2xl bg-amber-50/30">
-                      <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1 italic">Note to Chef:</p>
-                      <p className="text-sm font-medium text-amber-800 leading-relaxed italic">"{order.specialInstructions}"</p>
+                    <div className="mt-2 p-2 glass border border-amber-200 rounded-lg bg-amber-50/30">
+                      <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-0.5 italic">Note to Chef:</p>
+                      <p className="text-xs font-medium text-amber-800 leading-relaxed italic">"{order.specialInstructions}"</p>
                     </div>
                   )}
 
                   {/* Payment Block */}
-                  <div className={`p-6 rounded-[2.5rem] border-2 transition-all duration-500 ${isOrderPaid(order)
+                  <div className={`p-3 rounded-xl border-2 transition-all duration-500 ${isOrderPaid(order)
                     ? 'bg-emerald-50/50 border-emerald-100/50'
                     : 'bg-amber-50/50 border-amber-100/50'
                     }`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-                      <div className="flex items-center space-x-4 min-w-0">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0 ${isOrderPaid(order) ? 'bg-white text-emerald-600 border border-emerald-100' : 'bg-white text-amber-600 border border-amber-100'}`}>
-                          {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-6 h-6" /> : <FaMoneyBillWave className="w-6 h-6" />}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 ${isOrderPaid(order) ? 'bg-white text-emerald-600 border border-emerald-100' : 'bg-white text-amber-600 border border-amber-100'}`}>
+                          {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-4 h-4" /> : <FaMoneyBillWave className="w-4 h-4" />}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Status</p>
-                          <h4 className={`text-lg font-black flex items-center tracking-tight ${isOrderPaid(order) ? 'text-emerald-700' : 'text-amber-800'}`}>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Status</p>
+                          <h4 className={`text-sm font-black flex items-center tracking-tight ${isOrderPaid(order) ? 'text-emerald-700' : 'text-amber-800'}`}>
                             {isOrderPaid(order) ? (
                               <><FaCheckCircle className="mr-2 w-4 h-4" /> Fully Paid</>
                             ) : order.paymentVerificationRequestbycustomer?.applied ? (
@@ -482,7 +482,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                                 <span className="text-[10px] font-mono text-rose-400 mt-1 ml-6 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-lg w-fit border border-rose-100/50">Last Failed: •••{order.paymentVerificationRequestbycustomer.appliedUTR?.slice(-3) || order.utr?.slice(-3)}</span>
                               </div>
                             ) : (
-                              <><FaClock className="mr-2 w-4 h-4 animate-pulse" /> Awaiting Payment</>
+                              <><FaClock className="mr-1 w-3 h-3 animate-pulse" /> Awaiting Payment</>
                             )}
                           </h4>
                         </div>
@@ -491,15 +491,15 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                       {!isOrderPaid(order) && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status === 'ACCEPTED' && (
                         <div className="flex-shrink-0">
                           {order.paymentVerificationRequestbycustomer?.applied ? (
-                            <button disabled className="w-full sm:w-auto px-8 py-3.5 bg-indigo-400 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3">
+                            <button disabled className="w-full sm:w-auto px-4 py-2 bg-indigo-400 text-white rounded-lg text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2">
                               <FaSpinner className="animate-spin" /> Verifying... {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer.retrycount}/3)`}
                             </button>
                           ) : (
-                            <div className="flex flex-col items-center gap-2">
+                            <div className="flex flex-col items-center gap-1">
                               <button 
                                 onClick={() => setOrderToVerify(order)}
                                 disabled={(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
-                                className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${
+                                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${
                                   (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 
                                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
                                     : 'bg-slate-900 text-white hover:bg-black shadow-slate-200'
@@ -508,7 +508,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                                 Verify UPI Now {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer?.retrycount}/3)`}
                               </button>
                               {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 && (
-                                <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+                                <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
                                   Visit Counter to Pay
                                 </span>
                               )}
@@ -518,7 +518,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                       )}
                       
                       {isOrderPaid(order) && (
-                         <div className="bg-emerald-500 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 border border-emerald-400">
+                         <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 border border-emerald-400">
                           Verified
                         </div>
                       )}
@@ -527,24 +527,24 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
                   {/* Feedback Section */}
                   {order.status === 'COMPLETED' && !order.feedback?.rating && (
-                    <div className="mt-8 border-t border-slate-100 pt-8">
+                    <div className="mt-3 border-t border-slate-100 pt-3">
                       <FeedbackForm orderId={order._id} onSubmit={submitFeedback} />
                     </div>
                   )}
 
                   {/* Show existing feedback */}
                   {order.feedback?.rating && (
-                    <div className="bg-emerald-50/30 rounded-3xl p-6 border border-emerald-100/50">
-                      <div className="flex items-center gap-1.5 mb-3">
+                    <div className="bg-emerald-50/30 rounded-xl p-3 border border-emerald-100/50">
+                      <div className="flex items-center gap-1 mb-2">
                         {[...Array(5)].map((_, i) => (
                           <FaStar
                             key={i}
-                            className={`w-4 h-4 ${i < order.feedback!.rating! ? 'text-amber-400' : 'text-slate-200'}`}
+                            className={`w-3 h-3 ${i < order.feedback!.rating! ? 'text-amber-400' : 'text-slate-200'}`}
                           />
                         ))}
                       </div>
                       {order.feedback?.comment && (
-                        <p className="text-slate-700 italic font-medium">"{order.feedback.comment}"</p>
+                        <p className="text-slate-700 italic font-medium text-xs">"{order.feedback.comment}"</p>
                       )}
                     </div>
                   )}
@@ -553,7 +553,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                   {order.status === 'PLACED' && (
                     <button
                       onClick={() => openCancelModal(order._id)}
-                      className="w-full py-4 glass text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] border-rose-100 hover:bg-rose-50 transition-all active:scale-95 mt-4"
+                      className="w-full py-2 glass text-rose-500 rounded-lg text-[9px] font-black uppercase tracking-[0.3em] border-rose-100 hover:bg-rose-50 transition-all active:scale-95 mt-2"
                     >
                       Cancel Order
                     </button>

@@ -503,11 +503,11 @@ function CustomerPageContent() {
                 )}
               </div>
               <div>
-                <h1 className="text-base font-black text-slate-900 leading-tight uppercase tracking-tight">
+                <h1 className="text-lg font-black text-slate-900 leading-tight uppercase tracking-tight">
                   {headerConfig.title}
                 </h1>
-                <p className="text-[9px] uppercase tracking-[0.2em] text-indigo-500 font-black">
-                  Digital Menu Pro
+                <p className="text-[10px] uppercase tracking-[0.15em] text-slate-400 font-bold">
+                  Digital Menu
                 </p>
               </div>
             </div>

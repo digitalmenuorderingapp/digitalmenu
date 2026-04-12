@@ -208,10 +208,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
-  // Clear new orders badge when navigating to orders page
+  // Clear new orders badge when navigating to orders page (after 1 second)
   useEffect(() => {
     if (pathname.includes('/admin/orders')) {
-      setNewOrdersCount(0);
+      const timer = setTimeout(() => {
+        setNewOrdersCount(0);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [pathname]);
   const getSubscriptionStatus = () => {

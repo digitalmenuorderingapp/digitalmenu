@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaUtensils, FaPlus, FaMinus, FaLeaf, FaDotCircle, FaSlidersH, FaTimes, FaShoppingCart, FaSpinner } from 'react-icons/fa';
+import { FaUtensils, FaPlus, FaMinus, FaLeaf, FaDotCircle, FaSlidersH, FaTimes, FaShoppingCart, FaSpinner, FaEdit, FaCheck } from 'react-icons/fa';
 import { MenuItem, CartItem } from '@/types/order';
+import EditProfileModal from './EditProfileModal';
 
 interface MenuTabProps {
   menuItems: MenuItem[];
@@ -31,6 +32,7 @@ export default function MenuTab({
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // Auto-slide effect for item images
   useEffect(() => {
@@ -72,56 +74,56 @@ export default function MenuTab({
       <div className="mesh-gradient" />
 
       <main className="max-w-4xl mx-auto">
-        {/* ULTRA-COMPACT WELCOME SECTION */}
+        {/* DARK STATIC WELCOME CARD */}
         {(restaurantInfo || session.customerName) && session.customerName && (
           <div className="px-4 py-2 relative">
-            <motion.div 
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-2xl border-white/50 shadow-md overflow-hidden relative"
-            >
-              {/* Decorative Accent */}
-              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500" />
-              
+            <div className="bg-slate-900 rounded-2xl shadow-lg overflow-hidden relative">
               <div className="p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg relative z-10 border border-white/10">
-                        <span className="text-xl">👋</span>
-                      </div>
+                    <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700">
+                      <span className="text-xl">👋</span>
                     </div>
                     
                     <div>
                       <div className="flex items-center gap-1.5 leading-none mb-0.5">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <p className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">Active</p>
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                        <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Active</p>
                       </div>
-                      <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none">
+                      <h2 className="text-lg font-black text-white tracking-tight leading-none">
                         {session.customerName}
                       </h2>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-100 shadow-inner">
-                    <div className="text-right">
-                       <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Guests</p>
-                       <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest leading-none">
-                         {session.numberOfPersons === 1 ? 'Solo' : 'Group'}
-                       </p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700">
+                      <div className="text-right">
+                         <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Guests</p>
+                         <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-none">
+                           {session.numberOfPersons === 1 ? 'Solo' : 'Group'}
+                         </p>
+                      </div>
+                      <div className="w-px h-5 bg-slate-700" />
+                      <span className="text-xl font-black text-white leading-none tabular-nums">{session.numberOfPersons || 1}</span>
                     </div>
-                    <div className="w-px h-5 bg-slate-200" />
-                    <span className="text-xl font-black text-indigo-600 leading-none tabular-nums">{session.numberOfPersons || 1}</span>
+                    
+                    <button
+                      onClick={() => setIsEditProfileOpen(true)}
+                      className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700 hover:bg-slate-700 transition-colors"
+                    >
+                      <FaEdit className="text-slate-300 w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
       </main>
 
       {/* Modern Sticky Category Ribbon */}
-      <div className="sticky top-[72px] z-[50] glass border-b border-gray-200/50 shadow-sm overflow-hidden">
+      <div className="sticky top-[80px] z-[60] glass border-b border-gray-200/50 shadow-sm overflow-hidden">
         <div className="max-w-4xl mx-auto flex items-center">
           <div className="flex-shrink-0 pl-4 py-4 pr-2 border-r border-gray-100">
              <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
@@ -571,6 +573,20 @@ export default function MenuTab({
           </>
         )}
       </AnimatePresence>
+
+        {/* Edit Profile Modal */}
+        <EditProfileModal
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          customerName={session.customerName || ''}
+          mobileNumber={session.mobileNumber || ''}
+          numberOfPersons={session.numberOfPersons || 1}
+          onSave={(updates) => {
+            if (session.onUpdateSession) {
+              session.onUpdateSession(updates);
+            }
+          }}
+        />
     </div>
   );
 }
