@@ -57,7 +57,7 @@ function CustomerPageContent() {
   const menuItems = menuData?.data ? Object.values(menuData.data.menuItems).flat() as MenuItem[] : [];
 
   const ordersSwrKey = session.deviceId ? `/order/device/${session.deviceId}` : null;
-  const { data: ordersData, mutate: mutateOrders } = useSWR(ordersSwrKey, fetcher, {
+  const { data: ordersData, mutate: mutateOrders, isValidating: isOrdersValidating } = useSWR(ordersSwrKey, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     shouldRetryOnError: false,
@@ -187,7 +187,7 @@ function CustomerPageContent() {
   }, [mutateMenu]);
 
   const refreshOrders = useCallback(() => {
-    mutateOrders();
+    return mutateOrders();
   }, [mutateOrders]);
 
 
@@ -564,6 +564,7 @@ function CustomerPageContent() {
             session={session}
             onRefresh={refreshOrders}
             menuItems={menuItems}
+            isRefreshing={isOrdersValidating}
           />
         </div>
 

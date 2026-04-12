@@ -13,6 +13,7 @@ interface OrdersTabProps {
   session: any;
   onRefresh: () => void;
   menuItems: MenuItem[];
+  isRefreshing?: boolean;
 }
 
 interface FeedbackFormProps {
@@ -99,7 +100,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
       toast.success('UTR submitted! Verification pending.');
       setUtr('');
       setIsPending(true);
-      if (onRefresh) onRefresh();
+      if (onRefresh) await onRefresh();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Verification failed');
     } finally {
@@ -202,7 +203,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
   );
 }
 
-export default function OrdersTab({ orders, session, onRefresh, menuItems }: OrdersTabProps) {
+export default function OrdersTab({ orders, session, onRefresh, menuItems, isRefreshing }: OrdersTabProps) {
   const [orderToVerify, setOrderToVerify] = useState<Order | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedOrderIdForCancel, setSelectedOrderIdForCancel] = useState<string | null>(null);
@@ -257,7 +258,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
         comment: feedback
       });
       toast.success('Thank you for your feedback!');
-      onRefresh();
+      await onRefresh();
     } catch (error) {
       toast.error('Failed to submit feedback');
     }
@@ -279,7 +280,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
       });
       toast.success('Order cancelled successfully');
       setCancelModalOpen(false);
-      onRefresh();
+      await onRefresh();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
     } finally {
@@ -470,6 +471,16 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
                           <h4 className={`text-lg font-black flex items-center tracking-tight ${isOrderPaid(order) ? 'text-emerald-700' : 'text-amber-800'}`}>
                             {isOrderPaid(order) ? (
                               <><FaCheckCircle className="mr-2 w-4 h-4" /> Fully Paid</>
+                            ) : order.paymentVerificationRequestbycustomer?.applied ? (
+                              <div className="flex flex-col">
+                                <span className="flex items-center"><FaClock className="mr-2 w-4 h-4 animate-pulse" /> Verification Pending</span>
+                                <span className="text-[10px] font-mono text-slate-400 mt-1 ml-6 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-lg w-fit border border-slate-200/50">UTR: •••{order.paymentVerificationRequestbycustomer.appliedUTR?.slice(-3) || order.utr?.slice(-3)}</span>
+                              </div>
+                            ) : order.paymentVerificationRequestbycustomer?.adminAskedretry ? (
+                              <div className="flex flex-col">
+                                <span className="flex items-center text-rose-600"><FaExclamationTriangle className="mr-2 w-4 h-4 text-rose-500" /> Payment Rejected</span>
+                                <span className="text-[10px] font-mono text-rose-400 mt-1 ml-6 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-lg w-fit border border-rose-100/50">Last Failed: •••{order.paymentVerificationRequestbycustomer.appliedUTR?.slice(-3) || order.utr?.slice(-3)}</span>
+                              </div>
                             ) : (
                               <><FaClock className="mr-2 w-4 h-4 animate-pulse" /> Awaiting Payment</>
                             )}
@@ -662,8 +673,8 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems }: Ord
                   <PaymentEntryForm 
                     order={orderToVerify} 
                     session={session} 
-                    onRefresh={() => {
-                      onRefresh();
+                    onRefresh={async () => {
+                      await onRefresh();
                       setOrderToVerify(null);
                     }} 
                   />
