@@ -434,7 +434,7 @@ const OrderCard = ({
             const hasApplied = !!paymentObj?.applied || String(paymentObj?.applied) === 'true';
             const hasUTR = !!order.utr || !!order.submittedUtr || !!paymentObj?.appliedUTR;
             const isRetry = order.paymentStatus?.toUpperCase() === 'RETRY';
-            const showVerify = (hasApplied || hasUTR || isRetry) && order.status?.toUpperCase() === 'ACCEPTED';
+            const showVerify = (hasApplied || hasUTR || isRetry) && (order.status?.toUpperCase() === 'ACCEPTED' || order.status?.toUpperCase() === 'COMPLETED');
             
             console.log(`[DEBUG:OrderCard:${order.orderNumber || order._id?.slice(-6)}]`, { 
               showVerify,
@@ -447,7 +447,7 @@ const OrderCard = ({
               fullOrderSample: JSON.stringify(order).slice(0, 300)
             });
             
-            if (paid || order.status?.toUpperCase() === 'REJECTED' || order.status?.toUpperCase() === 'CANCELLED' || order.status?.toUpperCase() !== 'ACCEPTED') {
+            if (paid || order.status?.toUpperCase() === 'REJECTED' || order.status?.toUpperCase() === 'CANCELLED' || (order.status?.toUpperCase() !== 'ACCEPTED' && order.status?.toUpperCase() !== 'COMPLETED')) {
               return null;
             }
 
