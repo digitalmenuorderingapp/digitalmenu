@@ -375,14 +375,9 @@ export default function TermsOfServicePage() {
                     {t.nav_dashboard}
                   </Link>
                 ) : (
-                  <>
-                    <Link href="/auth" className="px-5 py-2.5 text-sm font-bold text-gray-600 md:text-gray-600 hover:text-indigo-600 border border-gray-200 md:border-none rounded-xl md:rounded-0 transition-all md:hover:bg-transparent hover:bg-gray-50 active:scale-95 md:active:scale-100">
-                      {t.nav_login}
-                    </Link>
-                    <Link href="/auth" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hidden sm:block">
-                      {t.nav_getStarted}
-                    </Link>
-                  </>
+                  <Link href="/auth" className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 min-w-[120px] text-center">
+                    {t.nav_login}
+                  </Link>
                 )}
               </motion.div>
             </div>

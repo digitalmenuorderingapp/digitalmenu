@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { TRANSLATIONS, Language } from '@/utils/translations';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
+import useSWR, { mutate } from 'swr';
+import { fetcher } from '@/services/swr';
 import { socketService } from '@/services/socket';
 import { playNewOrderSound } from '@/utils/notifications';
 import { getTodayISTDateString } from '@/utils/date';
@@ -34,7 +36,8 @@ import {
   FaCrown,
   FaLock,
   FaEnvelope,
-  FaChartArea
+  FaChartArea,
+  FaUserFriends
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
@@ -46,6 +49,9 @@ interface Stats {
   menuItems: number;
   tables: number;
   activeItems: number;
+  occupiedTables: number;
+  tablesList: any[];
+  pendingOrders: any[];
 }
 
 interface Ledger {
@@ -96,15 +102,48 @@ interface RestaurantFormData {
 export default function DashboardPage() {
   const router = useRouter();
   const { user, refreshUser, logout } = useAuth();
-  const [stats, setStats] = useState<Stats>({ menuItems: 0, tables: 0, activeItems: 0 });
-  const [isLoading, setIsLoading] = useState(true);
-  const [ledger, setLedger] = useState<Ledger | null>(null);
-  const [monthlyLedgers, setMonthlyLedgers] = useState<any[]>([]);
-  const [isLoadingLedger, setIsLoadingLedger] = useState(false);
-  const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => getTodayISTDateString());
   const [chartMode, setChartMode] = useState<'hourly' | 'daily'>('daily');
+  
+  // SWR hooks for various dashboard data points
+  const { data: menuRes, isLoading: isLoadingMenu } = useSWR(user ? '/menu/admin/all' : null, fetcher);
+  const { data: tableRes, isLoading: isLoadingTables } = useSWR(user ? '/table' : null, fetcher);
+  
+  const occupancySwrKey = user ? `/order?status=PLACED,ACCEPTED,COMPLETED&date=${getTodayISTDateString()}` : null;
+  const { data: occupancyRes, isLoading: isLoadingOccupancy, mutate: mutateOccupancy } = useSWR(occupancySwrKey, fetcher);
+
+  const ledgerSwrKey = user ? (selectedDate === new Date().toISOString().split('T')[0] ? '/ledger/today' : `/ledger/date?date=${selectedDate}`) : null;
+  const { data: ledgerRes, isLoading: isLoadingLedger, mutate: mutateLedger } = useSWR(ledgerSwrKey, fetcher);
+
+  const { data: monthlyRes, isLoading: isLoadingMonthly, mutate: mutateMonthly } = useSWR(user ? '/ledger/monthly' : null, fetcher);
+
+  // Derived data
+  const menuItems = menuRes?.data || [];
+  const tables = tableRes?.data || [];
+  const pendingOrders = occupancyRes?.data || [];
+  const ledger = ledgerRes?.data || null;
+  const monthlyLedgers = monthlyRes?.data?.ledgers || [];
+  const isLoading = isLoadingMenu || isLoadingTables || isLoadingOccupancy;
+
+  // Calculate unique tables that are occupied
+  // Rule: Occupied if (status is PLACED or ACCEPTED) OR (status is COMPLETED but payment is NOT VERIFIED)
+  const occupiedOrders = pendingOrders.filter((order: any) => 
+    order.orderType === 'dine-in' && 
+    order.tableNumber && 
+    (order.status === 'PLACED' || order.status === 'ACCEPTED' || (order.status === 'COMPLETED' && order.paymentStatus !== 'VERIFIED'))
+  );
+
+  const occupiedTableNumbers = new Set(occupiedOrders.map((order: any) => order.tableNumber));
+  
+  const stats = {
+    menuItems: menuItems.length,
+    tables: tables.length,
+    activeItems: menuItems.filter((item: { isActive: boolean }) => item.isActive).length,
+    occupiedTables: occupiedTableNumbers.size,
+    tablesList: tables,
+    pendingOrders: pendingOrders
+  };
   const [formData, setFormData] = useState<RestaurantFormData>({
     restaurantName: '',
     ownerName: '',
@@ -125,94 +164,25 @@ export default function DashboardPage() {
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
-    if (user) {
-      fetchStats();
-      fetchLedger(selectedDate);
-      fetchMonthlyLedgers();
-    }
-  }, [user, selectedDate]);
-
-  useEffect(() => {
     if (user?._id) {
       socketService.connect();
       socketService.join(user._id);
 
-      const handleNewOrder = (order: any) => {
-        // Skip notification if this admin created the order themselves
-        if (order.createdBy === user._id || order.source === 'admin') {
-          return;
-        }
-        fetchStats();
-        fetchLedger(selectedDate);
+      const handleUpdate = () => {
+        mutateOccupancy();
+        mutateLedger();
+        mutateMonthly();
       };
 
-      const handleOrderUpdate = (order: any) => {
-        fetchStats();
-        fetchLedger(selectedDate);
-      };
-
-      socketService.on('newOrder', handleNewOrder);
-      socketService.on('orderUpdate', handleOrderUpdate);
+      socketService.on('newOrder', handleUpdate);
+      socketService.on('orderUpdate', handleUpdate);
 
       return () => {
-        socketService.off('newOrder', handleNewOrder);
-        socketService.off('orderUpdate', handleOrderUpdate);
+        socketService.off('newOrder', handleUpdate);
+        socketService.off('orderUpdate', handleUpdate);
       };
     }
-  }, [user, selectedDate]);
-
-  const fetchStats = async () => {
-    try {
-      const [menuRes, tableRes] = await Promise.all([
-        api.get('/menu/admin/all'),
-        api.get('/table'),
-      ]);
-
-      const menuItems = menuRes.data.data || [];
-      const tables = tableRes.data.data || [];
-
-      setStats({
-        menuItems: menuItems.length,
-        tables: tables.length,
-        activeItems: menuItems.filter((item: { isActive: boolean }) => item.isActive).length,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchLedger = async (date: string) => {
-    setIsLoadingLedger(true);
-    try {
-      const isToday = date === new Date().toISOString().split('T')[0];
-      const endpoint = isToday ? '/ledger/today' : `/ledger/date?date=${date}`;
-      const response = await api.get(endpoint);
-      setLedger(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch ledger:', error);
-      setLedger(null);
-    } finally {
-      setIsLoadingLedger(false);
-    }
-  };
-
-  const fetchMonthlyLedgers = async () => {
-    setIsLoadingMonthly(true);
-    try {
-      console.log('Fetching monthly ledgers...');
-      const response = await api.get('/ledger/monthly');
-      console.log('Monthly ledgers response:', response.data);
-      setMonthlyLedgers(response.data.data?.ledgers || []);
-    } catch (error: any) {
-      console.error('Failed to fetch monthly ledgers:', error);
-      console.error('Error response:', error.response?.data);
-      setMonthlyLedgers([]);
-    } finally {
-      setIsLoadingMonthly(false);
-    }
-  };
+  }, [user, mutateOccupancy, mutateLedger, mutateMonthly]);
 
   const refreshLedger = async () => {
     setIsRefreshing(true);
@@ -220,12 +190,12 @@ export default function DashboardPage() {
       // Recalculate both transactions and analytical summary
       await api.post('/ledger/recalculate', { date: selectedDate });
 
-      // Re-fetch unified ledger data
-      await fetchLedger(selectedDate);
-      await fetchMonthlyLedgers();
+      // Trigger SWR revalidation
+      mutateOccupancy();
+      mutateLedger();
+      mutateMonthly();
 
       toast.success('Dashboard metrics refreshed successfully!');
-      fetchStats();
     } catch (error: any) {
       console.error('Failed to update stats:', error);
       toast.error(error.response?.data?.message || 'Failed to update statistics');
@@ -255,11 +225,11 @@ export default function DashboardPage() {
 
     // 1. Handle Lifetime Free (Legacy)
     if (type === 'free') {
-      return { 
-        name: 'Premium (LIFETIME)', 
-        daysLeft: null, 
-        isExpired: false, 
-        color: 'text-indigo-300' 
+      return {
+        name: 'Premium (LIFETIME)',
+        daysLeft: null,
+        isExpired: false,
+        color: 'text-indigo-300'
       };
     }
 
@@ -283,7 +253,7 @@ export default function DashboardPage() {
       const expiry = new Date(expiryDate);
       const diffTime = expiry.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       return {
         name: 'Premium Plan',
         daysLeft: Math.max(0, diffDays),
@@ -642,32 +612,143 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* Payment Breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-                    <FaMoneyBillWave className="w-4 h-4 text-amber-600" />
-                    <span>Cash Summary</span>
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between border-t pt-1 font-semibold">
-                      <span>In Hand (Net)</span>
-                      <span className="text-amber-700">₹{Math.round(ledger.cash?.balance || 0)}</span>
+              {/* Table Metrics Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-8">
+                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg">
+                        <FaUtensils className="w-5 h-5 opacity-40" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-indigo-900 uppercase tracking-wider">Tables Occupied</h4>
+                        <p className="text-xs text-indigo-600 font-medium">Active customers</p>
+                      </div>
+                    </div>
+                    <span className="text-3xl font-black text-indigo-700">{stats.occupiedTables}</span>
+                  </div>
+                  <div className="w-full bg-indigo-200 rounded-full h-2">
+                    <div 
+                      className="bg-indigo-600 h-2 rounded-full transition-all duration-1000" 
+                      style={{ width: `${stats.tables > 0 ? (stats.occupiedTables / stats.tables) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-lg">
+                        <FaTable className="w-5 h-5 opacity-40" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-emerald-900 uppercase tracking-wider">Available Tables</h4>
+                        <p className="text-xs text-emerald-600 font-medium">Ready for guests</p>
+                      </div>
+                    </div>
+                    <span className="text-3xl font-black text-emerald-700">{stats.tables - stats.occupiedTables}</span>
+                  </div>
+                  <div className="w-full bg-emerald-200 rounded-full h-2">
+                    <div 
+                      className="bg-emerald-600 h-2 rounded-full transition-all duration-1000" 
+                      style={{ width: `${stats.tables > 0 ? ((stats.tables - stats.occupiedTables) / stats.tables) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Table Status Section */}
+              <div className="mt-8 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/30 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4 relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                      <FaTable className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-gray-900 tracking-tight">Live Table Occupancy</h3>
+                      <p className="text-xs text-gray-500 font-medium">Real-time status for {user?.restaurantName || 'your restaurant'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white text-emerald-600 rounded-xl shadow-sm border border-gray-100 text-[10px] font-black uppercase tracking-widest">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                      Available
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl shadow-sm border border-gray-100 text-[10px] font-black uppercase tracking-widest">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                      Occupied
                     </div>
                   </div>
                 </div>
 
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-                    <FaCreditCard className="w-4 h-4 text-blue-600" />
-                    <span>Online Summary</span>
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between border-t pt-1 font-semibold">
-                      <span>Settled Online</span>
-                      <span className="text-blue-700">₹{Math.round(ledger.online.balance)}</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-5 relative z-10">
+                  {stats.tablesList.map((table: any) => {
+                    const isOccupied = stats.pendingOrders.some(
+                      (order: any) => 
+                        order.orderType === 'dine-in' && 
+                        order.tableNumber === table.tableNumber &&
+                        (order.status === 'PLACED' || order.status === 'ACCEPTED' || (order.status === 'COMPLETED' && order.paymentStatus !== 'VERIFIED'))
+                    );
+
+                    return (
+                      <motion.div
+                        key={table._id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ y: -5, scale: 1.02 }}
+                        className={`relative group p-6 rounded-[2rem] border-2 transition-all duration-300 flex flex-col items-center justify-center gap-2
+                          ${isOccupied 
+                            ? 'bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 border-indigo-700 text-white shadow-2xl shadow-indigo-200' 
+                            : 'bg-white border-gray-50 text-gray-900 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-50'
+                          }`}
+                      >
+                        <div className={`p-2 rounded-lg ${isOccupied ? 'bg-indigo-500/30' : 'bg-gray-50 group-hover:bg-emerald-50'}`}>
+                          <FaTable className={`w-3 h-3 ${isOccupied ? 'text-indigo-200' : 'text-gray-400 group-hover:text-emerald-500'}`} />
+                        </div>
+                        
+                        <div className="flex flex-col items-center">
+                          <span className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 ${isOccupied ? 'text-indigo-200/80' : 'text-gray-400'}`}>
+                            Table
+                          </span>
+                          <span className="text-3xl font-black tracking-tighter leading-none">
+                            {table.tableNumber}
+                          </span>
+                        </div>
+
+                        <div className={`mt-2 flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
+                          ${isOccupied ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-400 group-hover:bg-emerald-100 group-hover:text-emerald-700'}`}>
+                          <FaUserFriends className="w-2.5 h-2.5 opacity-60" />
+                          {table.seats || 4} Seats
+                        </div>
+
+                        {isOccupied && (
+                          <>
+                            <div className="absolute -top-2 -right-2 bg-emerald-400 text-white w-7 h-7 rounded-full shadow-lg flex items-center justify-center border-4 border-indigo-600">
+                              <FaUtensils className="w-2.5 h-2.5 animate-bounce" />
+                            </div>
+                            <div className="absolute top-2 left-2 flex gap-0.5">
+                              {[1, 2, 3].map(i => (
+                                <div key={i} className={`w-1 h-1 rounded-full bg-indigo-300/50 animate-pulse`} style={{ animationDelay: `${i * 200}ms` }}></div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                  
+                  {stats.tablesList.length === 0 && (
+                    <div className="col-span-full py-20 border-3 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-gray-300 bg-gray-50/50">
+                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                        <FaTable className="w-8 h-8 opacity-20" />
+                      </div>
+                      <h4 className="text-lg font-black text-gray-400 uppercase tracking-widest">No Tables Found</h4>
+                      <p className="text-xs font-bold text-gray-300 uppercase tracking-tighter">Please create tables in the Table Management section</p>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
