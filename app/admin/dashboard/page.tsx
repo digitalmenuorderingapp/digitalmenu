@@ -91,6 +91,15 @@ interface Ledger {
   }>;
 }
 
+interface MonthToDateStats {
+  totalOrders: number;
+  servedOrders: number;
+  cashBalance: number;
+  onlineBalance: number;
+  netBalance: number;
+  totalRevenue: number;
+}
+
 interface RestaurantFormData {
   restaurantName: string;
   ownerName: string;
@@ -282,7 +291,7 @@ export default function DashboardPage() {
   const maxDate = today.toISOString().split("T")[0];
 
   // Calculate month-to-date cumulative balance from monthlyLedgers
-  const monthToDateStats = monthlyLedgers.reduce((acc, ledger) => {
+  const monthToDateStats = (monthlyLedgers as Ledger[]).reduce((acc: MonthToDateStats, ledger: Ledger) => {
     acc.totalOrders += ledger.counts?.totalOrders || 0;
     acc.servedOrders += ledger.counts?.servedOrders || 0;
     acc.cashBalance += ledger.cash?.balance || 0;
