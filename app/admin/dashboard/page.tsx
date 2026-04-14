@@ -131,8 +131,8 @@ export default function DashboardPage() {
   const menuItems = menuRes?.data || [];
   const tables = tableRes?.data || [];
   const pendingOrders = occupancyRes?.data || [];
-  const ledger = ledgerRes?.data || null;
-  const monthlyLedgers = monthlyRes?.data?.ledgers || [];
+  const ledger: Ledger | null = ledgerRes?.data || null;
+  const monthlyLedgers: Ledger[] = monthlyRes?.data?.ledgers || [];
   const isLoading = isLoadingMenu || isLoadingTables || isLoadingOccupancy;
 
   // Calculate unique tables that are occupied
@@ -766,7 +766,7 @@ export default function DashboardPage() {
                 <div className="mt-6 border border-gray-200 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3">Top Selling Items Today</h4>
                   <div className="space-y-2">
-                    {ledger.soldItems.slice(0, 5).map((item, idx) => (
+                    {ledger.soldItems.slice(0, 5).map((item: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between text-sm">
                         <div className="flex items-center space-x-2">
                           <span className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-xs font-medium text-indigo-600">
