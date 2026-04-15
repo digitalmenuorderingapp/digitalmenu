@@ -9,12 +9,20 @@ import {
 } from 'react-icons/fa';
 import MathCaptcha from '@/components/auth/MathCaptcha';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginInput } from '@/lib/validations';
 
 function AuthPageContent() {
 
     // Login States
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<LoginInput>({
+        resolver: zodResolver(loginSchema),
+    });
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [error, setError] = useState('');
@@ -74,8 +82,7 @@ function AuthPageContent() {
     };
 
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: LoginInput) => {
         if (!loginCaptchaValid) {
             setError('Please solve the math captcha correctly');
             return;
@@ -83,7 +90,7 @@ function AuthPageContent() {
         setIsLoading(true);
         setError('');
         try {
-            await login(email, password);
+            await login(data.email, data.password);
             router.push('/admin/dashboard');
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Login failed');
@@ -122,28 +129,26 @@ function AuthPageContent() {
                     </div>
 
                     {/* Login Form */}
-                    <form onSubmit={handleLogin} className="space-y-3">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
                         <div className="relative group">
                             <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors text-sm" />
                             <input
                                 type="email"
                                 placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
+                                {...register('email')}
+                                className={`w-full bg-slate-50 border ${errors.email ? 'border-red-500' : 'border-slate-200'} rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400`}
                             />
+                            {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.email.message}</p>}
                         </div>
                         <div className="relative group">
                             <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors text-sm" />
                             <input
                                 type="password"
                                 placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400"
+                                {...register('password')}
+                                className={`w-full bg-slate-50 border ${errors.password ? 'border-red-500' : 'border-slate-200'} rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400`}
                             />
+                            {errors.password && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.password.message}</p>}
                         </div>
 
                         {error && <p className="text-red-500 text-xs text-center">{error}</p>}

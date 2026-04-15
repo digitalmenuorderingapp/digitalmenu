@@ -21,6 +21,9 @@ import {
   FaSave,
 } from 'react-icons/fa';
 import { Skeleton, MenuItemSkeleton } from '@/components/ui/Skeleton';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { menuItemSchema, MenuItemInput } from '@/lib/validations';
 
 interface MenuItem {
   _id: string;
@@ -53,29 +56,45 @@ export default function MenuManagementPage() {
   const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    offerPrice: '',
-    isActive: true,
-    foodType: 'Main Course',
-    isVeg: true,
-    isBestSeller: false,
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors }
+  } = useForm<MenuItemInput>({
+    resolver: zodResolver(menuItemSchema) as any,
+    defaultValues: {
+      name: '',
+      description: '',
+      price: 0,
+      offerPrice: undefined,
+      isActive: true,
+      foodType: 'Main Course',
+      isVeg: true,
+      isBestSeller: false,
+    }
   });
+
+  const isActiveWatcher = watch('isActive');
+  const isVegWatcher = watch('isVeg');
+  const isBestSellerWatcher = watch('isBestSeller');
+  const priceWatcher = watch('price');
+  const offerPriceWatcher = watch('offerPrice');
+  const foodTypeWatcher = watch('foodType');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [removedImages, setRemovedImages] = useState<string[]>([]);
 
 
-  const resetForm = () => {
-    setFormData({
+  const resetAll = () => {
+    reset({
       name: '',
       description: '',
-      price: '',
-      offerPrice: '',
+      price: 0,
+      offerPrice: undefined,
       isActive: true,
       foodType: 'Main Course',
       isVeg: true,
@@ -91,11 +110,11 @@ export default function MenuManagementPage() {
   const openModal = (item?: MenuItem) => {
     if (item) {
       setEditingItem(item);
-      setFormData({
+      reset({
         name: item.name,
         description: item.description || '',
-        price: item.price.toString(),
-        offerPrice: item.offerPrice?.toString() || '',
+        price: item.price,
+        offerPrice: item.offerPrice,
         isActive: item.isActive,
         foodType: item.foodType || 'Main Course',
         isVeg: item.isVeg ?? true,
@@ -103,14 +122,14 @@ export default function MenuManagementPage() {
       });
       setExistingImages(item.images || (item.image ? [item.image] : []));
     } else {
-      resetForm();
+      resetAll();
     }
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    resetForm();
+    resetAll();
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,36 +170,35 @@ export default function MenuManagementPage() {
     setRemovedImages(prev => [...prev, url]);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: MenuItemInput) => {
     setIsSubmitting(true);
 
-    const data = new FormData();
-    data.append('name', formData.name);
-    data.append('description', formData.description);
-    data.append('price', formData.price);
-    if (formData.offerPrice) data.append('offerPrice', formData.offerPrice);
-    data.append('isActive', formData.isActive.toString());
-    data.append('foodType', formData.foodType);
-    data.append('isVeg', formData.isVeg.toString());
-    data.append('isBestSeller', formData.isBestSeller.toString());
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('description', data.description || '');
+    formData.append('price', data.price.toString());
+    if (data.offerPrice) formData.append('offerPrice', data.offerPrice.toString());
+    formData.append('isActive', data.isActive.toString());
+    formData.append('foodType', data.foodType);
+    formData.append('isVeg', data.isVeg.toString());
+    formData.append('isBestSeller', data.isBestSeller.toString());
     
     // Add multiple images
     imageFiles.forEach(file => {
-      data.append('images', file);
+      formData.append('images', file);
     });
 
     // Add removed images for backend cleanup
     removedImages.forEach(url => {
-      data.append('removedImages', url);
+      formData.append('removedImages', url);
     });
 
     try {
       if (editingItem) {
-        await api.put(`/menu/${editingItem._id}`, data);
+        await api.put(`/menu/${editingItem._id}`, formData);
         toast.success('Menu item updated');
       } else {
-        const response = await api.post('/menu', data);
+        await api.post('/menu', formData);
         toast.success('Menu item created');
       }
       closeModal();
@@ -419,7 +437,7 @@ export default function MenuManagementPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
+              <form onSubmit={handleFormSubmit(onSubmit)} className="p-4 sm:p-6 space-y-5">
                 {/* Image Upload Section */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -497,12 +515,11 @@ export default function MenuManagementPage() {
                     </label>
                     <input
                       type="text"
-                      required
+                      {...register('name')}
                       placeholder="e.g., Butter Chicken"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                      className={`w-full px-4 py-2.5 bg-gray-50 border ${errors.name ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all`}
                     />
+                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                   </div>
 
                   <div className="sm:col-span-2">
@@ -511,11 +528,11 @@ export default function MenuManagementPage() {
                     </label>
                     <textarea
                       rows={5}
+                      {...register('description')}
                       placeholder="Give your dish a tempting description. Ingredients, special prep, or origin story—it all sells better!"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all resize-none"
+                      className={`w-full px-4 py-2.5 bg-gray-50 border ${errors.description ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all resize-none`}
                     />
+                    {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
                   </div>
 
                   {/* Price Row */}
@@ -529,21 +546,20 @@ export default function MenuManagementPage() {
                         type="number"
                         step="0.01"
                         min="0"
-                        required
+                        {...register('price', { valueAsNumber: true })}
                         placeholder="0.00"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        className="w-full pl-8 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                        className={`w-full pl-8 pr-4 py-2.5 bg-gray-50 border ${errors.price ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all`}
                       />
                     </div>
+                    {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Offer Price
-                      {formData.price && formData.offerPrice && Number(formData.offerPrice) < Number(formData.price) && (
+                      {priceWatcher && offerPriceWatcher && Number(offerPriceWatcher) < Number(priceWatcher) && (
                         <span className="ml-2 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
-                          {Math.round((1 - Number(formData.offerPrice) / Number(formData.price)) * 100)}% OFF
+                          {Math.round((1 - Number(offerPriceWatcher) / Number(priceWatcher)) * 100)}% OFF
                         </span>
                       )}
                     </label>
@@ -553,12 +569,12 @@ export default function MenuManagementPage() {
                         type="number"
                         step="0.01"
                         min="0"
+                        {...register('offerPrice', { valueAsNumber: true })}
                         placeholder="0.00"
-                        value={formData.offerPrice}
-                        onChange={(e) => setFormData({ ...formData, offerPrice: e.target.value })}
-                        className="w-full pl-8 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                        className={`w-full pl-8 pr-4 py-2.5 bg-gray-50 border ${errors.offerPrice ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all`}
                       />
                     </div>
+                    {errors.offerPrice && <p className="text-red-500 text-xs mt-1">{errors.offerPrice.message}</p>}
                   </div>
 
                   {/* Food Type & Status Row */}
@@ -567,8 +583,7 @@ export default function MenuManagementPage() {
                       Category
                     </label>
                     <select
-                      value={formData.foodType}
-                      onChange={(e) => setFormData({ ...formData, foodType: e.target.value })}
+                      {...register('foodType')}
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all appearance-none cursor-pointer"
                       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
                     >
@@ -581,6 +596,7 @@ export default function MenuManagementPage() {
                       <option value="Sides">🍟 Sides</option>
                       <option value="Desserts">🍰 Desserts</option>
                     </select>
+                    {errors.foodType && <p className="text-red-500 text-xs mt-1">{errors.foodType.message}</p>}
                   </div>
 
                   <div className="flex items-end">
@@ -588,16 +604,15 @@ export default function MenuManagementPage() {
                       <div className="relative">
                         <input
                           type="checkbox"
-                          checked={formData.isActive}
-                          onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                          {...register('isActive')}
                           className="sr-only peer"
                         />
                         <div className="w-11 h-6 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                       </div>
                       <span className="text-sm font-medium text-gray-700">
-                        {formData.isActive ? 'Active' : 'Inactive'}
+                        {isActiveWatcher ? 'Active' : 'Inactive'}
                       </span>
-                      {formData.isActive ? (
+                      {isActiveWatcher ? (
                         <FaToggleOn className="w-5 h-5 text-green-500 ml-auto" />
                       ) : (
                         <FaToggleOff className="w-5 h-5 text-gray-400 ml-auto" />
@@ -608,29 +623,27 @@ export default function MenuManagementPage() {
                   <div className="sm:col-span-2">
                     <div className="flex flex-col sm:flex-row gap-4">
                       <label className="flex-1 flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
-                        <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${formData.isVeg ? 'border-green-600' : 'border-red-600'}`}>
-                          <div className={`w-2.5 h-2.5 rounded-full ${formData.isVeg ? 'bg-green-600' : 'bg-red-600'}`} />
+                        <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${isVegWatcher ? 'border-green-600' : 'border-red-600'}`}>
+                          <div className={`w-2.5 h-2.5 rounded-full ${isVegWatcher ? 'bg-green-600' : 'bg-red-600'}`} />
                         </div>
                         <span className="text-sm font-semibold text-gray-700">
-                          {formData.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
+                          {isVegWatcher ? 'Vegetarian' : 'Non-Vegetarian'}
                         </span>
                         <input
                           type="checkbox"
-                          checked={formData.isVeg}
-                          onChange={(e) => setFormData({ ...formData, isVeg: e.target.checked })}
+                          {...register('isVeg')}
                           className="ml-auto w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
                         />
                       </label>
 
-                      <label className={`flex-1 flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${formData.isBestSeller ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
+                      <label className={`flex-1 flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${isBestSellerWatcher ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
                         <span className="text-lg">⭐</span>
-                        <span className={`text-sm font-semibold ${formData.isBestSeller ? 'text-amber-700' : 'text-gray-700'}`}>
+                        <span className={`text-sm font-semibold ${isBestSellerWatcher ? 'text-amber-700' : 'text-gray-700'}`}>
                           Best Seller Tag
                         </span>
                         <input
                           type="checkbox"
-                          checked={formData.isBestSeller}
-                          onChange={(e) => setFormData({ ...formData, isBestSeller: e.target.checked })}
+                          {...register('isBestSeller')}
                           className="ml-auto w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
                         />
                       </label>

@@ -37,14 +37,14 @@ import {
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TRANSLATIONS, Language } from '@/utils/translations';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { 
+  restaurantProfileSchema, RestaurantProfileInput,
+  passwordUpdateSchema, PasswordUpdateInput,
+  deleteAccountSchema, DeleteAccountInput
+} from '@/lib/validations';
 
-interface RestaurantFormData {
-  restaurantName: string;
-  ownerName: string;
-  address: string;
-  phone: string;
-  motto: string;
-}
 
 export default function RestaurantPage() {
   const router = useRouter();
@@ -55,24 +55,50 @@ export default function RestaurantPage() {
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [captchaText, setCaptchaText] = useState('');
-  const [deleteReason, setDeleteReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
   const [copied, setCopied] = useState(false);
   const [lang, setLang] = useState<Language>('hi');
   const [isDragging, setIsDragging] = useState(false);
-  const [formData, setFormData] = useState<RestaurantFormData>({
-    restaurantName: '',
-    ownerName: '',
-    address: '',
-    phone: '',
-    motto: ''
+
+  // Profile Form
+  const {
+    register: registerProfile,
+    handleSubmit: handleProfileSubmit,
+    reset: resetProfile,
+    watch: watchProfile,
+    formState: { errors: profileErrors }
+  } = useForm<RestaurantProfileInput>({
+    resolver: zodResolver(restaurantProfileSchema),
+    defaultValues: {
+      restaurantName: '',
+      ownerName: '',
+      address: '',
+      phone: '',
+      motto: ''
+    }
+  });
+
+  const mottoValue = watchProfile('motto');
+
+  // Password Form
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPassword,
+    formState: { errors: passwordErrors }
+  } = useForm<PasswordUpdateInput>({
+    resolver: zodResolver(passwordUpdateSchema)
+  });
+
+  // Delete Form
+  const {
+    register: registerDelete,
+    handleSubmit: handleDeleteSubmit,
+    reset: resetDelete,
+    formState: { errors: deleteErrors }
+  } = useForm<DeleteAccountInput>({
+    resolver: zodResolver(deleteAccountSchema)
   });
 
   // Persistence for language
@@ -85,7 +111,7 @@ export default function RestaurantPage() {
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      resetProfile({
         restaurantName: user.restaurantName || '',
         ownerName: user.ownerName || '',
         address: user.address || '',
@@ -94,40 +120,23 @@ export default function RestaurantPage() {
       });
       setLogoPreview(user.logo || null);
     }
-  }, [user]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  }, [user, resetProfile]);
 
   const openDeleteModal = () => {
     setIsDeleteModalOpen(true);
-    setCaptchaText('');
-    setDeleteReason('');
+    resetDelete();
   };
 
   const closeDeleteModal = () => {
     setIsDeleteModalOpen(false);
-    setCaptchaText('');
-    setDeleteReason('');
+    resetDelete();
   };
 
 
-  const confirmDeleteAccount = async () => {
-    if (captchaText !== 'DELETE') {
-      toast.error('Please type DELETE to confirm');
-      return;
-    }
-
-    if (!deleteReason.trim()) {
-      toast.error('Please provide a reason for deleting your account');
-      return;
-    }
-
+  const confirmDeleteAccount = async (data: DeleteAccountInput) => {
     setIsDeleting(true);
     try {
-      const response = await api.post('/auth/delete-account', { captcha: captchaText, reason: deleteReason });
+      const response = await api.post('/auth/delete-account', { captcha: data.captcha, reason: data.reason });
       toast.success(response.data.message || 'Account deleted successfully');
       closeDeleteModal();
       logout();
@@ -138,24 +147,14 @@ export default function RestaurantPage() {
     }
   };
 
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-    if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
+  const onPasswordUpdate = async (data: PasswordUpdateInput) => {
     setIsUpdatingPassword(true);
     try {
       const response = await api.post('/auth/set-password', {
-        password: passwordForm.newPassword
+        password: data.newPassword
       });
       toast.success(response.data.message || 'Password updated successfully');
-      setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      resetPassword();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update password');
     } finally {
@@ -179,8 +178,6 @@ export default function RestaurantPage() {
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
       handleLogoFile(file);
-    } else {
-      toast.error('Please drop an image file');
     }
   }, []);
 
@@ -235,12 +232,11 @@ export default function RestaurantPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onProfileSubmit = async (data: RestaurantProfileInput) => {
     setIsSaving(true);
 
     try {
-      await api.put('/auth/restaurant', formData);
+      await api.put('/auth/restaurant', data);
       await refreshUser();
       toast.success('Restaurant details updated successfully');
     } catch (error: any) {
@@ -593,7 +589,7 @@ export default function RestaurantPage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6 flex-1 flex flex-col">
+            <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="p-6 space-y-6 flex-1 flex flex-col">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
@@ -605,14 +601,12 @@ export default function RestaurantPage() {
                     </div>
                     <input
                       type="text"
-                      name="restaurantName"
-                      required
-                      value={formData.restaurantName}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
+                      {...registerProfile('restaurantName')}
+                      className={`block w-full pl-10 pr-3 py-2.5 border ${profileErrors.restaurantName ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400`}
                       placeholder="Enter restaurant name"
                     />
                   </div>
+                  {profileErrors.restaurantName && <p className="text-red-500 text-xs mt-1">{profileErrors.restaurantName.message}</p>}
                   <p className="text-xs text-gray-500">This will be displayed on your digital menu</p>
                 </div>
 
@@ -626,14 +620,12 @@ export default function RestaurantPage() {
                     </div>
                     <input
                       type="text"
-                      name="ownerName"
-                      required
-                      value={formData.ownerName}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
+                      {...registerProfile('ownerName')}
+                      className={`block w-full pl-10 pr-3 py-2.5 border ${profileErrors.ownerName ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400`}
                       placeholder="Enter owner name"
                     />
                   </div>
+                  {profileErrors.ownerName && <p className="text-red-500 text-xs mt-1">{profileErrors.ownerName.message}</p>}
                 </div>
               </div>
 
@@ -647,13 +639,12 @@ export default function RestaurantPage() {
                   </div>
                   <input
                     type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
+                    {...registerProfile('phone')}
                     className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400"
                     placeholder="Enter phone number"
                   />
                 </div>
+                {profileErrors.phone && <p className="text-red-500 text-xs mt-1">{profileErrors.phone.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -665,15 +656,13 @@ export default function RestaurantPage() {
                     <FaMapMarkerAlt className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                   </div>
                   <textarea
-                    name="address"
-                    required
+                    {...registerProfile('address')}
                     rows={3}
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none"
+                    className={`block w-full pl-10 pr-3 py-2.5 border ${profileErrors.address ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none`}
                     placeholder="Enter restaurant address"
                   />
                 </div>
+                {profileErrors.address && <p className="text-red-500 text-xs mt-1">{profileErrors.address.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -681,14 +670,13 @@ export default function RestaurantPage() {
                   Restaurant Motto
                 </label>
                 <textarea
-                  name="motto"
+                  {...registerProfile('motto')}
                   rows={2}
-                  value={formData.motto}
-                  onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 resize-none"
                   placeholder="e.g., 'Taste the Tradition' or 'Good Food, Good Mood'"
                 />
-                <p className="text-xs text-gray-500 text-right">{formData.motto?.length || 0}/100 characters</p>
+                {profileErrors.motto && <p className="text-red-500 text-xs mt-1">{profileErrors.motto.message}</p>}
+                <p className="text-xs text-gray-500 text-right">{mottoValue?.length || 0}/100 characters</p>
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
@@ -758,7 +746,7 @@ export default function RestaurantPage() {
                     </div>
                     <input
                       type="text"
-                      value={formData.restaurantName}
+                      value={user?.restaurantName || ''}
                       disabled
                       className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
                       placeholder="Enter restaurant name"
@@ -776,7 +764,7 @@ export default function RestaurantPage() {
                     </div>
                     <input
                       type="text"
-                      value={formData.ownerName}
+                      value={user?.ownerName || ''}
                       disabled
                       className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
                       placeholder="Enter owner name"
@@ -795,14 +783,13 @@ export default function RestaurantPage() {
                   </div>
                   <input
                     type="tel"
-                    value={formData.phone}
+                    value={user?.phone || ''}
                     disabled
                     className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
                     placeholder="Enter phone number"
                   />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   Address <span className="text-red-500">*</span>
@@ -813,7 +800,7 @@ export default function RestaurantPage() {
                   </div>
                   <textarea
                     rows={3}
-                    value={formData.address}
+                    value={user?.address || ''}
                     disabled
                     className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed resize-none"
                     placeholder="Enter restaurant address"
@@ -827,7 +814,7 @@ export default function RestaurantPage() {
                 </label>
                 <textarea
                   rows={2}
-                  value={formData.motto}
+                  value={user?.motto || ''}
                   disabled
                   className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed resize-none"
                   placeholder="e.g., 'Taste the Tradition' or 'Good Food, Good Mood'"
@@ -1004,7 +991,7 @@ export default function RestaurantPage() {
               </div>
             </div>
 
-            <form onSubmit={handlePasswordUpdate} className="p-5 space-y-4">
+            <form onSubmit={handlePasswordSubmit(onPasswordUpdate)} className="p-5 space-y-4">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-xs font-semibold text-gray-700">
@@ -1016,16 +1003,14 @@ export default function RestaurantPage() {
                     </div>
                     <input
                       type="password"
-                      required
-                      minLength={6}
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 text-sm"
+                      {...registerPassword('newPassword')}
+                      className={`block w-full pl-10 pr-3 py-2 border ${passwordErrors.newPassword ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 text-sm`}
                       placeholder="Enter new password"
                     />
                   </div>
+                  {passwordErrors.newPassword && <p className="text-red-500 text-[10px] mt-1">{passwordErrors.newPassword.message}</p>}
                 </div>
-
+ 
                 <div className="space-y-2">
                   <label className="block text-xs font-semibold text-gray-700">
                     Confirm New Password <span className="text-red-500">*</span>
@@ -1036,14 +1021,12 @@ export default function RestaurantPage() {
                     </div>
                     <input
                       type="password"
-                      required
-                      minLength={6}
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 text-sm"
+                      {...registerPassword('confirmPassword')}
+                      className={`block w-full pl-10 pr-3 py-2 border ${passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white hover:border-gray-400 text-sm`}
                       placeholder="Confirm new password"
                     />
                   </div>
+                  {passwordErrors.confirmPassword && <p className="text-red-500 text-[10px] mt-1">{passwordErrors.confirmPassword.message}</p>}
                 </div>
 
                 <div className="flex justify-end pt-2">
@@ -1202,40 +1185,41 @@ export default function RestaurantPage() {
                   </div>
                 </div>
 
-                <>
-                  <p className="text-gray-600 mb-4">
+                <form onSubmit={handleDeleteSubmit(confirmDeleteAccount)}>
+                  <p className="text-gray-600 mb-4 text-sm">
                     To proceed with account deletion, please explicitly type <strong>DELETE</strong> (case-sensitive) in the input below.
                   </p>
                   <div className="mb-4">
                     <input
                       type="text"
-                      value={captchaText}
-                      onChange={(e) => setCaptchaText(e.target.value)}
+                      {...registerDelete('captcha')}
                       placeholder='Type "DELETE"'
-                      className="w-full px-4 py-3 text-center tracking-widest border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none font-bold text-gray-800"
+                      className={`w-full px-4 py-3 text-center tracking-widest border ${deleteErrors.captcha ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none font-bold text-gray-800`}
                     />
+                    {deleteErrors.captcha && <p className="text-red-500 text-xs mt-1 text-center">{deleteErrors.captcha.message}</p>}
                   </div>
-                  <div className="mb-4">
+                  <div className="mb-4 text-left">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Reason for deletion (required)</label>
                     <textarea
-                      value={deleteReason}
-                      onChange={(e) => setDeleteReason(e.target.value)}
+                      {...registerDelete('reason')}
                       placeholder="Please let us know why you're deleting your account..."
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-gray-700 resize-none"
+                      className={`w-full px-4 py-3 border ${deleteErrors.reason ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-gray-700 resize-none`}
                     />
+                    {deleteErrors.reason && <p className="text-red-500 text-xs mt-1">{deleteErrors.reason.message}</p>}
                   </div>
                   <div className="flex space-x-3">
                     <button
+                      type="button"
                       onClick={closeDeleteModal}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={confirmDeleteAccount}
-                      disabled={isDeleting || captchaText !== 'DELETE'}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                      type="submit"
+                      disabled={isDeleting}
+                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 text-sm"
                     >
                       {isDeleting ? (
                         <>
@@ -1250,7 +1234,7 @@ export default function RestaurantPage() {
                       )}
                     </button>
                   </div>
-                </>
+                </form>
               </div>
             </div>
           </div>

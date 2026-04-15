@@ -21,6 +21,9 @@ import {
   FaUtensils,
 } from 'react-icons/fa';
 import { Skeleton, TableCardSkeleton } from '@/components/ui/Skeleton';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { tableSchema, TableInput } from '@/lib/validations';
 
 interface Table {
   _id: string;
@@ -194,9 +197,20 @@ export default function TableManagementPage() {
   const tables = data?.data || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [tableNumber, setTableNumber] = useState('');
-  const [seats, setSeats] = useState('4');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    reset,
+    formState: { errors }
+  } = useForm<TableInput>({
+    resolver: zodResolver(tableSchema),
+    defaultValues: {
+      tableNumber: undefined,
+      seats: 4
+    }
+  });
   const printRef = useRef<HTMLDivElement>(null);
 
   // Encryption key - in production, this should be stored securely
@@ -234,19 +248,15 @@ export default function TableManagementPage() {
   };
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tableNumber) return;
-
+  const onSubmit = async (data: TableInput) => {
     setIsSubmitting(true);
     try {
       await api.post('/table', {
-        tableNumber: parseInt(tableNumber),
-        seats: parseInt(seats) || 4
+        tableNumber: data.tableNumber,
+        seats: data.seats
       });
       toast.success('Table created successfully');
-      setTableNumber('');
-      setSeats('4');
+      reset();
       setIsModalOpen(false);
       mutateTables();
     } catch (error: any) {
@@ -374,7 +384,7 @@ export default function TableManagementPage() {
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setIsModalOpen(false)} />
             <div className="relative bg-white rounded-2xl p-6 w-full max-w-md">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Add New Table</h2>
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleFormSubmit(onSubmit)}>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Table Number *
@@ -382,12 +392,11 @@ export default function TableManagementPage() {
                   <input
                     type="number"
                     min="1"
-                    required
-                    value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    {...register('tableNumber', { valueAsNumber: true })}
+                    className={`w-full px-3 py-2 border ${errors.tableNumber ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none`}
                     placeholder="e.g., 1"
                   />
+                  {errors.tableNumber && <p className="text-red-500 text-xs mt-1">{errors.tableNumber.message}</p>}
                 </div>
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -396,12 +405,11 @@ export default function TableManagementPage() {
                   <input
                     type="number"
                     min="1"
-                    required
-                    value={seats}
-                    onChange={(e) => setSeats(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    {...register('seats', { valueAsNumber: true })}
+                    className={`w-full px-3 py-2 border ${errors.seats ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none`}
                     placeholder="e.g., 4"
                   />
+                  {errors.seats && <p className="text-red-500 text-xs mt-1">{errors.seats.message}</p>}
                 </div>
                 <div className="flex space-x-3">
                   <button

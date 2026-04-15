@@ -22,6 +22,9 @@ import {
   FaCommentDots,
   FaUsers
 } from 'react-icons/fa';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createOrderSchema, CreateOrderInput } from '@/lib/validations';
 
 interface MenuItem {
   _id: string;
@@ -54,14 +57,27 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
-  const [formData, setFormData] = useState({
-    customerName: '',
-    customerPhone: '',
-    tableNumber: '',
-    numberOfPersons: '1',
-    orderType: 'dine-in' as 'dine-in' | 'takeaway' | 'delivery',
-    specialInstructions: ''
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors }
+  } = useForm<CreateOrderInput>({
+    resolver: zodResolver(createOrderSchema),
+    defaultValues: {
+      customerName: '',
+      customerPhone: '',
+      tableNumber: undefined,
+      numberOfPersons: 1,
+      orderType: 'dine-in',
+      specialInstructions: ''
+    }
   });
+
+  const orderType = watch('orderType');
+  const tableNumberWatcher = watch('tableNumber');
 
   const restaurantId = user?.id || user?._id;
   const { data: menuData, isLoading } = useSWR<{ data: MenuItem[] }>(
@@ -112,38 +128,19 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     }, 0);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmit = async (data: CreateOrderInput) => {
     if (cart.length === 0) {
       toast.error('Please add items to the order');
       return;
-    }
-
-    if (!formData.customerName.trim()) {
-      toast.error('Please enter customer name');
-      return;
-    }
-
-    // Validate dine-in specific fields
-    if (formData.orderType === 'dine-in') {
-      if (!formData.tableNumber.trim()) {
-        toast.error('Please enter table number for dine-in order');
-        return;
-      }
-      if (!formData.numberOfPersons || parseInt(formData.numberOfPersons) < 1) {
-        toast.error('Please enter valid number of persons');
-        return;
-      }
     }
 
     try {
       setIsSubmitting(true);
       
       const orderData = {
-        ...formData,
-        tableNumber: formData.orderType === 'dine-in' ? parseInt(formData.tableNumber) || 0 : undefined,
-        numberOfPersons: formData.orderType === 'dine-in' ? parseInt(formData.numberOfPersons) || 1 : undefined,
+        ...data,
+        tableNumber: data.orderType === 'dine-in' ? Number(data.tableNumber) : undefined,
+        numberOfPersons: data.orderType === 'dine-in' ? Number(data.numberOfPersons) : undefined,
         items: cart.map(item => ({
           itemId: item._id,
           name: item.name,
@@ -162,14 +159,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
       
       // Reset form
       setCart([]);
-      setFormData({
-        customerName: '',
-        customerPhone: '',
-        tableNumber: '',
-        numberOfPersons: '1',
-        orderType: 'dine-in',
-        specialInstructions: ''
-      });
+      reset();
       
       onOrderCreated();
       onClose();
@@ -221,7 +211,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden" style={{ minHeight: 0 }}>
+            <form onSubmit={handleFormSubmit(onSubmit)} className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden" style={{ minHeight: 0 }}>
               {/* Left Side - Menu Items */}
               <div className="flex-none lg:flex-1 lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50">
                 <div className="p-4 sm:p-6">
@@ -338,12 +328,11 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       </label>
                       <input
                         type="text"
-                        required
-                        value={formData.customerName}
-                        onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        {...register('customerName')}
+                        className={`w-full px-4 py-3 border ${errors.customerName ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all`}
                         placeholder="Enter customer name"
                       />
+                      {errors.customerName && <p className="text-red-500 text-xs mt-1">{errors.customerName.message}</p>}
                     </div>
 
                     <div>
@@ -353,8 +342,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       </label>
                       <input
                         type="tel"
-                        value={formData.customerPhone}
-                        onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                        {...register('customerPhone')}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         placeholder="Enter phone number"
                       />
@@ -365,9 +353,9 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, orderType: 'dine-in' })}
+                          onClick={() => setValue('orderType', 'dine-in')}
                           className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                            formData.orderType === 'dine-in'
+                            orderType === 'dine-in'
                               ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg transform scale-105'
                               : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:shadow-md'
                           }`}
@@ -377,9 +365,9 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                         </button>
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, orderType: 'takeaway' })}
+                          onClick={() => setValue('orderType', 'takeaway')}
                           className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                            formData.orderType === 'takeaway'
+                            orderType === 'takeaway'
                               ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg transform scale-105'
                               : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:shadow-md'
                           }`}
@@ -390,7 +378,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       </div>
                     </div>
 
-                    {formData.orderType === 'dine-in' && (
+                    {orderType === 'dine-in' && (
                       <>
                         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
                           <label className="text-sm font-semibold text-indigo-900 mb-2 flex items-center gap-2">
@@ -399,12 +387,11 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                           </label>
                           <input
                             type="number"
-                            value={formData.tableNumber}
-                            onChange={(e) => setFormData({ ...formData, tableNumber: e.target.value })}
-                            className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                            {...register('tableNumber', { valueAsNumber: true })}
+                            className={`w-full px-3 py-2 border ${errors.tableNumber ? 'border-red-500' : 'border-indigo-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white`}
                             placeholder="Enter table number"
-                            required
                           />
+                          {errors.tableNumber && <p className="text-red-500 text-[10px] mt-1">{errors.tableNumber.message}</p>}
                         </div>
 
                         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
@@ -416,12 +403,11 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                             type="number"
                             min="1"
                             max="20"
-                            value={formData.numberOfPersons}
-                            onChange={(e) => setFormData({ ...formData, numberOfPersons: e.target.value })}
-                            className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                            {...register('numberOfPersons', { valueAsNumber: true })}
+                            className={`w-full px-3 py-2 border ${errors.numberOfPersons ? 'border-red-500' : 'border-indigo-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white`}
                             placeholder="Number of guests"
-                            required
                           />
+                          {errors.numberOfPersons && <p className="text-red-500 text-[10px] mt-1">{errors.numberOfPersons.message}</p>}
                         </div>
                       </>
                     )}
@@ -431,8 +417,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                         Special Instructions
                       </label>
                       <textarea
-                        value={formData.specialInstructions}
-                        onChange={(e) => setFormData({ ...formData, specialInstructions: e.target.value })}
+                        {...register('specialInstructions')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         rows={2}
                         placeholder="Any special requests..."
@@ -577,7 +562,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                           <div className="text-right">
                             <p className="text-sm opacity-90">{cart.length} Items</p>
                             <p className="text-xs opacity-75">
-                              {formData.orderType === 'dine-in' ? `Table ${formData.tableNumber || 'Not set'}` : formData.orderType}
+                              {orderType === 'dine-in' ? `Table ${tableNumberWatcher || 'Not set'}` : orderType}
                             </p>
                           </div>
                         </div>
