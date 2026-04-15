@@ -270,7 +270,7 @@ export default function MenuManagementPage() {
           Array(6).fill(0).map((_, i) => <MenuItemSkeleton key={i} />)
         ) : (
           menuItems.map((item) => (
-            <div className={`bg-white rounded-xl shadow-sm border overflow-hidden ${
+            <div key={item._id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${
               item.isActive ? 'border-gray-100' : 'border-gray-200 opacity-75'
             }`}
           >

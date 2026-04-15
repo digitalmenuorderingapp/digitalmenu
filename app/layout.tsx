@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Script from 'next/script';
 import LayoutClient from './layout-client';
 import './globals.css';
 import { Bricolage_Grotesque, DM_Sans, Noto_Sans_Devanagari, Noto_Sans_Bengali } from 'next/font/google';
@@ -64,7 +65,7 @@ export default function RootLayout({
           {children}
         </LayoutClient>
         {/* Google Identity Services */}
-        <script src="https://accounts.google.com/gsi/client" async defer></script>
+        <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
       </body>
     </html>
   );

@@ -20,6 +20,9 @@ import { socketService } from '@/services/socket';
 import { playNotificationSound } from '@/utils/notifications';
 import { Order, MenuItem, CartItem } from '@/types/order';
 import { Notification } from '@/types/notification';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { customerInfoSchema, CustomerInfoInput } from '@/lib/validations';
 
 // Encryption key - must match the one used in tables page
 const ENCRYPTION_KEY = 'dm-2026';
@@ -32,13 +35,25 @@ function CustomerPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCustomerInfoModal, setShowCustomerInfoModal] = useState(false);
-  const [customerFormData, setCustomerFormData] = useState({
-    customerName: '',
-    numberOfPersons: 1,
-    customerPhone: ''
-  });
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  
+  const {
+    register: registerInfo,
+    handleSubmit: handleSubmitInfo,
+    setValue: setInfoValue,
+    watch: watchInfo,
+    formState: { errors: infoErrors }
+  } = useForm<CustomerInfoInput>({
+    resolver: zodResolver(customerInfoSchema),
+    defaultValues: {
+      customerName: '',
+      numberOfPersons: 1,
+      customerPhone: ''
+    }
+  });
+
+  const infoData = watchInfo();
 
   const qrParam = searchParams.get('q') || searchParams.get('qr'); // Support both new and old param
   const tableNumber = searchParams.get('table');
@@ -269,7 +284,7 @@ function CustomerPageContent() {
         processedNotifications.add(notification._id);
 
         console.log('[Socket] New notification received:', notification);
-        setNotifications(prev => [notification, ...prev]);
+        setNotifications((prev: Notification[]) => [notification, ...prev]);
         setUnreadNotifications(prev => prev + 1);
 
         // Map notification status to toast message
@@ -613,11 +628,11 @@ function CustomerPageContent() {
                   </label>
                   <input
                     type="text"
-                    value={customerFormData.customerName}
-                    onChange={(e) => setCustomerFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                    {...registerInfo('customerName')}
                     placeholder="Enter your name"
                     className="w-full px-6 py-4.5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 text-sm font-black shadow-inner outline-none transition-all placeholder:text-slate-300"
                   />
+                  {infoErrors.customerName && <p className="text-rose-500 text-[10px] font-bold px-1">{infoErrors.customerName.message}</p>}
                 </div>
 
                 <div className="space-y-4">
@@ -626,16 +641,18 @@ function CustomerPageContent() {
                   </label>
                   <div className="flex items-center space-x-4 bg-slate-50 p-2 rounded-[1.5rem] border border-slate-100 shadow-inner">
                     <button
-                      onClick={() => setCustomerFormData(prev => ({ ...prev, numberOfPersons: Math.max(1, prev.numberOfPersons - 1) }))}
+                      type="button"
+                      onClick={() => setInfoValue('numberOfPersons', Math.max(1, infoData.numberOfPersons - 1))}
                       className="w-14 h-14 rounded-2xl bg-white hover:bg-indigo-50 flex items-center justify-center text-xl font-black text-slate-900 shadow-sm transition-all border border-slate-100"
                     >
                       -
                     </button>
                     <span className="text-2xl font-black text-indigo-600 flex-1 text-center tabular-nums">
-                      {customerFormData.numberOfPersons}
+                      {infoData.numberOfPersons}
                     </span>
                     <button
-                      onClick={() => setCustomerFormData(prev => ({ ...prev, numberOfPersons: prev.numberOfPersons + 1 }))}
+                      type="button"
+                      onClick={() => setInfoValue('numberOfPersons', infoData.numberOfPersons + 1)}
                       className="w-14 h-14 rounded-2xl bg-white hover:bg-indigo-50 flex items-center justify-center text-xl font-black text-slate-900 shadow-sm transition-all border border-slate-100"
                     >
                       +
@@ -649,33 +666,33 @@ function CustomerPageContent() {
                   </label>
                   <input
                     type="tel"
-                    value={customerFormData.customerPhone}
-                    onChange={(e) => setCustomerFormData(prev => ({ ...prev, customerPhone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                    {...registerInfo('customerPhone')}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setInfoValue('customerPhone', val);
+                    }}
                     placeholder="10 digit number"
                     maxLength={10}
                     className="w-full px-6 py-4.5 bg-slate-50 border border-slate-100 rounded-[1.5rem] focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 text-sm font-black shadow-inner outline-none transition-all placeholder:text-slate-300"
                   />
+                  {infoErrors.customerPhone && <p className="text-rose-500 text-[10px] font-bold px-1">{infoErrors.customerPhone.message}</p>}
                 </div>
 
                 <button
-                  onClick={async () => {
-                    if (!customerFormData.customerName.trim()) {
-                      toast.error('Please enter your name');
-                      return;
-                    }
+                  onClick={handleSubmitInfo(async (data) => {
                     updateSession({
-                      customerName: customerFormData.customerName.trim(),
-                      numberOfPersons: customerFormData.numberOfPersons,
-                      mobileNumber: customerFormData.customerPhone || undefined
+                      customerName: data.customerName.trim(),
+                      numberOfPersons: data.numberOfPersons,
+                      mobileNumber: data.customerPhone || undefined
                     });
                     
                     try {
                       if (session.deviceId) {
                         await api.put('/order/device/profile', {
                           deviceId: session.deviceId,
-                          customerName: customerFormData.customerName.trim(),
-                          customerPhone: customerFormData.customerPhone || undefined,
-                          numberOfPersons: customerFormData.numberOfPersons
+                          customerName: data.customerName.trim(),
+                          customerPhone: data.customerPhone || undefined,
+                          numberOfPersons: data.numberOfPersons
                         });
                       }
                     } catch (error) {
@@ -684,8 +701,7 @@ function CustomerPageContent() {
                     
                     setShowCustomerInfoModal(false);
                     toast.success('Ready to explore! 🍽️');
-                  }}
-                  disabled={!customerFormData.customerName.trim()}
+                  })}
                   className="w-full py-5 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.3em] rounded-[1.5rem] shadow-2xl hover:bg-black transition-all active:scale-[0.98] disabled:opacity-30 disabled:grayscale"
                 >
                   Start Experience

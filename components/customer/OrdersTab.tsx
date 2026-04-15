@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
 import { Order, MenuItem } from '@/types/order';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { orderFeedbackSchema, OrderFeedbackInput, paymentVerifySchema, PaymentVerifyInput, cancelOrderSchema, CancelOrderInput } from '@/lib/validations';
 
 
 interface OrdersTabProps {
@@ -22,18 +25,25 @@ interface FeedbackFormProps {
 }
 
 function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
-  const [feedback, setFeedback] = useState('');
-  const [rating, setRating] = useState(5);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!feedback.trim()) {
-      toast.error('Please enter your feedback');
-      return;
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting }
+  } = useForm<OrderFeedbackInput>({
+    resolver: zodResolver(orderFeedbackSchema),
+    defaultValues: {
+      rating: 5,
+      comment: ''
     }
-    setIsSubmitting(true);
-    await onSubmit(orderId, feedback, rating);
-    setIsSubmitting(false);
+  });
+
+  const rating = watch('rating');
+  const comment = watch('comment');
+
+  const onFormSubmit = async (data: OrderFeedbackInput) => {
+    await onSubmit(orderId, data.comment, data.rating);
   };
 
   return (
@@ -45,7 +55,8 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            onClick={() => setRating(star)}
+            type="button"
+            onClick={() => setValue('rating', star)}
             className="focus:outline-none"
           >
             <FaStar
@@ -57,18 +68,19 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
 
       {/* Feedback Text */}
       <textarea
-        value={feedback}
-        onChange={(e) => setFeedback(e.target.value.slice(0, 500))}
+        {...register('comment')}
         placeholder="Share your experience with this order..."
         rows={2}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs resize-none mb-2"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs resize-none mb-1"
       />
+      {errors.comment && <p className="text-rose-500 text-[10px] font-bold mb-1">{errors.comment.message}</p>}
+      
       <p className="text-[10px] text-gray-500 mb-2 text-right">
-        {feedback.length}/500
+        {comment.length}/500
       </p>
 
       <button
-        onClick={handleSubmit}
+        onClick={handleSubmit(onFormSubmit)}
         disabled={isSubmitting}
         className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
       >
@@ -79,32 +91,36 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
 }
 
 function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session: any; onRefresh?: () => void }) {
-  const [utr, setUtr] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [isPending, setIsPending] = useState(order.paymentVerificationRequestbycustomer?.applied || false);
 
-  const handleVerify = async () => {
-    if (!utr || utr.length < 6) {
-      toast.error('Please enter the last 6 digits of your UTR');
-      return;
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting }
+  } = useForm<PaymentVerifyInput>({
+    resolver: zodResolver(paymentVerifySchema),
+    defaultValues: {
+      utr: ''
     }
+  });
 
+  const utr = watch('utr');
+
+  const onFormSubmit = async (data: PaymentVerifyInput) => {
     try {
-      setIsSubmitting(true);
       await api.put(`/order/${order._id}/retry-payment`, {
         paymentMethod: 'ONLINE',
-        utr,
+        utr: data.utr,
         deviceId: session.deviceId
       });
       toast.success('UTR submitted! Verification pending.');
-      setUtr('');
       setIsPending(true);
       if (onRefresh) await onRefresh();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Verification failed');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -174,22 +190,26 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2">
         <div className="relative flex-1">
           <input
             type="text"
-            value={utr}
-            onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            {...register('utr')}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+              setValue('utr', val);
+            }}
             placeholder="000000"
             disabled={isSubmitting}
             className="w-full px-3 py-2 bg-white border-2 border-indigo-50 rounded-lg text-center text-lg font-black font-mono tracking-widest focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
           />
         </div>
+        {errors.utr && <p className="text-rose-500 text-[10px] font-bold text-center">{errors.utr.message}</p>}
       </div>
 
       <button
-        onClick={handleVerify}
-        disabled={isSubmitting || utr.length < 6 || (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
+        onClick={handleSubmit(onFormSubmit)}
+        disabled={isSubmitting || (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
         className="w-full py-2 bg-gray-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-black active:scale-95 transition-all disabled:opacity-50 shadow-lg touch-manipulation"
       >
         {isSubmitting ? (
@@ -207,8 +227,17 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
   const [orderToVerify, setOrderToVerify] = useState<Order | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedOrderIdForCancel, setSelectedOrderIdForCancel] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
-  const [isCancelling, setIsCancelling] = useState(false);
+
+  const {
+    register: registerCancel,
+    handleSubmit: handleSubmitCancel,
+    formState: { isSubmitting: isCancelling }
+  } = useForm<CancelOrderInput>({
+    resolver: zodResolver(cancelOrderSchema),
+    defaultValues: {
+      reason: ''
+    }
+  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -253,7 +282,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
   const submitFeedback = async (orderId: string, feedback: string, rating: number) => {
     try {
-      await api.post(`/order/${orderId}/feedback`, {
+      await api.put(`/order/${orderId}/feedback`, {
         rating,
         comment: feedback
       });
@@ -269,13 +298,12 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
     setCancelModalOpen(true);
   };
 
-  const cancelOrder = async () => {
+  const cancelOrder = async (data: CancelOrderInput) => {
     if (!selectedOrderIdForCancel) return;
     
-    setIsCancelling(true);
     try {
       await api.put(`/order/${selectedOrderIdForCancel}/cancel`, {
-        reason: cancelReason,
+        reason: data.reason,
         deviceId: session.deviceId
       });
       toast.success('Order cancelled successfully');
@@ -283,8 +311,6 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
       await onRefresh();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
-    } finally {
-      setIsCancelling(false);
     }
   };
 
@@ -598,8 +624,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Optional Feedback</label>
                    <textarea
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
+                    {...registerCancel('reason')}
                     placeholder="Why are you cancelling? (Optional)"
                     rows={3}
                     className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-rose-50 focus:border-rose-200 text-sm font-medium resize-none shadow-inner"
@@ -607,8 +632,8 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                 </div>
                 
                 <div className="flex gap-4">
-                  <button onClick={() => setCancelModalOpen(false)} className="flex-1 py-4 glass text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-50 active:scale-95 transition-all">Keep It</button>
-                  <button onClick={cancelOrder} className="flex-1 py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-slate-200 active:scale-[0.98] transition-all">Cancel It</button>
+                  <button type="button" onClick={() => setCancelModalOpen(false)} className="flex-1 py-4 glass text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-50 active:scale-95 transition-all">Keep It</button>
+                  <button onClick={handleSubmitCancel(cancelOrder)} className="flex-1 py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-slate-200 active:scale-[0.98] transition-all">Cancel It</button>
                 </div>
               </div>
             </motion.div>

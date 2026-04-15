@@ -4,6 +4,9 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { FaPlus, FaMinus, FaTrash, FaShoppingCart, FaMoneyBillWave, FaCreditCard } from 'react-icons/fa';
 import { MenuItem, CartItem } from '@/types/order';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { cartInstructionsSchema, CartInstructionsInput } from '@/lib/validations';
 
 
 interface CartTabProps {
@@ -23,8 +26,21 @@ export default function CartTab({
   session,
   onPlaceOrder
 }: CartTabProps) {
-  const [specialInstructions, setSpecialInstructions] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { isSubmitting }
+  } = useForm<CartInstructionsInput>({
+    resolver: zodResolver(cartInstructionsSchema),
+    defaultValues: {
+      specialInstructions: ''
+    }
+  });
+
+  const specialInstructions = watch('specialInstructions');
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => {
@@ -33,11 +49,9 @@ export default function CartTab({
     }, 0);
   };
 
-  const handlePlaceOrder = async () => {
-    setIsSubmitting(true);
-    await onPlaceOrder('CASH', '', specialInstructions);
-    setIsSubmitting(false);
-    setSpecialInstructions('');
+  const onFormSubmit = async (data: CartInstructionsInput) => {
+    await onPlaceOrder('CASH', '', data.specialInstructions);
+    reset();
   };
 
   if (cart.length === 0) {
@@ -171,8 +185,7 @@ export default function CartTab({
             Special Instructions
           </label>
           <textarea
-            value={specialInstructions}
-            onChange={(e) => setSpecialInstructions(e.target.value.slice(0, 500))}
+            {...register('specialInstructions')}
             placeholder="Add a note (e.g., less spicy, no onions)..."
             rows={2}
             className="w-full px-3 py-2 bg-white/50 border border-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-50 focus:border-indigo-500 text-xs font-medium resize-none shadow-inner"
@@ -190,7 +203,7 @@ export default function CartTab({
         </div>
 
         <button
-          onClick={handlePlaceOrder}
+          onClick={handleSubmit(onFormSubmit)}
           disabled={isSubmitting}
           className="w-full bg-slate-900 text-white py-3 rounded-lg text-xs font-black uppercase tracking-[0.3em] hover:bg-black transition-all shadow-2xl active:scale-[0.98] disabled:opacity-50 group relative overflow-hidden"
         >

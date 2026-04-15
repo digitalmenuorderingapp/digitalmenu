@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginInput } from '@/lib/validations';
+import { getAdminDeviceInfo } from '@/utils/device';
 
 function AuthPageContent() {
 
@@ -55,7 +56,6 @@ function AuthPageContent() {
                         if (response.code) {
                             setIsGoogleLoading(true);
                             try {
-                                const { getAdminDeviceInfo } = require('@/utils/device');
                                 const deviceInfo = getAdminDeviceInfo();
                                 await googleSignIn(response.code, deviceInfo.deviceId, deviceInfo.deviceName);
                                 router.push('/admin/dashboard');
@@ -110,7 +110,24 @@ function AuthPageContent() {
 
             {/* Main Card - Single Centered Layout */}
             <div className="relative z-10 w-full max-w-max">
-                <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border border-white/20">
+                <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border border-white/20 relative overflow-hidden">
+                    {/* Full Card Loading Overlay */}
+                    <AnimatePresence>
+                        {(isLoading || isGoogleLoading) && (
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 z-[100] bg-white/70 backdrop-blur-md flex flex-col items-center justify-center rounded-3xl"
+                            >
+                                <FaSpinner className="text-4xl text-indigo-600 animate-spin mb-3 drop-shadow-md" />
+                                <p className="text-indigo-900 font-black text-xs tracking-widest uppercase shadow-white drop-shadow-sm">
+                                    {isGoogleLoading ? 'Connecting...' : 'Signing in...'}
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* Logo & Header */}
                     <div className="text-center mb-6">
                         <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-3">

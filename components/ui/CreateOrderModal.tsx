@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/services/swr';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,605 +8,401 @@ import api from '@/services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import {
-  FaTimes,
-  FaPlus,
-  FaMinus,
-  FaTrash,
-  FaUtensils,
-  FaUser,
-  FaPhone,
-  FaHashtag,
-  FaChair,
-  FaShoppingBag,
-  FaTruck,
-  FaCommentDots,
-  FaUsers
+    FaTimes, FaPlus, FaMinus, FaTrash, FaUtensils, FaUser, FaPhone,
+    FaHashtag, FaChair, FaShoppingBag, FaUsers, FaSearch, FaChevronRight,
+    FaRegClipboard, FaCheckCircle, FaSpinner
 } from 'react-icons/fa';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createOrderSchema, CreateOrderInput } from '@/lib/validations';
 
 interface MenuItem {
-  _id: string;
-  name: string;
-  price: number;
-  offerPrice?: number;
-  category: string;
-  foodType?: string;
-  description?: string;
-  ingredients?: string;
-  preparationMethod?: string;
-  images?: string[];
-  image?: string;
-  isActive: boolean;
+    _id: string;
+    name: string;
+    price: number;
+    offerPrice?: number;
+    category: string;
+    foodType?: string;
+    description?: string;
+    images?: string[];
+    image?: string;
+    isActive: boolean;
 }
 
 interface CartItem extends MenuItem {
-  quantity: number;
+    quantity: number;
 }
 
 interface CreateOrderModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onOrderCreated: () => void;
+    isOpen: boolean;
+    onClose: () => void;
+    onOrderCreated: () => void;
 }
 
 export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrderModalProps) {
-  const { user } = useAuth();
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user } = useAuth();
+    const [cart, setCart] = useState<CartItem[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
+    const [mobileView, setMobileView] = useState<'menu' | 'cart'>('menu');
+    const [isMobile, setIsMobile] = useState(false);
 
-  // Form state
-  const {
-    register,
-    handleSubmit: handleFormSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors }
-  } = useForm<CreateOrderInput>({
-    resolver: zodResolver(createOrderSchema),
-    defaultValues: {
-      customerName: '',
-      customerPhone: '',
-      tableNumber: undefined,
-      numberOfPersons: 1,
-      orderType: 'dine-in',
-      specialInstructions: ''
-    }
-  });
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
-  const orderType = watch('orderType');
-  const tableNumberWatcher = watch('tableNumber');
-
-  const restaurantId = user?.id || user?._id;
-  const { data: menuData, isLoading } = useSWR<{ data: MenuItem[] }>(
-    isOpen && restaurantId ? `/menu/${restaurantId}` : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      shouldRetryOnError: false,
-    }
-  );
-
-  const menuItems = menuData?.data?.filter((item: MenuItem) => item.isActive) || [];
-
-  const addToCart = (item: MenuItem) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem => cartItem._id === item._id);
-      if (existingItem) {
-        return prevCart.map(cartItem =>
-          cartItem._id === item._id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        );
-      }
-      return [...prevCart, { ...item, quantity: 1 }];
-    });
-  };
-
-  const updateQuantity = (itemId: string, change: number) => {
-    setCart(prevCart => {
-      return prevCart.map(item => {
-        if (item._id === itemId) {
-          const newQuantity = item.quantity + change;
-          return newQuantity > 0 ? { ...item, quantity: newQuantity } : null;
+    // Form state
+    const {
+        register,
+        handleSubmit: handleFormSubmit,
+        setValue,
+        watch,
+        reset,
+        formState: { errors }
+    } = useForm<any>({
+        resolver: zodResolver(createOrderSchema),
+        defaultValues: {
+            customerName: '',
+            customerPhone: '',
+            tableNumber: undefined,
+            numberOfPersons: 1,
+            orderType: 'dine-in',
+            specialInstructions: ''
         }
-        return item;
-      }).filter(Boolean) as CartItem[];
     });
-  };
 
-  const removeFromCart = (itemId: string) => {
-    setCart(prevCart => prevCart.filter(item => item._id !== itemId));
-  };
+    const orderType = watch('orderType');
+    const restaurantId = user?._id || user?.id;
 
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => {
-      const price = item.offerPrice || item.price;
-      return total + (price * item.quantity);
-    }, 0);
-  };
+    const { data: menuData, isLoading: isMenuLoading } = useSWR<{ data: MenuItem[] }>(
+        isOpen && restaurantId ? `/menu/${restaurantId}` : null,
+        fetcher,
+        { revalidateOnFocus: false, shouldRetryOnError: false }
+    );
 
-  const onSubmit = async (data: CreateOrderInput) => {
-    if (cart.length === 0) {
-      toast.error('Please add items to the order');
-      return;
-    }
+    const menuItems = useMemo(() => {
+        return menuData?.data?.filter(item => item.isActive) || [];
+    }, [menuData]);
 
-    try {
-      setIsSubmitting(true);
-      
-      const orderData = {
-        ...data,
-        tableNumber: data.orderType === 'dine-in' ? Number(data.tableNumber) : undefined,
-        numberOfPersons: data.orderType === 'dine-in' ? Number(data.numberOfPersons) : undefined,
-        items: cart.map(item => ({
-          itemId: item._id,
-          name: item.name,
-          price: item.offerPrice || item.price,
-          quantity: item.quantity,
-          offerPrice: item.offerPrice
-        })),
-        totalAmount: calculateTotal(),
-        deviceId: 'counter-order',
-        sessionId: `counter-${Date.now()}`,
-        status: 'PLACED'
-      };
+    const categories = useMemo(() => {
+        const cats = ['All', ...new Set(menuItems.map(item => item.category || 'Other'))];
+        return cats;
+    }, [menuItems]);
 
-      await api.post('/order/create-admin', orderData);
-      toast.success('Order created successfully!');
-      
-      // Reset form
-      setCart([]);
-      reset();
-      
-      onOrderCreated();
-      onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create order');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    const filteredItems = useMemo(() => {
+        return menuItems.filter(item => {
+            const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+            return matchesSearch && matchesCategory;
+        });
+    }, [menuItems, searchQuery, selectedCategory]);
 
-  const groupedItems = menuItems.reduce((acc, item) => {
-    const category = item.category || 'Other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(item);
-    return acc;
-  }, {} as Record<string, MenuItem[]>);
+    const addToCart = (item: MenuItem) => {
+        setCart(prev => {
+            const existing = prev.find(i => i._id === item._id);
+            if (existing) {
+                return prev.map(i => i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i);
+            }
+            return [...prev, { ...item, quantity: 1 }];
+        });
+        toast.success(`Added ${item.name}`, { icon: '🛒', duration: 1000 });
+    };
 
+    const updateQuantity = (id: string, delta: number) => {
+        setCart(prev => prev.map(item => {
+            if (item._id === id) {
+                const newQty = Math.max(0, item.quantity + delta);
+                return newQty === 0 ? null : { ...item, quantity: newQty };
+            }
+            return item;
+        }).filter(Boolean) as CartItem[]);
+    };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-2xl w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
-              <div className="flex items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <FaUtensils className="text-xl sm:text-2xl" />
-                  <h2 className="text-lg sm:text-2xl font-bold">Create Counter Order</h2>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors shrink-0"
-                >
-                  <FaTimes className="text-xl" />
-                </button>
-              </div>
-            </div>
+    const calculateTotal = () => {
+        return cart.reduce((acc, item) => acc + (item.offerPrice || item.price) * item.quantity, 0);
+    };
 
-            <form onSubmit={handleFormSubmit(onSubmit)} className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden" style={{ minHeight: 0 }}>
-              {/* Left Side - Menu Items */}
-              <div className="flex-none lg:flex-1 lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50">
-                <div className="p-4 sm:p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <FaUtensils className="text-indigo-600" />
-                    Menu Items
-                  </h3>
-                  
-                  {isLoading ? (
-                    <div className="flex items-center justify-center h-64">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    </div>
-                  ) : menuItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                      <FaUtensils className="text-4xl mb-4 text-gray-300" />
-                      <p className="text-lg font-medium">No menu items available</p>
-                      <p className="text-sm mt-2">Please add active menu items to your restaurant menu</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {Object.entries(groupedItems).map(([category, items]) => (
-                        <div key={category}>
-                          <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                            {category}
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {items.map(item => {
-                              const price = item.offerPrice || item.price;
-                              const hasDiscount = item.offerPrice && item.offerPrice < item.price;
-                              
-                              return (
-                                <div
-                                  key={item._id}
-                                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-400 hover:scale-[1.02] transition-all duration-200 cursor-pointer group"
-                                  onClick={() => addToCart(item)}
-                                >
-                                  <div className="relative">
-                                    {(item.images?.length || 0) > 0 || item.image ? (
-                                      <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
-                                        <img
-                                          src={item.images?.[0] || item.image || ''}
-                                          alt={item.name}
-                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                          onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                          }}
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                                        <FaUtensils className="text-4xl text-gray-300" />
-                                      </div>
-                                    )}
-                                    {hasDiscount && (
-                                      <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center justify-center">
-                                        {Math.round((1 - item.offerPrice! / item.price) * 100)}% OFF
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="p-4">
-                                    <h5 className="font-semibold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">
-                                      {item.name}
-                                    </h5>
-                                    {item.description && (
-                                      <p className="text-xs text-gray-500 mb-3 line-clamp-2">{item.description}</p>
-                                    )}
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-lg font-bold text-indigo-600">₹{price}</span>
-                                        {hasDiscount && (
-                                          <span className="text-sm text-gray-400 line-through">₹{item.price}</span>
-                                        )}
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          addToCart(item);
-                                        }}
-                                        className="w-8 h-8 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center shadow-md hover:shadow-lg"
-                                      >
-                                        <FaPlus className="text-xs" />
-                                      </button>
+    const onSubmit = async (values: any) => {
+        const data = values as CreateOrderInput;
+        if (cart.length === 0) return;
+        if (!restaurantId) {
+            toast.error('Session expired. Please refresh.');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const orderData: any = {
+                customerName: data.customerName,
+                customerPhone: data.customerPhone || '',
+                orderType: data.orderType,
+                specialInstructions: data.specialInstructions || '',
+                items: cart.map(i => ({
+                    itemId: i._id,
+                    name: i.name,
+                    price: Number(i.offerPrice || i.price),
+                    quantity: Number(i.quantity)
+                })),
+                totalAmount: Number(calculateTotal()),
+                deviceId: 'counter-order',
+                sessionId: `counter-${Date.now()}`,
+                status: 'PLACED',
+                restaurantId: restaurantId
+            };
+
+            if (data.orderType === 'dine-in') {
+                if (data.tableNumber) orderData.tableNumber = Number(data.tableNumber);
+                if (data.numberOfPersons) orderData.numberOfPersons = Number(data.numberOfPersons);
+            }
+
+            console.log('[CreateOrder] Payload:', orderData);
+            await api.post('/order/create-admin', orderData);
+            toast.success('Order created successfully!');
+            setCart([]);
+            reset();
+            onOrderCreated();
+            onClose();
+        } catch (error: any) {
+            const serverMsg = error.response?.data?.message || error.response?.data?.errors?.[0]?.message;
+            toast.error(serverMsg || 'Failed to create order');
+            console.error('[CreateOrder] API Error:', error.response?.data);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Add this to debug validation blocking
+    const onInternalFormError = (errs: any) => {
+        console.warn('[CreateOrder] Validation Bloacker:', errs);
+        const firstErrorKey = Object.keys(errs)[0];
+        if (firstErrorKey) {
+            toast.error(`Validation failed: ${errs[firstErrorKey].message || firstErrorKey}`);
+        }
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm lg:p-4 lg:items-center lg:justify-center">
+                    {/* Background Overlay for Tablet/Desktop */}
+                    <div className="hidden lg:block absolute inset-0 -z-10" onClick={onClose} />
+
+                    <motion.div
+                        initial={{ opacity: 0, y: '100dvh' }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: '100dvh' }}
+                        className="flex-1 w-full lg:max-w-[1200px] lg:h-[90vh] lg:flex-none lg:rounded-[2.5rem] bg-white shadow-2xl flex flex-col overflow-hidden"
+                    >
+                        {/* Header Section */}
+                        <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-indigo-800 p-4 lg:p-6 flex items-center justify-between text-white shrink-0 shadow-lg z-20">
+                            <div className="flex items-center gap-3 lg:gap-4">
+                                <div className="p-2 lg:p-3 bg-white/10 rounded-xl lg:rounded-2xl backdrop-blur-xl border border-white/10">
+                                    <FaShoppingBag className="text-xl lg:text-2xl text-indigo-300" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg lg:text-2xl font-black tracking-tight uppercase italic">Digital Counter</h2>
+                                    <p className="text-indigo-200/60 text-[9px] lg:text-xs font-bold uppercase tracking-widest px-1">Order Management System</p>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-all hover:scale-110 active:scale-90">
+                                <FaTimes className="text-xl lg:text-2xl" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleFormSubmit(onSubmit, onInternalFormError)} className="flex-1 flex overflow-hidden lg:flex-row relative">
+                            {/* Desktop: Show Both | Mobile: Show Active Only */}
+                            {(!isMobile || mobileView === 'menu') && (
+                                <div className="flex-[1.8] flex flex-col bg-slate-50 border-r border-slate-200/60 min-w-0 h-full">
+                                    {/* Filters & Search */}
+                                    <div className="p-3 lg:p-5 space-y-3 lg:space-y-4 border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0">
+                                        <div className="relative group">
+                                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search menu..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full pl-10 lg:pl-12 pr-4 py-2 lg:py-3 bg-slate-100/50 border-2 border-transparent focus:border-indigo-500/30 rounded-xl lg:rounded-2xl outline-none text-xs lg:text-sm font-medium"
+                                            />
+                                        </div>
+                                        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                            {categories.map(cat => (
+                                                <button
+                                                    key={cat}
+                                                    type="button"
+                                                    onClick={() => setSelectedCategory(cat)}
+                                                    className={`px-4 py-1.5 rounded-lg text-[10px] lg:text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'
+                                                        }`}
+                                                >
+                                                    {cat}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                  </div>
+
+                                    {/* Items List */}
+                                    <div className="flex-1 overflow-y-auto p-3 lg:p-4 pb-20 lg:pb-4">
+                                        {isMenuLoading ? (
+                                            <div className="h-full flex items-center justify-center"><FaSpinner className="animate-spin text-2xl" /></div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-4 font-inter">
+                                                {filteredItems.map(item => (
+                                                    <div key={item._id} onClick={() => addToCart(item)} className="bg-white p-2 lg:p-4 rounded-xl lg:rounded-2xl border border-slate-100 hover:border-indigo-200 shadow-sm cursor-pointer flex flex-col gap-2 transition-all active:scale-95">
+                                                        <div className="w-full aspect-square bg-slate-50 rounded-lg overflow-hidden border border-slate-50">
+                                                            {(item.image || (item.images && item.images[0])) ? <img src={item.image || item.images![0]} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><FaUtensils className="text-slate-200" /></div>}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-slate-800 text-[11px] lg:text-sm truncate">{item.name}</h4>
+                                                            <p className="text-indigo-600 font-extrabold text-[12px] lg:text-base">₹{item.offerPrice || item.price}</p>
+                                                        </div>
+                                                        <button type="button" className="w-full py-1.5 bg-slate-50 text-indigo-600 rounded-lg text-[9px] font-bold uppercase tracking-wider">Add +</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+                            )}
 
-              {/* Right Side - Order Details */}
-              <div className="w-full lg:w-[420px] flex flex-col bg-white flex-none shrink-0 lg:shrink-none">
-                {/* Scrollable Content Area */}
-                <div className="flex-1 lg:overflow-y-auto">
-                  {/* Customer Details */}
-                  <div className="p-6 border-b border-gray-200 bg-gradient-to-b from-white to-gray-50">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <FaUser className="text-indigo-600" />
-                    Customer Details
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
-                        <FaUser className="text-xs text-gray-400" />
-                        Customer Name *
-                      </label>
-                      <input
-                        type="text"
-                        {...register('customerName')}
-                        className={`w-full px-4 py-3 border ${errors.customerName ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all`}
-                        placeholder="Enter customer name"
-                      />
-                      {errors.customerName && <p className="text-red-500 text-xs mt-1">{errors.customerName.message}</p>}
-                    </div>
+                            {/* Cart / Checkout Section */}
+                            {(!isMobile || mobileView === 'cart') && (
+                                <div className="flex-1 lg:max-w-[400px] flex flex-col bg-white h-full relative z-10">
+                                    {/* Header */}
+                                    <div className="p-4 lg:p-5 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-20">
+                                        <h3 className="font-black text-slate-800 text-base lg:text-lg tracking-tight">Checkout Details</h3>
+                                        <div className="flex items-center gap-2">
+                                            <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[10px] font-black">{cart.length} ITEMS</span>
+                                            {cart.length > 0 && <button type="button" onClick={() => setCart([])} className="text-rose-500 p-1"><FaTrash size={12} /></button>}
+                                        </div>
+                                    </div>
 
-                    <div>
-                      <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
-                        <FaPhone className="text-xs text-gray-400" />
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        {...register('customerPhone')}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        placeholder="Enter phone number"
-                      />
-                    </div>
+                                    {/* Content (Scrolls) */}
+                                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-100 flex flex-col">
+                                        {/* Cart Items */}
+                                        <div className="p-4 lg:p-6 space-y-4">
+                                            {cart.length > 0 ? (
+                                                cart.map(item => (
+                                                    <div key={item._id} className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex-shrink-0">
+                                                            {(item.image || (item.images && item.images[0])) ? <img src={item.image || item.images![0]} alt="" className="w-full h-full object-cover rounded-lg" /> : <FaUtensils className="p-3 text-slate-200" />}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-xs font-bold text-slate-800 truncate">{item.name}</p>
+                                                            <p className="text-[10px] font-bold text-indigo-600">₹{(item.offerPrice || item.price) * item.quantity}</p>
+                                                        </div>
+                                                        <div className="flex items-center bg-slate-50 rounded-lg p-1 border">
+                                                            <button type="button" onClick={() => updateQuantity(item._id, -1)} className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-xs"><FaMinus size={8} /></button>
+                                                            <span className="w-6 text-center text-xs font-black">{item.quantity}</span>
+                                                            <button type="button" onClick={() => updateQuantity(item._id, 1)} className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-xs"><FaPlus size={8} /></button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center py-10 opacity-40">
+                                                    <FaShoppingBag className="text-3xl mb-2" />
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest">No items selected</p>
+                                                </div>
+                                            )}
+                                        </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-800 mb-3">Order Type</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setValue('orderType', 'dine-in')}
-                          className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                            orderType === 'dine-in'
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg transform scale-105'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:shadow-md'
-                          }`}
-                        >
-                          <FaChair className="mx-auto mb-1" />
-                          <span className="text-xs font-semibold">Dine In</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setValue('orderType', 'takeaway')}
-                          className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                            orderType === 'takeaway'
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg transform scale-105'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:shadow-md'
-                          }`}
-                        >
-                          <FaShoppingBag className="mx-auto mb-1" />
-                          <span className="text-xs font-semibold">Takeaway</span>
-                        </button>
-                      </div>
-                    </div>
+                                        {/* Form Details */}
+                                        <div className="mt-auto p-4 lg:p-6 border-t border-slate-100 bg-slate-50/50 space-y-4 pb-24">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1">
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase">Customer Name *</label>
+                                                    <input type="text" {...register('customerName')} placeholder="Full Name" className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 outline-none" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase">Phone Number</label>
+                                                    <input
+                                                        type="text"
+                                                        {...register('customerPhone')}
+                                                        placeholder="10-digit number"
+                                                        maxLength={10}
+                                                        className={`w-full px-3 py-2 text-xs border ${errors.customerPhone ? 'border-rose-500 bg-rose-50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-indigo-100 outline-none transition-all`}
+                                                    />
+                                                    {errors.customerPhone && <p className="text-[8px] font-bold text-rose-500 pl-1">Exactly 10 digits required</p>}
+                                                </div>
+                                            </div>
 
-                    {orderType === 'dine-in' && (
-                      <>
-                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-                          <label className="text-sm font-semibold text-indigo-900 mb-2 flex items-center gap-2">
-                            <FaHashtag className="text-indigo-600" />
-                            Table Number *
-                          </label>
-                          <input
-                            type="number"
-                            {...register('tableNumber', { valueAsNumber: true })}
-                            className={`w-full px-3 py-2 border ${errors.tableNumber ? 'border-red-500' : 'border-indigo-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white`}
-                            placeholder="Enter table number"
-                          />
-                          {errors.tableNumber && <p className="text-red-500 text-[10px] mt-1">{errors.tableNumber.message}</p>}
-                        </div>
+                                            <div className="flex gap-2">
+                                                {(['dine-in', 'takeaway'] as const).map(type => (
+                                                    <button
+                                                        key={type}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setValue('orderType', type);
+                                                            if (type !== 'dine-in') {
+                                                                setValue('tableNumber', undefined);
+                                                                setValue('numberOfPersons', 1);
+                                                            }
+                                                        }}
+                                                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2 border-2 ${orderType === type ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-500'}`}
+                                                    >
+                                                        {type === 'dine-in' ? <FaChair /> : <FaShoppingBag />} {type}
+                                                    </button>
+                                                ))}
+                                            </div>
 
-                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-                          <label className="text-sm font-semibold text-indigo-900 mb-2 flex items-center gap-2">
-                            <FaUsers className="text-indigo-600" />
-                            Number of Persons *
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="20"
-                            {...register('numberOfPersons', { valueAsNumber: true })}
-                            className={`w-full px-3 py-2 border ${errors.numberOfPersons ? 'border-red-500' : 'border-indigo-300'} rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white`}
-                            placeholder="Number of guests"
-                          />
-                          {errors.numberOfPersons && <p className="text-red-500 text-[10px] mt-1">{errors.numberOfPersons.message}</p>}
-                        </div>
-                      </>
-                    )}
+                                            {orderType === 'dine-in' && (
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase">Table No *</label>
+                                                        <input type="number" {...register('tableNumber', { valueAsNumber: true })} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase">Persons *</label>
+                                                        <input type="number" {...register('numberOfPersons', { valueAsNumber: true })} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl" />
+                                                    </div>
+                                                </div>
+                                            )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Special Instructions
-                      </label>
-                      <textarea
-                        {...register('specialInstructions')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        rows={2}
-                        placeholder="Any special requests..."
-                      />
-                    </div>
-                  </div>
-                </div>
+                                            <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase">Final Total</span>
+                                                <span className="text-xl font-black text-slate-800 tracking-tighter">₹{calculateTotal()}</span>
+                                            </div>
 
-                {/* Cart Summary - Always Visible */}
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 border-t border-indigo-100 flex-shrink-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <FaShoppingBag className="text-indigo-600" />
-                      Order Summary
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                        {cart.length} {cart.length === 1 ? 'Item' : 'Items'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {cart.length === 0 ? (
-                    <div className="text-center py-4">
-                      <p className="text-gray-500 text-sm">No items added yet</p>
-                      <p className="text-xs text-gray-400 mt-1">Add items from the menu to get started</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {cart.slice(0, 3).map(item => {
-                        const price = item.offerPrice || item.price;
-                        const itemTotal = price * item.quantity;
-                        return (
-                          <div key={item._id} className="flex justify-between items-center text-sm">
-                            <div className="flex-1">
-                              <span className="font-medium text-gray-700">{item.name}</span>
-                              <span className="text-gray-500 ml-2">×{item.quantity}</span>
-                            </div>
-                            <span className="font-medium text-gray-900">₹{itemTotal.toFixed(2)}</span>
-                          </div>
-                        );
-                      })}
-                      
-                      {cart.length > 3 && (
-                        <p className="text-xs text-gray-500 text-center">+{cart.length - 3} more items</p>
-                      )}
-                      
-                      <div className="pt-3 border-t border-indigo-200 mt-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-900">Total Amount:</span>
-                          <span className="text-xl font-bold text-indigo-600">₹{calculateTotal().toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Cart Details */}
-                <div className="p-6 bg-gray-50">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Order Details</h3>
-                    {cart.length > 0 && (
-                      <span className="text-sm text-gray-500">
-                        Click items to modify quantity
-                      </span>
-                    )}
-                  </div>
-                  
-                  {cart.length === 0 ? (
-                    <div className="text-center py-8">
-                      <FaUtensils className="text-4xl text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 font-medium">Your cart is empty</p>
-                      <p className="text-sm text-gray-400 mt-2">Browse menu items and add them to your order</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {cart.map(item => {
-                        const price = item.offerPrice || item.price;
-                        const itemTotal = price * item.quantity;
-                        const hasDiscount = item.offerPrice && item.offerPrice < item.price;
-                        
-                        return (
-                          <div key={item._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h5 className="font-semibold text-gray-900">{item.name}</h5>
-                                  {hasDiscount && (
-                                    <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full flex items-center justify-center">
-                                      {Math.round((1 - item.offerPrice! / item.price) * 100)}% OFF
-                                    </span>
-                                  )}
+                                            <button
+                                                type="submit"
+                                                disabled={isSubmitting || cart.length === 0}
+                                                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                {isSubmitting ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
+                                                {isSubmitting ? 'Processing...' : 'Place Counter Order'}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                
-                                <div className="flex items-center gap-4 text-sm text-gray-600">
-                                  <span>₹{price} × {item.quantity}</span>
-                                  <span className="font-semibold text-gray-900">= ₹{itemTotal.toFixed(2)}</span>
-                                </div>
-                                
-                                {item.description && (
-                                  <p className="text-xs text-gray-500 mt-2 line-clamp-2">{item.description}</p>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-1 ml-4">
-                                <button
-                                  type="button"
-                                  onClick={() => updateQuantity(item._id, -1)}
-                                  className="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center"
-                                  disabled={item.quantity <= 1}
-                                >
-                                  <FaMinus className="text-xs" />
-                                </button>
-                                <span className="w-10 text-center font-bold text-gray-900">{item.quantity}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => updateQuantity(item._id, 1)}
-                                  className="w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors flex items-center justify-center"
-                                >
-                                  <FaPlus className="text-xs" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => removeFromCart(item._id)}
-                                  className="w-8 h-8 rounded-lg bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center justify-center ml-2"
-                                >
-                                  <FaTrash className="text-xs" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      
-                      {/* Order Total Summary */}
-                      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg p-4 mt-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm opacity-90">Order Total</p>
-                            <p className="text-2xl font-bold">₹{calculateTotal().toFixed(2)}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm opacity-90">{cart.length} Items</p>
-                            <p className="text-xs opacity-75">
-                              {orderType === 'dine-in' ? `Table ${tableNumberWatcher || 'Not set'}` : orderType}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-                {/* End of scrollable content */}
+                            )}
 
-                {/* Actions */}
-                <div className="p-6 border-t border-gray-200 bg-white flex-shrink-0">
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold"
-                    >
-                      Cancel Order
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || cart.length === 0}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                    >
-                      {isSubmitting ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Creating Order...
-                        </span>
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          <FaPlus />
-                          Create Order
-                        </span>
-                      )}
-                    </button>
-                  </div>
+                            {/* Mobile NavBar (Bottom) */}
+                            {isMobile && (
+                                <div className="absolute bottom-0 inset-x-0 bg-white border-t border-slate-100 p-2.5 flex gap-2.5 z-50">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileView('menu')}
+                                        className={`flex-1 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${mobileView === 'menu' ? 'bg-slate-900 text-white shadow-xl' : 'bg-slate-100 text-slate-500'}`}
+                                    >
+                                        <FaUtensils /> Select Items
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileView('cart')}
+                                        className={`flex-1 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all relative ${mobileView === 'cart' ? 'bg-slate-900 text-white shadow-xl' : 'bg-slate-100 text-slate-500'}`}
+                                    >
+                                        <FaShoppingBag /> {cart.length > 0 ? `Checkout (₹${calculateTotal()})` : 'Checkout'}
+                                        {cart.length > 0 && <span className="absolute -top-1 -right-1 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] border-2 border-white">{cart.length}</span>}
+                                    </button>
+                                </div>
+                            )}
+                        </form>
+                    </motion.div>
                 </div>
-              </div>
-            </form>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+            )}
+        </AnimatePresence>
+    );
 }

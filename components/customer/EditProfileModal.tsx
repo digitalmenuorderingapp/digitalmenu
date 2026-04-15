@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUser, FaPhone, FaTimes, FaPlus, FaMinus, FaArrowRight } from 'react-icons/fa';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { customerInfoSchema, CustomerInfoInput } from '@/lib/validations';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -21,22 +24,38 @@ export default function EditProfileModal({
   numberOfPersons,
   onSave
 }: EditProfileModalProps) {
-  const [editName, setEditName] = useState(customerName);
-  const [editMobile, setEditMobile] = useState(mobileNumber);
-  const [editPersons, setEditPersons] = useState(numberOfPersons);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors }
+  } = useForm<CustomerInfoInput>({
+    resolver: zodResolver(customerInfoSchema),
+    defaultValues: {
+      customerName,
+      customerPhone: mobileNumber,
+      numberOfPersons
+    }
+  });
 
-  // Update local state when props change
+  const formData = watch();
+
+  // Update form when props change
   useEffect(() => {
-    setEditName(customerName);
-    setEditMobile(mobileNumber);
-    setEditPersons(numberOfPersons);
-  }, [customerName, mobileNumber, numberOfPersons]);
+    reset({
+      customerName,
+      customerPhone: mobileNumber,
+      numberOfPersons
+    });
+  }, [customerName, mobileNumber, numberOfPersons, reset]);
 
-  const handleSave = () => {
+  const onSubmit = (data: CustomerInfoInput) => {
     onSave({
-      customerName: editName,
-      mobileNumber: editMobile,
-      numberOfPersons: editPersons
+      customerName: data.customerName,
+      mobileNumber: data.customerPhone || '',
+      numberOfPersons: data.numberOfPersons
     });
     onClose();
   };
@@ -84,11 +103,11 @@ export default function EditProfileModal({
                   </div>
                   <input
                     type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
+                    {...register('customerName')}
                     placeholder="Enter your name"
                     className="w-full bg-slate-800/50 border-2 border-slate-700/50 rounded-2xl pl-14 pr-5 py-4 focus:border-indigo-500 focus:bg-slate-800 outline-none transition-all font-medium text-lg text-white placeholder:text-slate-500"
                   />
+                  {errors.customerName && <p className="text-rose-500 text-xs mt-1 ml-1 font-bold">{errors.customerName.message}</p>}
                 </div>
               </div>
 
@@ -97,17 +116,19 @@ export default function EditProfileModal({
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Group Size *</label>
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => setEditPersons(Math.max(1, editPersons - 1))}
+                    type="button"
+                    onClick={() => setValue('numberOfPersons', Math.max(1, formData.numberOfPersons - 1))}
                     className="w-14 h-14 bg-slate-800/50 border-2 border-slate-700/50 rounded-2xl flex items-center justify-center text-white hover:bg-slate-700 hover:border-slate-600 transition-all active:scale-95"
                   >
                     <FaMinus className="w-5 h-5" />
                   </button>
                   <div className="flex-1 text-center bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 rounded-2xl py-4">
-                    <span className="text-3xl font-black text-white">{editPersons}</span>
+                    <span className="text-3xl font-black text-white">{formData.numberOfPersons}</span>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Guests</p>
                   </div>
                   <button
-                    onClick={() => setEditPersons(Math.min(8, editPersons + 1))}
+                    type="button"
+                    onClick={() => setValue('numberOfPersons', Math.min(8, formData.numberOfPersons + 1))}
                     className="w-14 h-14 bg-slate-800/50 border-2 border-slate-700/50 rounded-2xl flex items-center justify-center text-white hover:bg-slate-700 hover:border-slate-600 transition-all active:scale-95"
                   >
                     <FaPlus className="w-5 h-5" />
@@ -124,19 +145,23 @@ export default function EditProfileModal({
                   </div>
                   <input
                     type="tel"
-                    value={editMobile}
-                    onChange={(e) => setEditMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    {...register('customerPhone')}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setValue('customerPhone', val);
+                    }}
                     placeholder="10 digit number"
                     maxLength={10}
                     className="w-full bg-slate-800/50 border-2 border-slate-700/50 rounded-2xl pl-14 pr-5 py-4 focus:border-indigo-500 focus:bg-slate-800 outline-none transition-all font-medium text-lg text-white placeholder:text-slate-500"
                   />
+                  {errors.customerPhone && <p className="text-rose-500 text-xs mt-1 ml-1 font-bold">{errors.customerPhone.message}</p>}
                 </div>
               </div>
 
               {/* Submit Button */}
               <div className="pt-4">
                 <button
-                  onClick={handleSave}
+                  onClick={handleSubmit(onSubmit)}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-black uppercase text-sm tracking-[0.25em] hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl shadow-indigo-600/30 active:scale-[0.98] flex items-center justify-center gap-3"
                 >
                   <span>Start Experience</span>

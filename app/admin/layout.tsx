@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const fetchNotifications = async () => {
     if (!isAuthenticated || !user?._id) return;
     try {
-      const response = await api.get('/notifications');
+      const response = await api.get('/notifications', { params: { recipientType: 'ADMIN' } });
       setNotifications(response.data.data || []);
       setUnreadCount(response.data.unreadCount || 0);
     } catch (error) {

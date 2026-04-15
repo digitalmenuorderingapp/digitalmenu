@@ -71,12 +71,57 @@ export const orderItemSchema = z.object({
   offerPrice: z.number().optional(),
 });
 
+// Customer Info
+export const customerInfoSchema = z.object({
+  customerName: z.string().min(1, 'Name is required'),
+  numberOfPersons: z.number({ message: 'Seats are required' }).min(1, 'Minimum 1 person required'),
+  customerPhone: z.string().regex(/^\d{10}$/, 'Mobile number must be 10 digits').optional().or(z.literal('')),
+});
+
+export type CustomerInfoInput = z.infer<typeof customerInfoSchema>;
+
+// Order Feedback
+export const orderFeedbackSchema = z.object({
+  rating: z.number().min(1).max(5),
+  comment: z.string().min(1, 'Please share your experience').max(500, 'Comment is too long'),
+});
+
+export type OrderFeedbackInput = z.infer<typeof orderFeedbackSchema>;
+
+// Payment Verification
+export const paymentVerifySchema = z.object({
+  utr: z.string().regex(/^\d{6}$/, 'Please enter the last 6 digits of your UTR'),
+});
+
+export type PaymentVerifyInput = z.infer<typeof paymentVerifySchema>;
+
+// Cancel Order
+export const cancelOrderSchema = z.object({
+  reason: z.string().optional(),
+});
+
+export type CancelOrderInput = z.infer<typeof cancelOrderSchema>;
+
+// Cart Instructions
+export const cartInstructionsSchema = z.object({
+  specialInstructions: z.string().max(500, 'Instructions too long').optional(),
+});
+
+export type CartInstructionsInput = z.infer<typeof cartInstructionsSchema>;
+
 export const createOrderSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required'),
-  customerPhone: z.string().optional(),
+  customerPhone: z.string()
+    .regex(/^\d{10}$/, 'Mobile number must be 10 digits')
+    .optional()
+    .or(z.literal('')),
   orderType: z.enum(['dine-in', 'takeaway', 'delivery']),
-  tableNumber: z.number().min(1, 'Table number is required').optional(),
-  numberOfPersons: z.number().min(1, 'At least 1 person required').optional(),
+  tableNumber: z.union([z.number(), z.string(), z.null(), z.undefined()])
+    .transform((val) => (val === '' || val === null || val === undefined ? undefined : Number(val)))
+    .pipe(z.number().min(1, 'Table number is required').optional()),
+  numberOfPersons: z.union([z.number(), z.string(), z.null(), z.undefined()])
+    .transform((val) => (val === '' || val === null || val === undefined ? undefined : Number(val)))
+    .pipe(z.number().min(1, 'At least 1 person required').optional()),
   specialInstructions: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.orderType === 'dine-in') {

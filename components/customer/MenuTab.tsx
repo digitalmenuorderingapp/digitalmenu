@@ -426,53 +426,54 @@ export default function MenuTab({
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-2">Product Description</h4>
-                    <p className="text-base text-gray-600 leading-relaxed font-medium">
+                    <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
+                      <div className="w-4 h-px bg-slate-200" /> 
+                      Product Description
+                    </h4>
+                    <p className="text-[15px] text-slate-600 leading-relaxed font-medium italic opacity-90">
                       {selectedItem.description || 'Experience culinary perfection with this signature dish. Each component is meticulously selected and prepared to offer an unforgettable experience of textures and flavors.'}
                     </p>
                   </div>
                 </div>
               </div>
-
-              <div className="absolute bottom-0 left-0 right-0 p-6 py-4 pb-8 glass-card border-t border-white/50 backdrop-blur-3xl z-20">
-                  <div className="flex items-center gap-6">
+                 <div className="absolute bottom-0 left-0 right-0 p-5 pb-8 glass-card border-t border-white/50 backdrop-blur-3xl z-20">
+                  <div className="flex items-center gap-4">
                     {/* Left: Quantity Management */}
-                    <div className="flex-[2]">
+                    <div className="flex-1">
                       {getItemQuantity(selectedItem._id) === 0 ? (
                         <button 
                           onClick={() => addToCart(selectedItem)}
-                          className="w-full h-14 bg-slate-900 text-white text-xs font-black uppercase tracking-[0.25em] rounded-2xl shadow-2xl flex items-center justify-center gap-3 hover:bg-black transition-all group/pop"
+                          className="w-full h-14 bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl flex items-center justify-center gap-3 hover:bg-black active:scale-95 transition-all group/pop"
                         >
-                          <FaPlus className="w-3.5 h-3.5 text-indigo-400 group-hover/pop:rotate-90 transition-transform" />
+                          <FaPlus className="w-3 h-3 text-emerald-400" />
                           <span>Add to Order</span>
                         </button>
                       ) : (
                         <div className="h-14 bg-indigo-600 rounded-2xl flex items-center p-1 shadow-2xl shadow-indigo-200">
-                          <button onClick={() => removeFromCart(selectedItem._id)} className="w-12 h-12 flex items-center justify-center text-white hover:bg-white/10 rounded-xl transition-all"><FaMinus className="w-4 h-4" /></button>
+                          <button onClick={() => removeFromCart(selectedItem._id)} className="w-12 h-12 flex items-center justify-center text-white hover:bg-white/10 rounded-xl transition-all"><FaMinus className="w-3.5 h-3.5" /></button>
                           <div className="flex-1 text-center">
-                            <p className="text-lg font-black text-white leading-none tabular-nums">{getItemQuantity(selectedItem._id)}</p>
-                            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-widest mt-1">In Order</p>
+                            <p className="text-base font-black text-white tabular-nums leading-none tracking-tight">{getItemQuantity(selectedItem._id)}</p>
+                            <p className="text-[7px] font-black text-indigo-200 uppercase tracking-widest mt-1">Selected</p>
                           </div>
-                          <button onClick={() => addToCart(selectedItem)} className="w-12 h-12 flex items-center justify-center text-white hover:bg-white/10 rounded-xl transition-all"><FaPlus className="w-4 h-4" /></button>
+                          <button onClick={() => addToCart(selectedItem)} className="w-12 h-12 flex items-center justify-center text-white hover:bg-white/10 rounded-xl transition-all"><FaPlus className="w-3.5 h-3.5" /></button>
                         </div>
                       )}
                     </div>
-
+ 
                     {/* Right: Cart Button */}
                     <button 
                       onClick={() => {
                         setSelectedItem(null);
                         onGoToCart?.();
                       }}
-                      className="relative w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-2xl flex items-center justify-center hover:shadow-2xl hover:scale-105 transition-all shadow-xl shadow-orange-200/50 overflow-hidden group/cart"
+                      className="relative w-14 h-14 bg-indigo-50 border-2 border-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-100/50 hover:scale-105 active:scale-90 transition-all group/cart"
                       title="Go to Cart"
                     >
-                      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/cart:translate-y-0 transition-transform duration-500" />
-                      <FaShoppingCart className="relative z-10 w-6 h-6" />
+                      <FaShoppingCart className="w-5 h-5" />
                       {totalCartCount > 0 && (
-                        <span className="absolute top-0 right-0 -mt-1 -mr-1 w-7 h-7 bg-red-600 text-white text-[11px] font-black rounded-full flex items-center justify-center border-3 border-white shadow-xl tabular-nums animate-bounce-slow">
+                        <span className="absolute -top-2.5 -right-2.5 min-w-[26px] h-6 px-1.5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-[3px] border-white shadow-lg shadow-rose-200 animate-bounce-slow">
                           {totalCartCount}
                         </span>
                       )}
