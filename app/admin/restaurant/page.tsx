@@ -508,7 +508,7 @@ export default function RestaurantPage() {
                 </div>
                 <div className="flex items-start space-x-2">
                   <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                  <span>Pay ₹500/year (UPI/Bank Transfer)</span>
+                  <span>Pay ₹2000/year (UPI/Bank Transfer)</span>
                 </div>
                 <div className="flex items-start space-x-2">
                   <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>

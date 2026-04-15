@@ -95,7 +95,7 @@ export default function SubscriptionModal({ isOpen, isInline = false, expiryDate
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">3</div>
-                  <p className="text-sm font-medium text-gray-600">Pay ₹500/year (UPI/Bank Transfer)</p>
+                  <p className="text-sm font-medium text-gray-600">Pay ₹2000/year (UPI/Bank Transfer)</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">4</div>
