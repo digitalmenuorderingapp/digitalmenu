@@ -431,6 +431,8 @@ function CustomerPageContent() {
           itemId: item._id,
           name: item.name,
           price: item.offerPrice || item.price,
+          originalPrice: item.price,
+          offerPrice: item.offerPrice || null,
           quantity: item.quantity
         })),
 

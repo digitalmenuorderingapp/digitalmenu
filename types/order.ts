@@ -11,6 +11,14 @@ export interface MenuItem {
     discountPercentage?: number;
     isVeg?: boolean;
     isBestSeller?: boolean;
+    gstEnabled?: boolean;
+    sgstPercentage?: number;
+    cgstPercentage?: number;
+    igstPercentage?: number;
+    serviceChargeEnabled?: boolean;
+    serviceChargePercentage?: number;
+    taxOnServiceCharge?: boolean;
+    taxOnServiceChargePercentage?: number;
 }
 
 export interface CartItem extends MenuItem {

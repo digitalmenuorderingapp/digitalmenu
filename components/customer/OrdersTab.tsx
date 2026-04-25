@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes, FaUtensils, FaExclamationTriangle } from 'react-icons/fa';
+import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes, FaUtensils, FaExclamationTriangle, FaPrint } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
@@ -227,6 +227,8 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
   const [orderToVerify, setOrderToVerify] = useState<Order | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedOrderIdForCancel, setSelectedOrderIdForCancel] = useState<string | null>(null);
+  const [billModalOpen, setBillModalOpen] = useState(false);
+  const [selectedOrderForBill, setSelectedOrderForBill] = useState<Order | null>(null);
 
   const {
     register: registerCancel,
@@ -347,18 +349,30 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                   'bg-white/50'
                 }`}>
                   <div className="flex items-start justify-between gap-3 relative z-10">
-                    <div className="min-w-0">
-                      <div className="flex items-center space-x-2 mb-1 flex-wrap gap-y-1">
-                        <div className={`p-1.5 rounded-lg glass ${
-                           order.status === 'COMPLETED' ? 'text-emerald-600' :
-                           order.status === 'ACCEPTED' ? 'text-indigo-600' :
-                           order.status === 'PLACED' ? 'text-amber-600' : 'text-slate-600'
-                        }`}>
-                          {getStatusIcon(order.status)}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                          <div className={`p-1.5 rounded-lg glass ${
+                             order.status === 'COMPLETED' ? 'text-emerald-600' :
+                             order.status === 'ACCEPTED' ? 'text-indigo-600' :
+                             order.status === 'PLACED' ? 'text-amber-600' : 'text-slate-600'
+                          }`}>
+                            {getStatusIcon(order.status)}
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-[0.15em] ${getStatusColor(order.status)} border border-white/50`}>
+                            {order.status}
+                          </span>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-[0.15em] ${getStatusColor(order.status)} border border-white/50`}>
-                          {order.status}
-                        </span>
+                        <button
+                          onClick={() => {
+                            setSelectedOrderForBill(order);
+                            setBillModalOpen(true);
+                          }}
+                          className="p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-indigo-300 transition-all shadow-sm"
+                          title="Print Bill"
+                        >
+                          <FaPrint className="w-4 h-4 text-slate-600" />
+                        </button>
                       </div>
                       <h3 className="text-base font-black text-slate-900 truncate tracking-tight">
                         Order #{order.orderNumber || order._id.slice(-6)}
@@ -717,7 +731,118 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+
+        {/* Bill Modal */}
+        <AnimatePresence>
+          {billModalOpen && selectedOrderForBill && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setBillModalOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+              />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: 'spring', damping: 28, stiffness: 250 }}
+                className="fixed bottom-0 left-0 right-0 max-w-2xl mx-auto bg-white rounded-t-[2rem] z-[101] shadow-2xl max-h-[90vh] overflow-y-auto"
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">Bill Details</h3>
+                    <button
+                      onClick={() => setBillModalOpen(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <FaTimes className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-semibold text-gray-700">Order #{selectedOrderForBill.orderNumber || selectedOrderForBill._id.slice(-6)}</span>
+                      <span className="text-xs text-gray-500">{formatDate(selectedOrderForBill.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Table #{selectedOrderForBill.tableNumber}</span>
+                      <span className="text-sm font-semibold text-gray-900">{selectedOrderForBill.customerName}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-4">
+                    <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Items</h4>
+                    {selectedOrderForBill.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                          <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">₹{((item.offerPrice || item.price) * item.quantity).toFixed(2)}</p>
+                          {item.offerPrice && item.offerPrice < item.price && (
+                            <p className="text-xs text-gray-400 line-through">₹{(item.price * item.quantity).toFixed(2)}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Subtotal</span>
+                      <span className="text-sm font-semibold text-gray-900">₹{selectedOrderForBill.items.reduce((sum, item) => sum + ((item.offerPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Tax Breakdown (Indian GST Format) */}
+                    <div className="bg-indigo-50 rounded-lg p-3 mt-3">
+                      <h5 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Tax Breakdown</h5>
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">SGST</span>
+                          <span className="text-xs font-medium text-gray-900">₹0.00</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">CGST</span>
+                          <span className="text-xs font-medium text-gray-900">₹0.00</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">IGST</span>
+                          <span className="text-xs font-medium text-gray-900">₹0.00</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Service Charge */}
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm text-gray-600">Service Charge</span>
+                      <span className="text-sm font-semibold text-gray-900">₹0.00</span>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-3 mt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-base font-bold text-gray-900">Total</span>
+                        <span className="text-xl font-black text-indigo-600">₹{selectedOrderForBill.totalAmount.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      window.print();
+                    }}
+                    className="w-full mt-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FaPrint className="w-4 h-4" />
+                    Print Bill
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
     </>
   );
 }

@@ -558,7 +558,6 @@ export default function RestaurantPage() {
           </div>
         </motion.div>
 
-  
       </div>
 
       {/* Main Layout Grid */}

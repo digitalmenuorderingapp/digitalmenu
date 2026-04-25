@@ -25,7 +25,8 @@ import {
   FaHashtag,
   FaExclamationCircle,
   FaEnvelope,
-  FaPlus
+  FaPlus,
+  FaPrint
 } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import useSWR, { mutate } from 'swr';
@@ -38,6 +39,8 @@ import OrderCard, { isOrderPaid, getPaymentStatusDisplay } from '@/components/ui
 import StatsCard from '@/components/ui/StatsCard';
 import CreateOrderModal from '@/components/ui/CreateOrderModal';
 import { Skeleton, StatsCardSkeleton, OrderCardSkeleton } from '@/components/ui/Skeleton';
+import PrintableBill from '@/components/ui/PrintableBill';
+import { useReactToPrint } from 'react-to-print';
 
 interface Order {
   _id: string;
@@ -88,6 +91,13 @@ export default function OrdersPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
+  const [billModalOpen, setBillModalOpen] = useState(false);
+  const [selectedOrderForBill, setSelectedOrderForBill] = useState<Order | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+  });
 
   // Build SWR key based on query parameters
   const swrKey = useMemo(() => {
@@ -299,6 +309,21 @@ export default function OrdersPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const formatDate = (date: any) => {
+    return new Date(date).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handlePrintBill = (order: Order) => {
+    setSelectedOrderForBill(order);
+    setBillModalOpen(true);
+  };
+
   const handleAction = async (orderId: string, action: string, payload: any = {}) => {
     try {
       const finalAction = payload?.actionOverride || action;
@@ -493,6 +518,7 @@ export default function OrdersPage() {
                    key={`${order._id}-${order.status}-${order.paymentStatus}-${order.updatedAt || Date.now()}`}
                    order={order as any}
                    onAction={handleAction}
+                   onPrint={(o: any) => handlePrintBill(order)}
                 />
               ))}
             </motion.div>
@@ -508,6 +534,63 @@ export default function OrdersPage() {
           setCreateOrderModalOpen(false);
         }}
       />
+
+      {/* Bill Modal */}
+      <AnimatePresence>
+        {billModalOpen && selectedOrderForBill && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setBillModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-0 flex items-center justify-center z-[101] p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">Bill Details</h3>
+                    <button
+                      onClick={() => setBillModalOpen(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <FaTimes className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+
+                  {/* Printable Bill Component */}
+                  <div className="flex justify-center mb-6">
+                    <PrintableBill
+                      ref={printRef}
+                      order={selectedOrderForBill}
+                      restaurantName={user?.restaurantName || 'Restaurant'}
+                      restaurantLogo={user?.logo || undefined}
+                      isPaid={selectedOrderForBill.paymentStatus?.toUpperCase() === 'VERIFIED'}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handlePrint}
+                    className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FaPrint className="w-4 h-4" />
+                    Print Bill
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+

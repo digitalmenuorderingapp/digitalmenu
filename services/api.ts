@@ -101,8 +101,14 @@ api.interceptors.response.use(
       refreshSubscribers.forEach((cb) => cb('failed'));
       refreshSubscribers = [];
 
-      // Don't auto-redirect - let components handle auth state
-      // Public pages should work without authentication
+      // Clear auth state and redirect to login
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        // Only redirect if not already on auth page
+        if (!window.location.pathname.includes('/auth')) {
+          window.location.href = '/auth';
+        }
+      }
       return Promise.reject(refreshError);
     }
   }

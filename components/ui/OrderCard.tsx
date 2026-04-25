@@ -19,7 +19,8 @@ import {
   FaArrowRight,
   FaPhone,
   FaRedo,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaPrint
 } from 'react-icons/fa';
 import Button from './Button';
 
@@ -133,12 +134,14 @@ interface OrderCardProps {
   order: Order;
   variant?: 'today' | 'compact';
   onAction?: (orderId: string, action: string, payload?: any) => void;
+  onPrint?: (order: Order) => void;
 }
 
 const OrderCard = ({
   order,
   variant = 'today',
-  onAction
+  onAction,
+  onPrint
 }: OrderCardProps) => {
   // TEMP: Debug log for retry count
   console.log('Order:', order._id, 'retryCount:', order.paymentVerificationRequestbycustomer?.retrycount, 'paymentStatus:', order.paymentStatus);
@@ -222,7 +225,9 @@ const OrderCard = ({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-3xl border transition-all duration-300 overflow-hidden group/card shadow-sm hover:shadow-xl ${
+      className={`relative rounded-3xl border transition-all duration-300 overflow-hidden group/card shadow-sm hover:shadow-xl
+        ${paid ? 'border-green-200' : ''}
+      ${
         order.status?.toUpperCase() === 'PLACED' ? 'bg-amber-50/50 border-amber-100/50 hover:border-amber-200' :
         order.status?.toUpperCase() === 'ACCEPTED' ? 'bg-blue-50/50 border-blue-100/50 hover:border-blue-200' :
         order.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-50/50 border-green-100/50 hover:border-green-200' :
@@ -230,6 +235,7 @@ const OrderCard = ({
         'bg-white border-gray-100'
       } ${order.paymentDueStatus?.toUpperCase() === 'DUE' ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}
     >
+
       {/* Header */}
       <div className={`p-4 sm:p-5 border-b border-gray-100/50 flex flex-wrap items-center justify-between gap-3 transition-colors duration-300 ${
         order.status?.toUpperCase() === 'PLACED' ? 'bg-gradient-to-br from-amber-50/80 to-white/40' :
@@ -485,6 +491,16 @@ const OrderCard = ({
               </div>
             );
           })()}
+
+          {/* Print Bill Button */}
+          <Button
+            size="md"
+            variant="outline"
+            onClick={() => onPrint?.(order)}
+            leftIcon={<FaPrint className="w-4 h-4" />}
+          >
+            Print Bill
+          </Button>
 
           {/* Status-based Actions (Accept, Reject, Serve, Mark Unpaid) */}
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">

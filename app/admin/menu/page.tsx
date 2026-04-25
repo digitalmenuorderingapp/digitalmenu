@@ -19,6 +19,7 @@ import {
   FaUtensils,
   FaCloudUploadAlt,
   FaSave,
+  FaPercent,
 } from 'react-icons/fa';
 import { Skeleton, MenuItemSkeleton } from '@/components/ui/Skeleton';
 import { useForm } from 'react-hook-form';
@@ -40,6 +41,12 @@ interface MenuItem {
   restaurantId?: string;
   isVeg?: boolean;
   isBestSeller?: boolean;
+  gstEnabled?: boolean;
+  sgstPercentage?: number;
+  cgstPercentage?: number;
+  igstPercentage?: number;
+  serviceChargeEnabled?: boolean;
+  serviceChargePercentage?: number;
 }
 
 export default function MenuManagementPage() {
@@ -55,6 +62,29 @@ export default function MenuManagementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [isGSTModalOpen, setIsGSTModalOpen] = useState(false);
+  const [isSavingGST, setIsSavingGST] = useState(false);
+
+  // GST Config Form
+  const {
+    register: registerGST,
+    handleSubmit: handleGSTSubmit,
+    reset: resetGST,
+    watch: watchGST,
+    formState: { errors: gstErrors }
+  } = useForm({
+    defaultValues: {
+      gstEnabled: false,
+      sgstPercentage: 0,
+      cgstPercentage: 0,
+      igstPercentage: 0,
+      serviceChargeEnabled: false,
+      serviceChargePercentage: 0
+    }
+  });
+
+  const gstEnabledWatcher = watchGST('gstEnabled');
+  const serviceChargeEnabledWatcher = watchGST('serviceChargeEnabled');
 
   const {
     register,
@@ -129,7 +159,37 @@ export default function MenuManagementPage() {
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setEditingItem(null);
     resetAll();
+  };
+
+  const fetchGSTConfig = async () => {
+    try {
+      const response = await api.get('/gst-config');
+      if (response.data.success) {
+        resetGST(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch GST config:', error);
+    }
+  };
+
+  const onGSTSubmit = async (data: any) => {
+    setIsSavingGST(true);
+    try {
+      await api.put('/gst-config', data);
+      toast.success('GST configuration updated successfully');
+      setIsGSTModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update GST configuration');
+    } finally {
+      setIsSavingGST(false);
+    }
+  };
+
+  const openGSTModal = () => {
+    fetchGSTConfig();
+    setIsGSTModalOpen(true);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,13 +315,22 @@ export default function MenuManagementPage() {
           <h1 className="text-2xl font-bold text-gray-900">Menu Management</h1>
           <p className="text-gray-600 mt-1">Add, edit, and manage your restaurant menu items.</p>
         </div>
-        <button
-          onClick={() => openModal()}
-          className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          <FaPlus className="w-4 h-4" />
-          <span>Add Item</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openGSTModal}
+            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <FaPercent className="w-4 h-4" />
+            <span>Tax Config</span>
+          </button>
+          <button
+            onClick={() => openModal()}
+            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            <FaPlus className="w-4 h-4" />
+            <span>Add Item</span>
+          </button>
+        </div>
       </div>
 
       {/* Menu Items Grid */}
@@ -684,6 +753,151 @@ export default function MenuManagementPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GST Config Modal */}
+      {isGSTModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setIsGSTModalOpen(false)} />
+            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                      <FaPercent className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Tax Configuration</h3>
+                      <p className="text-xs text-gray-500">Configure GST and service charge</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsGSTModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleGSTSubmit(onGSTSubmit)} className="space-y-4">
+                  {/* GST Toggle */}
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          {...registerGST('gstEnabled')}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">Enable GST</span>
+                    </label>
+                    {gstEnabledWatcher && (
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="relative">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">SGST %</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            {...registerGST('sgstPercentage', { valueAsNumber: true })}
+                            placeholder="2.5"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm"
+                          />
+                        </div>
+                        <div className="relative">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">CGST %</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            {...registerGST('cgstPercentage', { valueAsNumber: true })}
+                            placeholder="2.5"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm"
+                          />
+                        </div>
+                        <div className="relative">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">IGST %</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            {...registerGST('igstPercentage', { valueAsNumber: true })}
+                            placeholder="0"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Service Charge Toggle */}
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          {...registerGST('serviceChargeEnabled')}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">Service Charge</span>
+                    </label>
+                    {serviceChargeEnabledWatcher && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            {...registerGST('serviceChargePercentage', { valueAsNumber: true })}
+                            placeholder="5"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">%</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsGSTModalOpen(false)}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingGST}
+                      className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 text-sm"
+                    >
+                      {isSavingGST ? (
+                        <>
+                          <FaSpinner className="w-4 h-4 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaSave className="w-4 h-4" />
+                          <span>Save</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         </div>

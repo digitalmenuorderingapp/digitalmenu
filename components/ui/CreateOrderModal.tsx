@@ -145,6 +145,8 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                     itemId: i._id,
                     name: i.name,
                     price: Number(i.offerPrice || i.price),
+                    originalPrice: Number(i.price),
+                    offerPrice: i.offerPrice ? Number(i.offerPrice) : null,
                     quantity: Number(i.quantity)
                 })),
                 totalAmount: Number(calculateTotal()),
@@ -257,7 +259,16 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                                         </div>
                                                         <div>
                                                             <h4 className="font-bold text-slate-800 text-[11px] lg:text-sm truncate">{item.name}</h4>
-                                                            <p className="text-indigo-600 font-extrabold text-[12px] lg:text-base">₹{item.offerPrice || item.price}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                {item.offerPrice && item.offerPrice < item.price ? (
+                                                                    <>
+                                                                        <p className="text-gray-400 text-[10px] line-through">₹{item.price}</p>
+                                                                        <p className="text-indigo-600 font-extrabold text-[12px] lg:text-base">₹{item.offerPrice}</p>
+                                                                    </>
+                                                                ) : (
+                                                                    <p className="text-indigo-600 font-extrabold text-[12px] lg:text-base">₹{item.price}</p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <button type="button" className="w-full py-1.5 bg-slate-50 text-indigo-600 rounded-lg text-[9px] font-bold uppercase tracking-wider">Add +</button>
                                                     </div>
@@ -292,7 +303,18 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                                         </div>
                                                         <div className="flex-1">
                                                             <p className="text-xs font-bold text-slate-800 truncate">{item.name}</p>
-                                                            <p className="text-[10px] font-bold text-indigo-600">₹{(item.offerPrice || item.price) * item.quantity}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                {item.offerPrice && item.offerPrice < item.price ? (
+                                                                    <>
+                                                                        <p className="text-gray-400 text-[9px] line-through">₹{item.price}</p>
+                                                                        <p className="text-indigo-600 font-bold text-[10px]">₹{item.offerPrice}</p>
+                                                                    </>
+                                                                ) : (
+                                                                    <p className="text-indigo-600 font-bold text-[10px]">₹{item.price}</p>
+                                                                )}
+                                                                <p className="text-gray-500 text-[9px]">× {item.quantity}</p>
+                                                                <p className="text-slate-800 font-bold text-[10px] ml-auto">₹{(item.offerPrice || item.price) * item.quantity}</p>
+                                                            </div>
                                                         </div>
                                                         <div className="flex items-center bg-slate-50 rounded-lg p-1 border">
                                                             <button type="button" onClick={() => updateQuantity(item._id, -1)} className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-xs"><FaMinus size={8} /></button>
