@@ -731,6 +731,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
 
         {/* Bill Modal */}
         <AnimatePresence>
@@ -843,6 +844,6 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
             </>
           )}
         </AnimatePresence>
-    </>
+      </>
   );
 }
