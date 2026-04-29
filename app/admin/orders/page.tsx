@@ -101,7 +101,23 @@ export default function OrdersPage() {
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
   const [billModalOpen, setBillModalOpen] = useState(false);
   const [selectedOrderForBill, setSelectedOrderForBill] = useState<Order | null>(null);
+  const [isThermalPrint, setIsThermalPrint] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('isThermalPrint');
+    if (stored !== null) {
+      setIsThermalPrint(stored === 'true');
+    }
+  }, []);
+
+  const toggleThermalPrint = () => {
+    setIsThermalPrint(prev => {
+      const newVal = !prev;
+      localStorage.setItem('isThermalPrint', String(newVal));
+      return newVal;
+    });
+  };
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -439,6 +455,16 @@ export default function OrdersPage() {
               ))}
             </div>
 
+            <div className="flex items-center gap-2 bg-gray-100/50 px-3 py-1.5 rounded-xl border border-gray-200/50">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Thermal Print</span>
+              <button
+                onClick={toggleThermalPrint}
+                className={`w-8 h-4 rounded-full relative transition-colors ${isThermalPrint ? 'bg-indigo-500' : 'bg-gray-300'}`}
+              >
+                <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-transform ${isThermalPrint ? 'left-[18px]' : 'left-0.5'}`} />
+              </button>
+            </div>
+
             <Button variant="primary" onClick={() => setCreateOrderModalOpen(true)} className="!py-1.5 !px-3.5" leftIcon={<FaPlus className="text-white text-[10px]" />}>
               <span className="text-[9px] font-black uppercase tracking-widest">Add Order</span>
               <span className="ml-2 text-[8px] text-white/70 font-normal">Alt+N</span>
@@ -582,6 +608,7 @@ export default function OrdersPage() {
                       restaurantLogo={user?.logo || undefined}
                       isPaid={selectedOrderForBill.paymentStatus?.toUpperCase() === 'VERIFIED'}
                       gstEnabled={selectedOrderForBill.gstEnabled || false}
+                      isThermalPrint={isThermalPrint}
                     />
                   </div>
 

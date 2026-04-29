@@ -278,8 +278,19 @@ const OrderCard = ({
             </div>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter">₹{order.totalAmount}</p>
+        <div className="text-right flex flex-col items-end">
+          <div className="flex items-center gap-3">
+            {(order.status?.toUpperCase() === 'ACCEPTED' || order.status?.toUpperCase() === 'COMPLETED') && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onPrint?.(order); }}
+                className="p-1.5 sm:p-2 bg-white/80 rounded-lg border border-indigo-100 hover:bg-white hover:border-indigo-300 transition-all shadow-sm text-indigo-600"
+                title="Print Bill"
+              >
+                <FaPrint className="w-3 h-3 sm:w-4 sm:h-4" />
+              </button>
+            )}
+            <p className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter">₹{order.totalAmount}</p>
+          </div>
           {/* Only show NEW badge for PLACED orders - other updates go to notifications */}
           {order.status?.toUpperCase() === 'PLACED' && (
             <span className="inline-flex items-center mt-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-amber-100/50 text-amber-700">
@@ -480,15 +491,6 @@ const OrderCard = ({
             );
           })()}
 
-          {/* Print Bill Button */}
-          <Button
-            size="md"
-            variant="outline"
-            onClick={() => onPrint?.(order)}
-            leftIcon={<FaPrint className="w-4 h-4" />}
-          >
-            Print Bill
-          </Button>
 
           {/* Status-based Actions (Accept, Reject, Serve, Mark Unpaid) */}
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">

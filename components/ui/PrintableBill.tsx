@@ -8,6 +8,7 @@ interface PrintableBillProps {
   restaurantLogo?: string;
   isPaid?: boolean;
   gstEnabled?: boolean;
+  isThermalPrint?: boolean;
 }
 
 // Helper functions
@@ -62,19 +63,19 @@ const GSTOnlyBill = ({ order, subtotal, gstEnabled }: { order: any; subtotal: nu
         <div className="text-xs font-bold mb-1">TAX BREAKDOWN</div>
         {(order.sgstAmount || 0) > 0 && (
           <div className="flex justify-between text-xs">
-            <span>SGST:</span>
+            <span>SGST{order.items?.[0]?.sgstPercentage ? ` (${order.items[0].sgstPercentage}%)` : ''}:</span>
             <span>₹{(order.sgstAmount || 0).toFixed(2)}</span>
           </div>
         )}
         {(order.cgstAmount || 0) > 0 && (
           <div className="flex justify-between text-xs">
-            <span>CGST:</span>
+            <span>CGST{order.items?.[0]?.cgstPercentage ? ` (${order.items[0].cgstPercentage}%)` : ''}:</span>
             <span>₹{(order.cgstAmount || 0).toFixed(2)}</span>
           </div>
         )}
         {(order.igstAmount || 0) > 0 && (
           <div className="flex justify-between text-xs">
-            <span>IGST:</span>
+            <span>IGST{order.items?.[0]?.igstPercentage ? ` (${order.items[0].igstPercentage}%)` : ''}:</span>
             <span>₹{(order.igstAmount || 0).toFixed(2)}</span>
           </div>
         )}
@@ -124,19 +125,19 @@ const FullBill = ({ order, subtotal, gstEnabled }: { order: any; subtotal: numbe
         <div className="text-xs font-bold mb-1">TAX BREAKDOWN</div>
         {(order.sgstAmount || 0) > 0 && (
           <div className="flex justify-between text-xs">
-            <span>SGST:</span>
+            <span>SGST{order.items?.[0]?.sgstPercentage ? ` (${order.items[0].sgstPercentage}%)` : ''}:</span>
             <span>₹{(order.sgstAmount || 0).toFixed(2)}</span>
           </div>
         )}
         {(order.cgstAmount || 0) > 0 && (
           <div className="flex justify-between text-xs">
-            <span>CGST:</span>
+            <span>CGST{order.items?.[0]?.cgstPercentage ? ` (${order.items[0].cgstPercentage}%)` : ''}:</span>
             <span>₹{(order.cgstAmount || 0).toFixed(2)}</span>
           </div>
         )}
         {(order.igstAmount || 0) > 0 && (
           <div className="flex justify-between text-xs">
-            <span>IGST:</span>
+            <span>IGST{order.items?.[0]?.igstPercentage ? ` (${order.items[0].igstPercentage}%)` : ''}:</span>
             <span>₹{(order.igstAmount || 0).toFixed(2)}</span>
           </div>
         )}
@@ -193,17 +194,31 @@ const BillTotals = ({ order, subtotal, gstEnabled }: { order: any; subtotal: num
 };
 
 const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
-  ({ order, restaurantName = 'Restaurant', restaurantLogo, isPaid, gstEnabled = false }, ref) => {
+  ({ order, restaurantName = 'Restaurant', restaurantLogo, isPaid, gstEnabled = false, isThermalPrint = false }, ref) => {
     const subtotal = calculateSubtotal(order);
 
     return (
       <div
         ref={ref}
-        className="bg-white p-4 w-[80mm] text-sm font-mono"
+        className="bg-white p-4 w-[80mm] text-sm font-mono relative overflow-hidden"
         style={{ fontFamily: 'monospace' }}
       >
-        {/* Header */}
-        <div className="text-center mb-4">
+        {/* Watermark Background */}
+        {restaurantLogo && !isThermalPrint && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 opacity-10">
+            <img 
+              src={restaurantLogo.startsWith('http') ? restaurantLogo : `${window.location.origin}${restaurantLogo}`} 
+              alt="Watermark" 
+              className="w-2/3 object-contain grayscale"
+              crossOrigin="anonymous"
+            />
+          </div>
+        )}
+
+        {/* Content wrapper to stay above watermark */}
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="text-center mb-4">
           {restaurantLogo && (
             <div className="mb-2">
               <img 
@@ -303,6 +318,7 @@ const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
         <div className="text-center text-xs text-gray-600">
           <p>Thank you for dining with us!</p>
           <p className="mt-1">Visit us again</p>
+        </div>
         </div>
       </div>
     );

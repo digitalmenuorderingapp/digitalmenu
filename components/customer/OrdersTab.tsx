@@ -377,19 +377,19 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
           <div className="space-y-1">
             {(order.sgstAmount || 0) > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">SGST</span>
+                <span className="text-xs text-gray-600">SGST{order.items?.[0]?.sgstPercentage ? ` (${order.items[0].sgstPercentage}%)` : ''}</span>
                 <span className="text-xs font-medium text-gray-900">₹{(order.sgstAmount || 0).toFixed(2)}</span>
               </div>
             )}
             {(order.cgstAmount || 0) > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">CGST</span>
+                <span className="text-xs text-gray-600">CGST{order.items?.[0]?.cgstPercentage ? ` (${order.items[0].cgstPercentage}%)` : ''}</span>
                 <span className="text-xs font-medium text-gray-900">₹{(order.cgstAmount || 0).toFixed(2)}</span>
               </div>
             )}
             {(order.igstAmount || 0) > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">IGST</span>
+                <span className="text-xs text-gray-600">IGST{order.items?.[0]?.igstPercentage ? ` (${order.items[0].igstPercentage}%)` : ''}</span>
                 <span className="text-xs font-medium text-gray-900">₹{(order.igstAmount || 0).toFixed(2)}</span>
               </div>
             )}
@@ -443,19 +443,19 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
           <div className="space-y-1">
             {(order.sgstAmount || 0) > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">SGST</span>
+                <span className="text-xs text-gray-600">SGST{order.items?.[0]?.sgstPercentage ? ` (${order.items[0].sgstPercentage}%)` : ''}</span>
                 <span className="text-xs font-medium text-gray-900">₹{(order.sgstAmount || 0).toFixed(2)}</span>
               </div>
             )}
             {(order.cgstAmount || 0) > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">CGST</span>
+                <span className="text-xs text-gray-600">CGST{order.items?.[0]?.cgstPercentage ? ` (${order.items[0].cgstPercentage}%)` : ''}</span>
                 <span className="text-xs font-medium text-gray-900">₹{(order.cgstAmount || 0).toFixed(2)}</span>
               </div>
             )}
             {(order.igstAmount || 0) > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">IGST</span>
+                <span className="text-xs text-gray-600">IGST{order.items?.[0]?.igstPercentage ? ` (${order.items[0].igstPercentage}%)` : ''}</span>
                 <span className="text-xs font-medium text-gray-900">₹{(order.igstAmount || 0).toFixed(2)}</span>
               </div>
             )}
@@ -555,16 +555,18 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                             {order.status}
                           </span>
                         </div>
-                        <button
-                          onClick={() => {
-                            setSelectedOrderForBill(order);
-                            setBillModalOpen(true);
-                          }}
-                          className="p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-indigo-300 transition-all shadow-sm"
-                          title="Print Bill"
-                        >
-                          <FaPrint className="w-4 h-4 text-slate-600" />
-                        </button>
+                        {(order.status === 'ACCEPTED' || order.status === 'COMPLETED') && (
+                          <button
+                            onClick={() => {
+                              setSelectedOrderForBill(order);
+                              setBillModalOpen(true);
+                            }}
+                            className="p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-indigo-300 transition-all shadow-sm"
+                            title="Print Bill"
+                          >
+                            <FaPrint className="w-4 h-4 text-slate-600" />
+                          </button>
+                        )}
                       </div>
                       <h3 className="text-base font-black text-slate-900 truncate tracking-tight">
                         Order #{order.orderNumber || order._id.slice(-6)}
@@ -1022,6 +1024,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                         restaurantLogo={session?.logo || undefined}
                         isPaid={selectedOrderForBill.paymentStatus?.toUpperCase() === 'VERIFIED'}
                         gstEnabled={selectedOrderForBill.gstEnabled || false}
+                        isThermalPrint={false}
                       />
                     </div>
                   </div>
