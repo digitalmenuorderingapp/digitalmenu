@@ -193,18 +193,12 @@ const OrderCard = ({
           </div>
           <div className="text-right">
             <p className="font-black text-indigo-600 text-sm">₹{order.totalAmount}</p>
-            <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
-              order.status?.toUpperCase() === 'PLACED' ? 'bg-amber-100 text-amber-600' :
-              order.status?.toUpperCase() === 'ACCEPTED' ? 'bg-blue-100 text-blue-600' :
-              order.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-100 text-green-600' :
-              order.status?.toUpperCase() === 'REJECTED' || order.status?.toUpperCase() === 'CANCELLED' ? 'bg-red-100 text-red-600' :
-              'bg-gray-100 text-gray-500'
-            }`}>
-              {order.status?.toUpperCase() === 'PLACED' ? 'NEW' :
-               order.status?.toUpperCase() === 'ACCEPTED' ? 'PREPARING' :
-               order.status?.toUpperCase() === 'COMPLETED' ? 'SERVED' :
-               order.status?.toUpperCase()}
-            </span>
+            {/* Only show NEW badge for PLACED orders */}
+            {order.status?.toUpperCase() === 'PLACED' && (
+              <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600">
+                NEW
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-gray-50">
@@ -286,19 +280,13 @@ const OrderCard = ({
         </div>
         <div className="text-right">
           <p className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter">₹{order.totalAmount}</p>
-          <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${
-            order.status?.toUpperCase() === 'PLACED' ? 'bg-amber-100/50 text-amber-700' :
-            order.status?.toUpperCase() === 'ACCEPTED' ? 'bg-blue-100/50 text-blue-700' :
-            order.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-100/50 text-green-700' :
-            order.status?.toUpperCase() === 'REJECTED' || order.status?.toUpperCase() === 'CANCELLED' ? 'bg-red-100/50 text-red-700' :
-            'bg-gray-100/50 text-gray-700'
-          }`}>
-            {order.status?.toUpperCase() === 'PLACED' && <FaSpinner className="animate-spin mr-1 w-2 h-2" />}
-            {order.status?.toUpperCase() === 'PLACED' ? 'NEW' :
-             order.status?.toUpperCase() === 'ACCEPTED' ? 'PREPARING' :
-             order.status?.toUpperCase() === 'COMPLETED' ? 'SERVED' :
-             order.status?.toUpperCase()}
-          </span>
+          {/* Only show NEW badge for PLACED orders - other updates go to notifications */}
+          {order.status?.toUpperCase() === 'PLACED' && (
+            <span className="inline-flex items-center mt-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-amber-100/50 text-amber-700">
+              <FaSpinner className="animate-spin mr-1 w-2 h-2" />
+              NEW
+            </span>
+          )}
         </div>
       </div>
 

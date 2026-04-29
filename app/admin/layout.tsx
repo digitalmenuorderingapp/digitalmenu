@@ -56,7 +56,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [newOrdersCount, setNewOrdersCount] = useState(0);
 
   // Track processed notification IDs for deduplication
   const processedNotificationsRef = useRef<Set<string>>(new Set());
@@ -137,9 +136,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         if (notification.type === 'ORDER_NEW') {
           toast.success(notification.message, { icon: '📦' });
           playNewOrderSound();
-          if (!pathname.includes('/admin/orders')) {
-            setNewOrdersCount(prev => prev + 1);
-          }
         } else if (notification.type === 'PAYMENT_VERIFIED') {
           toast.success(notification.message, { icon: '💰' });
           playPaymentVerifiedSound();
@@ -179,20 +175,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [isAuthenticated, user?._id, refreshUser, pathname]);
 
-  const handleMarkAsRead = async (id?: string) => {
+  const handleMarkAsRead = async (id?: string | string[]) => {
     try {
+      const idsToMark = Array.isArray(id) ? id : id ? [id] : notifications.filter(n => !n.isRead).map(n => n._id);
+      
+      if (idsToMark.length === 0) return;
+
       await api.post('/notifications/mark-read', {
-        notificationIds: id ? [id] : notifications.filter(n => !n.isRead).map(n => n._id),
+        notificationIds: idsToMark,
         recipientType: 'ADMIN'
       });
 
-      if (id) {
-        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      } else {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setUnreadCount(0);
-      }
+      setNotifications(prev => prev.map(n => idsToMark.includes(n._id) ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - idsToMark.length));
     } catch (error) {
       console.error('Failed to mark notifications as read:', error);
     }
@@ -208,15 +203,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
-  // Clear new orders badge when navigating to orders page (after 1 second)
+  // Auto-mark order notifications as read when navigating to orders page
   useEffect(() => {
     if (pathname.includes('/admin/orders')) {
       const timer = setTimeout(() => {
-        setNewOrdersCount(0);
+        const unreadOrderNotifs = notifications.filter(n => !n.isRead && n.type === 'ORDER_NEW');
+        if (unreadOrderNotifs.length > 0) {
+          handleMarkAsRead(unreadOrderNotifs.map(n => n._id));
+        }
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [pathname]);
+  }, [pathname, notifications]);
+
+  // Derived counts
+  const unreadOrdersCount = notifications.filter(n => !n.isRead && n.type === 'ORDER_NEW').length;
+
   const getSubscriptionStatus = () => {
     if (!user?.subscription) {
       return { name: 'Basic', daysLeft: 0, isExpired: false, status: 'Inactive', expiryDate: 'N/A' };
@@ -375,9 +377,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
                 <span className="text-sm font-bold text-gray-700 group-hover:text-gray-900">Notifications</span>
               </div>
-              {newOrdersCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">
-                  {newOrdersCount}
+                  {unreadCount}
                 </span>
               )}
             </button>
@@ -410,9 +412,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {item.icon}
                         </span>
                         <span className="font-medium text-sm">{item.label}</span>
-                        {item.href === '/admin/orders' && newOrdersCount > 0 && (
+                        {item.href === '/admin/orders' && unreadOrdersCount > 0 && (
                           <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                            {newOrdersCount}
+                            {unreadOrdersCount}
                           </span>
                         )}
                         {isActive && <FaChevronRight className="w-3 h-3 ml-auto opacity-70" />}
@@ -574,9 +576,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 {item.icon}
                               </span>
                               <span className="font-medium text-sm">{item.label}</span>
-                              {item.href === '/admin/orders' && unreadCount > 0 && (
+                              {item.href === '/admin/orders' && unreadOrdersCount > 0 && (
                                 <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                                  {unreadCount}
+                                  {unreadOrdersCount}
                                 </span>
                               )}
                               {isActive && <FaChevronRight className="w-3 h-3 ml-auto opacity-70" />}
@@ -693,7 +695,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-100 rounded-lg relative"
                   >
                     <FaBell className="w-5 h-5" />
-                    {newOrdersCount > 0 && (
+                    {unreadCount > 0 && (
                       <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white shadow-sm" />
                     )}
                   </motion.button>

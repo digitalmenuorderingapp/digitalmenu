@@ -72,6 +72,14 @@ interface Order {
   };
   createdAt: string;
   updatedAt?: string;
+  gstEnabled?: boolean;
+  sgstAmount?: number;
+  cgstAmount?: number;
+  igstAmount?: number;
+  serviceChargeAmount?: number;
+  taxableAmount?: number;
+  roundOff?: number;
+  subtotal?: number;
   feedback?: {
     rating?: number;
     comment?: string;
@@ -573,6 +581,7 @@ export default function OrdersPage() {
                       restaurantName={user?.restaurantName || 'Restaurant'}
                       restaurantLogo={user?.logo || undefined}
                       isPaid={selectedOrderForBill.paymentStatus?.toUpperCase() === 'VERIFIED'}
+                      gstEnabled={selectedOrderForBill.gstEnabled || false}
                     />
                   </div>
 

@@ -7,21 +7,194 @@ interface PrintableBillProps {
   restaurantName?: string;
   restaurantLogo?: string;
   isPaid?: boolean;
+  gstEnabled?: boolean;
 }
 
-const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
-  ({ order, restaurantName = 'Restaurant', restaurantLogo, isPaid }, ref) => {
-    const formatDate = (date: string) => {
-      return new Date(date).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    };
+// Helper functions
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
-    const subtotal = order.subtotal || order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+const calculateSubtotal = (order: any) => {
+  return order.subtotal || order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+};
+
+// Scenario 1: Neither service charge nor GST enabled
+const SimpleBill = ({ order, subtotal }: { order: any; subtotal: number }) => (
+  <div className="flex justify-between font-black text-lg mt-2 pt-2 border-t-2 border-black">
+    <span>AMOUNT PAYABLE:</span>
+    <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
+  </div>
+);
+
+// Scenario 2: Service charge enabled, GST NOT enabled
+const ServiceChargeOnlyBill = ({ order, subtotal }: { order: any; subtotal: number }) => (
+  <>
+    <div className="flex justify-between">
+      <span>Service Charge:</span>
+      <span>₹{(order.serviceChargeAmount || 0).toFixed(0)}</span>
+    </div>
+    <div className="flex justify-between font-black text-lg mt-2 pt-2 border-t-2 border-black">
+      <span>AMOUNT PAYABLE:</span>
+      <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
+    </div>
+  </>
+);
+
+// Scenario 3: GST enabled, Service charge NOT enabled
+const GSTOnlyBill = ({ order, subtotal, gstEnabled }: { order: any; subtotal: number; gstEnabled: boolean }) => {
+  const taxAmount = order.totalAmount - subtotal;
+  const grandTotal = order.grandTotal || (subtotal + (order.sgstAmount || 0) + (order.cgstAmount || 0) + (order.igstAmount || 0));
+  
+  return (
+    <>
+      <div className="flex justify-between font-semibold">
+        <span>Taxable Amount:</span>
+        <span>₹{(order.taxableAmount || subtotal).toFixed(0)}</span>
+      </div>
+      <div className="mt-2 pt-2 border-t border-dashed border-gray-300">
+        <div className="text-xs font-bold mb-1">TAX BREAKDOWN</div>
+        {(order.sgstAmount || 0) > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>SGST:</span>
+            <span>₹{(order.sgstAmount || 0).toFixed(2)}</span>
+          </div>
+        )}
+        {(order.cgstAmount || 0) > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>CGST:</span>
+            <span>₹{(order.cgstAmount || 0).toFixed(2)}</span>
+          </div>
+        )}
+        {(order.igstAmount || 0) > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>IGST:</span>
+            <span>₹{(order.igstAmount || 0).toFixed(2)}</span>
+          </div>
+        )}
+        {(order.sgstAmount || 0) === 0 && (order.cgstAmount || 0) === 0 && (order.igstAmount || 0) === 0 && taxAmount > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>Tax:</span>
+            <span>₹{taxAmount.toFixed(2)}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex justify-between mt-2 pt-2 border-t border-gray-300">
+        <span>Total:</span>
+        <span>₹{grandTotal.toFixed(2)}</span>
+      </div>
+      {order.roundOff !== 0 && (
+        <div className="flex justify-between text-xs">
+          <span>Round Off:</span>
+          <span>{(order.roundOff || 0) > 0 ? '+' : ''}₹{(order.roundOff || 0).toFixed(2)}</span>
+        </div>
+      )}
+      <div className="flex justify-between font-black text-lg mt-2 pt-2 border-t-2 border-black">
+        <span>AMOUNT PAYABLE:</span>
+        <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
+      </div>
+    </>
+  );
+};
+
+// Scenario 4: Both service charge AND GST enabled
+const FullBill = ({ order, subtotal, gstEnabled }: { order: any; subtotal: number; gstEnabled: boolean }) => {
+  const serviceCharge = order.serviceChargeAmount || 0;
+  const taxableAmount = order.taxableAmount || (subtotal + serviceCharge);
+  const taxAmount = order.totalAmount - subtotal - serviceCharge;
+  const grandTotal = order.grandTotal || (taxableAmount + (order.sgstAmount || 0) + (order.cgstAmount || 0) + (order.igstAmount || 0));
+  
+  return (
+    <>
+      <div className="flex justify-between">
+        <span>Service Charge:</span>
+        <span>₹{serviceCharge.toFixed(0)}</span>
+      </div>
+      <div className="flex justify-between font-semibold">
+        <span>Taxable Amount:</span>
+        <span>₹{taxableAmount.toFixed(0)}</span>
+      </div>
+      <div className="mt-2 pt-2 border-t border-dashed border-gray-300">
+        <div className="text-xs font-bold mb-1">TAX BREAKDOWN</div>
+        {(order.sgstAmount || 0) > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>SGST:</span>
+            <span>₹{(order.sgstAmount || 0).toFixed(2)}</span>
+          </div>
+        )}
+        {(order.cgstAmount || 0) > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>CGST:</span>
+            <span>₹{(order.cgstAmount || 0).toFixed(2)}</span>
+          </div>
+        )}
+        {(order.igstAmount || 0) > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>IGST:</span>
+            <span>₹{(order.igstAmount || 0).toFixed(2)}</span>
+          </div>
+        )}
+        {(order.sgstAmount || 0) === 0 && (order.cgstAmount || 0) === 0 && (order.igstAmount || 0) === 0 && taxAmount > 0 && (
+          <div className="flex justify-between text-xs">
+            <span>Tax:</span>
+            <span>₹{taxAmount.toFixed(2)}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex justify-between mt-2 pt-2 border-t border-gray-300">
+        <span>Total:</span>
+        <span>₹{grandTotal.toFixed(2)}</span>
+      </div>
+      {order.roundOff !== 0 && (
+        <div className="flex justify-between text-xs">
+          <span>Round Off:</span>
+          <span>{(order.roundOff || 0) > 0 ? '+' : ''}₹{(order.roundOff || 0).toFixed(2)}</span>
+        </div>
+      )}
+      <div className="flex justify-between font-black text-lg mt-2 pt-2 border-t-2 border-black">
+        <span>AMOUNT PAYABLE:</span>
+        <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
+      </div>
+    </>
+  );
+};
+
+// Main Bill Totals Component that decides which scenario to render
+const BillTotals = ({ order, subtotal, gstEnabled }: { order: any; subtotal: number; gstEnabled: boolean }) => {
+  const hasServiceCharge = (order.serviceChargeAmount || 0) > 0;
+  const hasTaxAmounts = (order.sgstAmount || 0) > 0 || (order.cgstAmount || 0) > 0 || (order.igstAmount || 0) > 0;
+  const hasGSTFlag = order.gstEnabled || gstEnabled;
+  const hasTaxByAmount = order.totalAmount > (subtotal + (order.serviceChargeAmount || 0));
+  const hasGST = hasTaxAmounts || hasGSTFlag || hasTaxByAmount;
+
+  // Scenario 1: No service charge, no GST
+  if (!hasServiceCharge && !hasGST) {
+    return <SimpleBill order={order} subtotal={subtotal} />;
+  }
+
+  // Scenario 2: Service charge only, no GST
+  if (hasServiceCharge && !hasGST) {
+    return <ServiceChargeOnlyBill order={order} subtotal={subtotal} />;
+  }
+
+  // Scenario 3: GST only, no service charge
+  if (!hasServiceCharge && hasGST) {
+    return <GSTOnlyBill order={order} subtotal={subtotal} gstEnabled={gstEnabled} />;
+  }
+
+  // Scenario 4: Both service charge and GST
+  return <FullBill order={order} subtotal={subtotal} gstEnabled={gstEnabled} />;
+};
+
+const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
+  ({ order, restaurantName = 'Restaurant', restaurantLogo, isPaid, gstEnabled = false }, ref) => {
+    const subtotal = calculateSubtotal(order);
 
     return (
       <div
@@ -33,7 +206,12 @@ const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
         <div className="text-center mb-4">
           {restaurantLogo && (
             <div className="mb-2">
-              <img src={restaurantLogo} alt="Logo" className="h-16 mx-auto" />
+              <img 
+                src={restaurantLogo.startsWith('http') ? restaurantLogo : `${window.location.origin}${restaurantLogo}`} 
+                alt="Logo" 
+                className="h-16 mx-auto object-contain"
+                crossOrigin="anonymous"
+              />
             </div>
           )}
           <h1 className="text-lg font-bold uppercase">{restaurantName}</h1>
@@ -89,9 +267,9 @@ const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
               <div key={idx} className="flex justify-between text-xs mb-1">
                 <span className="flex-1 whitespace-normal" title={item.name}>{item.name}</span>
                 <span className="w-8 text-center flex-shrink-0">{item.quantity}</span>
-                <span className="w-14 text-right flex-shrink-0">₹{originalPrice.toFixed(2)}</span>
-                <span className="w-14 text-right flex-shrink-0">{offerPrice ? `₹${offerPrice.toFixed(2)}` : '-'}</span>
-                <span className="w-14 text-right font-semibold flex-shrink-0">₹{total.toFixed(2)}</span>
+                <span className="w-14 text-right flex-shrink-0">₹{originalPrice.toFixed(0)}</span>
+                <span className="w-14 text-right flex-shrink-0">{offerPrice ? `₹${offerPrice.toFixed(0)}` : '-'}</span>
+                <span className="w-14 text-right font-semibold flex-shrink-0">₹{total.toFixed(0)}</span>
               </div>
             );
           })}
@@ -102,50 +280,11 @@ const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
 
         {/* Totals */}
         <div className="space-y-1">
-          {/* Service Charge */}
-          {order.serviceChargeAmount > 0 && (
-            <div className="flex justify-between">
-              <span>Service Charge:</span>
-              <span>₹{order.serviceChargeAmount.toFixed(2)}</span>
-            </div>
-          )}
-
-          {/* Subtotal */}
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>₹{subtotal.toFixed(2)}</span>
+            <span>₹{subtotal.toFixed(0)}</span>
           </div>
-
-          {/* Tax Breakdown */}
-          {(order.sgstAmount > 0 || order.cgstAmount > 0 || order.igstAmount > 0) && (
-            <div className="mt-2 pt-2 border-t border-dashed border-gray-300">
-              <div className="text-xs font-bold mb-1">TAX BREAKDOWN</div>
-              {order.sgstAmount > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span>SGST:</span>
-                  <span>₹{order.sgstAmount.toFixed(2)}</span>
-                </div>
-              )}
-              {order.cgstAmount > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span>CGST:</span>
-                  <span>₹{order.cgstAmount.toFixed(2)}</span>
-                </div>
-              )}
-              {order.igstAmount > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span>IGST:</span>
-                  <span>₹{order.igstAmount.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Payable Total - BOLD */}
-          <div className="flex justify-between font-black text-lg mt-3 pt-2 border-t-2 border-black">
-            <span>PAYABLE:</span>
-            <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
-          </div>
+          <BillTotals order={order} subtotal={subtotal} gstEnabled={gstEnabled} />
         </div>
 
         {/* PAID Stamp */}

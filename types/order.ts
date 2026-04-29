@@ -11,14 +11,6 @@ export interface MenuItem {
     discountPercentage?: number;
     isVeg?: boolean;
     isBestSeller?: boolean;
-    gstEnabled?: boolean;
-    sgstPercentage?: number;
-    cgstPercentage?: number;
-    igstPercentage?: number;
-    serviceChargeEnabled?: boolean;
-    serviceChargePercentage?: number;
-    taxOnServiceCharge?: boolean;
-    taxOnServiceChargePercentage?: number;
 }
 
 export interface CartItem extends MenuItem {
@@ -71,4 +63,13 @@ export interface Order {
         retrycount?: number;
         adminAskedretry?: boolean;
     };
+    gstEnabled?: boolean;
+    sgstAmount?: number;
+    cgstAmount?: number;
+    igstAmount?: number;
+    serviceChargeAmount?: number;
+    taxableAmount?: number;
+    roundOff?: number;
+    grandTotal?: number;
+    subtotal?: number;
 }

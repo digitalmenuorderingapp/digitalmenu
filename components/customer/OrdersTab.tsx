@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes, FaUtensils, FaExclamationTriangle, FaPrint } from 'react-icons/fa';
+import { useState, useRef } from 'react';
+import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes, FaUtensils, FaExclamationTriangle, FaPrint, FaDownload } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
@@ -9,6 +9,8 @@ import { Order, MenuItem } from '@/types/order';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { orderFeedbackSchema, OrderFeedbackInput, paymentVerifySchema, PaymentVerifyInput, cancelOrderSchema, CancelOrderInput } from '@/lib/validations';
+import html2pdf from 'html2pdf.js';
+import PrintableBill from '@/components/ui/PrintableBill';
 
 
 interface OrdersTabProps {
@@ -229,6 +231,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
   const [selectedOrderIdForCancel, setSelectedOrderIdForCancel] = useState<string | null>(null);
   const [billModalOpen, setBillModalOpen] = useState(false);
   const [selectedOrderForBill, setSelectedOrderForBill] = useState<Order | null>(null);
+  const billRef = useRef<HTMLDivElement>(null);
 
   const {
     register: registerCancel,
@@ -240,6 +243,21 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
       reason: ''
     }
   });
+
+  const handleDownloadPDF = () => {
+    if (!billRef.current || !selectedOrderForBill) return;
+
+    const element = billRef.current;
+    const opt = {
+      margin: 0,
+      filename: `Bill_${selectedOrderForBill.orderNumber || selectedOrderForBill._id}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm' as const, format: [80, 297] as [number, number], orientation: 'portrait' as const }
+    };
+
+    html2pdf().set(opt).from(element).save();
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -314,6 +332,180 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
     }
+  };
+
+  // Helper to calculate subtotal for selected order
+  const calculateBillSubtotal = (order: any) => {
+    return order.subtotal || order.items.reduce((sum: number, item: any) => sum + ((item.offerPrice || item.price) * item.quantity), 0);
+  };
+
+  // Scenario 1: Neither service charge nor GST enabled
+  const SimpleBillModal = ({ order, subtotal }: { order: any; subtotal: number }) => (
+    <div className="flex justify-between items-center border-t-2 border-indigo-600 pt-3 mt-3">
+      <span className="text-base font-bold text-gray-900">Amount Payable</span>
+      <span className="text-xl font-black text-indigo-600">₹{Math.round(order.totalAmount).toFixed(0)}</span>
+    </div>
+  );
+
+  // Scenario 2: Service charge enabled, GST NOT enabled
+  const ServiceChargeOnlyBillModal = ({ order, subtotal }: { order: any; subtotal: number }) => (
+    <>
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-600">Service Charge</span>
+        <span className="text-sm font-semibold text-gray-900">₹{(order.serviceChargeAmount || 0).toFixed(0)}</span>
+      </div>
+      <div className="flex justify-between items-center border-t-2 border-indigo-600 pt-3 mt-3">
+        <span className="text-base font-bold text-gray-900">Amount Payable</span>
+        <span className="text-xl font-black text-indigo-600">₹{Math.round(order.totalAmount).toFixed(0)}</span>
+      </div>
+    </>
+  );
+
+  // Scenario 3: GST enabled, Service charge NOT enabled
+  const GSTOnlyBillModal = ({ order, subtotal }: { order: any; subtotal: number }) => {
+    const taxAmount = order.totalAmount - subtotal;
+    const grandTotal = order.grandTotal || (subtotal + (order.sgstAmount || 0) + (order.cgstAmount || 0) + (order.igstAmount || 0));
+    
+    return (
+      <>
+        <div className="flex justify-between items-center font-semibold">
+          <span className="text-sm text-gray-700">Taxable Amount</span>
+          <span className="text-sm font-semibold text-gray-900">₹{(order.taxableAmount || subtotal).toFixed(0)}</span>
+        </div>
+        <div className="bg-indigo-50 rounded-lg p-3 mt-3">
+          <h5 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Tax Breakdown</h5>
+          <div className="space-y-1">
+            {(order.sgstAmount || 0) > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">SGST</span>
+                <span className="text-xs font-medium text-gray-900">₹{(order.sgstAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
+            {(order.cgstAmount || 0) > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">CGST</span>
+                <span className="text-xs font-medium text-gray-900">₹{(order.cgstAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
+            {(order.igstAmount || 0) > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">IGST</span>
+                <span className="text-xs font-medium text-gray-900">₹{(order.igstAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
+            {(order.sgstAmount || 0) === 0 && (order.cgstAmount || 0) === 0 && (order.igstAmount || 0) === 0 && taxAmount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">Tax</span>
+                <span className="text-xs font-medium text-gray-900">₹{taxAmount.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+          <span className="text-sm text-gray-600">Total</span>
+          <span className="text-sm font-semibold text-gray-900">₹{grandTotal.toFixed(2)}</span>
+        </div>
+        {(order.roundOff || 0) !== 0 && (
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Round Off</span>
+            <span className="text-gray-500">{(order.roundOff || 0) > 0 ? '+' : ''}₹{(order.roundOff || 0).toFixed(2)}</span>
+          </div>
+        )}
+        <div className="border-t border-gray-200 pt-3 mt-3">
+          <div className="flex justify-between items-center">
+            <span className="text-base font-bold text-gray-900">Amount Payable</span>
+            <span className="text-xl font-black text-indigo-600">₹{Math.round(order.totalAmount).toFixed(0)}</span>
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  // Scenario 4: Both service charge AND GST enabled
+  const FullBillModal = ({ order, subtotal }: { order: any; subtotal: number }) => {
+    const serviceCharge = order.serviceChargeAmount || 0;
+    const taxableAmount = order.taxableAmount || (subtotal + serviceCharge);
+    const taxAmount = order.totalAmount - subtotal - serviceCharge;
+    const grandTotal = order.grandTotal || (taxableAmount + (order.sgstAmount || 0) + (order.cgstAmount || 0) + (order.igstAmount || 0));
+
+    return (
+      <>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Service Charge</span>
+          <span className="text-sm font-semibold text-gray-900">₹{serviceCharge.toFixed(0)}</span>
+        </div>
+        <div className="flex justify-between items-center font-semibold">
+          <span className="text-sm text-gray-700">Taxable Amount</span>
+          <span className="text-sm font-semibold text-gray-900">₹{taxableAmount.toFixed(0)}</span>
+        </div>
+        <div className="bg-indigo-50 rounded-lg p-3 mt-3">
+          <h5 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Tax Breakdown</h5>
+          <div className="space-y-1">
+            {(order.sgstAmount || 0) > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">SGST</span>
+                <span className="text-xs font-medium text-gray-900">₹{(order.sgstAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
+            {(order.cgstAmount || 0) > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">CGST</span>
+                <span className="text-xs font-medium text-gray-900">₹{(order.cgstAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
+            {(order.igstAmount || 0) > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">IGST</span>
+                <span className="text-xs font-medium text-gray-900">₹{(order.igstAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
+            {(order.sgstAmount || 0) === 0 && (order.cgstAmount || 0) === 0 && (order.igstAmount || 0) === 0 && taxAmount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">Tax</span>
+                <span className="text-xs font-medium text-gray-900">₹{taxAmount.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+          <span className="text-sm text-gray-600">Total</span>
+          <span className="text-sm font-semibold text-gray-900">₹{grandTotal.toFixed(2)}</span>
+        </div>
+        {(order.roundOff || 0) !== 0 && (
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Round Off</span>
+            <span className="text-gray-500">{(order.roundOff || 0) > 0 ? '+' : ''}₹{(order.roundOff || 0).toFixed(2)}</span>
+          </div>
+        )}
+        <div className="border-t border-gray-200 pt-3 mt-3">
+          <div className="flex justify-between items-center">
+            <span className="text-base font-bold text-gray-900">Amount Payable</span>
+            <span className="text-xl font-black text-indigo-600">₹{Math.round(order.totalAmount).toFixed(0)}</span>
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  // Bill Totals component that decides which scenario to render
+  const BillTotalsModal = ({ order }: { order: any }) => {
+    const subtotal = calculateBillSubtotal(order);
+    const hasServiceCharge = (order.serviceChargeAmount || 0) > 0;
+    const hasTaxAmounts = (order.sgstAmount || 0) > 0 || (order.cgstAmount || 0) > 0 || (order.igstAmount || 0) > 0;
+    const hasGSTFlag = order.gstEnabled;
+    const hasTaxByAmount = order.totalAmount > (subtotal + (order.serviceChargeAmount || 0));
+    const hasGST = hasTaxAmounts || hasGSTFlag || hasTaxByAmount;
+
+    if (!hasServiceCharge && !hasGST) {
+      return <SimpleBillModal order={order} subtotal={subtotal} />;
+    }
+    if (hasServiceCharge && !hasGST) {
+      return <ServiceChargeOnlyBillModal order={order} subtotal={subtotal} />;
+    }
+    if (!hasServiceCharge && hasGST) {
+      return <GSTOnlyBillModal order={order} subtotal={subtotal} />;
+    }
+    return <FullBillModal order={order} subtotal={subtotal} />;
   };
 
   return (
@@ -775,70 +967,74 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
                   <div className="space-y-3 mb-4">
                     <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Items</h4>
-                    {selectedOrderForBill.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                          <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">₹{((item.offerPrice || item.price) * item.quantity).toFixed(2)}</p>
-                          {item.offerPrice && item.offerPrice < item.price && (
-                            <p className="text-xs text-gray-400 line-through">₹{(item.price * item.quantity).toFixed(2)}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 font-semibold text-gray-700">Description</th>
+                            <th className="text-center py-2 font-semibold text-gray-700">Qty</th>
+                            <th className="text-right py-2 font-semibold text-gray-700">Actual</th>
+                            <th className="text-right py-2 font-semibold text-gray-700">Offer</th>
+                            <th className="text-right py-2 font-semibold text-gray-700">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedOrderForBill.items.map((item, idx) => (
+                            <tr key={idx} className="border-b border-gray-100">
+                              <td className="py-2 text-gray-900">{item.name}</td>
+                              <td className="py-2 text-center text-gray-600">{item.quantity}</td>
+                              <td className="py-2 text-right text-gray-600">₹{item.price.toFixed(0)}</td>
+                              <td className="py-2 text-right text-gray-600">₹{(item.offerPrice || item.price).toFixed(0)}</td>
+                              <td className="py-2 text-right font-semibold text-gray-900">₹{((item.offerPrice || item.price) * item.quantity).toFixed(0)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   <div className="border-t border-gray-200 pt-4 space-y-2">
+                    {/* Common: Subtotal always shown first */}
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Subtotal</span>
-                      <span className="text-sm font-semibold text-gray-900">₹{selectedOrderForBill.items.reduce((sum, item) => sum + ((item.offerPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
-                    </div>
-                    
-                    {/* Tax Breakdown (Indian GST Format) */}
-                    <div className="bg-indigo-50 rounded-lg p-3 mt-3">
-                      <h5 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Tax Breakdown</h5>
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">SGST</span>
-                          <span className="text-xs font-medium text-gray-900">₹0.00</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">CGST</span>
-                          <span className="text-xs font-medium text-gray-900">₹0.00</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">IGST</span>
-                          <span className="text-xs font-medium text-gray-900">₹0.00</span>
-                        </div>
-                      </div>
+                      <span className="text-sm font-semibold text-gray-900">₹{selectedOrderForBill.items.reduce((sum, item) => sum + ((item.offerPrice || item.price) * item.quantity), 0).toFixed(0)}</span>
                     </div>
 
-                    {/* Service Charge */}
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-sm text-gray-600">Service Charge</span>
-                      <span className="text-sm font-semibold text-gray-900">₹0.00</span>
-                    </div>
+                    {/* Bill Details - 4 Scenarios */}
+                    <BillTotalsModal order={selectedOrderForBill} />
+                  </div>
 
-                    <div className="border-t border-gray-200 pt-3 mt-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-base font-bold text-gray-900">Total</span>
-                        <span className="text-xl font-black text-indigo-600">₹{selectedOrderForBill.totalAmount.toFixed(2)}</span>
+                  {/* PAID Stamp - Show if payment is verified */}
+                  {selectedOrderForBill.paymentStatus?.toUpperCase() === 'VERIFIED' && (
+                    <div className="mt-4 border-2 border-emerald-600 rounded-lg p-3 text-center bg-emerald-50">
+                      <div className="border border-emerald-600 rounded-md p-2">
+                        <span className="text-xl font-black tracking-[0.3em] text-emerald-700">PAID</span>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Hidden PrintableBill for PDF generation */}
+                  <div className="hidden">
+                    <div ref={billRef}>
+                      <PrintableBill
+                        order={selectedOrderForBill}
+                        restaurantName={session?.restaurantName || 'Restaurant'}
+                        restaurantLogo={session?.logo || undefined}
+                        isPaid={selectedOrderForBill.paymentStatus?.toUpperCase() === 'VERIFIED'}
+                        gstEnabled={selectedOrderForBill.gstEnabled || false}
+                      />
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      window.print();
-                    }}
-                    className="w-full mt-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <FaPrint className="w-4 h-4" />
-                    Print Bill
-                  </button>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={handleDownloadPDF}
+                      className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FaDownload className="w-4 h-4" />
+                      Download PDF
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </>
