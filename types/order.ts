@@ -7,8 +7,6 @@ export interface MenuItem {
     images?: string[];
     image?: string;
     isAvailable: boolean;
-    offerPrice?: number;
-    discountPercentage?: number;
     isVeg?: boolean;
     isBestSeller?: boolean;
 }
@@ -22,7 +20,6 @@ export interface OrderItem {
     name: string;
     price: number;
     quantity: number;
-    offerPrice?: number;
 }
 
 

@@ -19,11 +19,15 @@ import {
   FaTimes,
   FaDownload,
   FaUtensils,
+  FaTable,
+  FaUserFriends
 } from 'react-icons/fa';
 import { Skeleton, TableCardSkeleton } from '@/components/ui/Skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { tableSchema, TableInput } from '@/lib/validations';
+import { getTodayISTDateString } from '@/utils/date';
+import { motion } from 'framer-motion';
 
 interface Table {
   _id: string;
@@ -194,6 +198,10 @@ export default function TableManagementPage() {
     shouldRetryOnError: false,
   });
 
+  const occupancySwrKey = user ? `/order?status=PLACED,ACCEPTED,COMPLETED&date=${getTodayISTDateString()}` : null;
+  const { data: occupancyRes, isLoading: isLoadingOccupancy } = useSWR(occupancySwrKey, fetcher);
+  const pendingOrders = occupancyRes?.data || [];
+
   const tables = data?.data || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -327,6 +335,106 @@ export default function TableManagementPage() {
             <span>Add Table</span>
           </button>
         </div>
+      </div>
+
+      {/* Live Table Status Section */}
+      <div className="mb-8 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/30 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+              <FaTable className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-gray-900 tracking-tight">Live Table Occupancy</h3>
+              <p className="text-xs text-gray-500 font-medium">Real-time status for {user?.restaurantName || 'your restaurant'}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white text-emerald-600 rounded-xl shadow-sm border border-gray-100 text-[10px] font-black uppercase tracking-widest">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              Available
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl shadow-sm border border-gray-100 text-[10px] font-black uppercase tracking-widest">
+              <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+              Occupied
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-5 relative z-10">
+          {tables.map((table: any) => {
+            const isOccupied = pendingOrders.some(
+              (order: any) => 
+                order.orderType === 'dine-in' && 
+                order.tableNumber === table.tableNumber &&
+                (order.status === 'PLACED' || order.status === 'ACCEPTED' || (order.status === 'COMPLETED' && order.paymentStatus !== 'VERIFIED'))
+            );
+
+            return (
+              <motion.div
+                key={`occ-${table._id}`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ y: -5, scale: 1.02 }}
+                className={`relative group p-6 rounded-[2rem] border-2 transition-all duration-300 flex flex-col items-center justify-center gap-2
+                  ${isOccupied 
+                    ? 'bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 border-indigo-700 text-white shadow-2xl shadow-indigo-200' 
+                    : 'bg-white border-gray-50 text-gray-900 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-50'
+                  }`}
+              >
+                <div className={`p-2 rounded-lg ${isOccupied ? 'bg-indigo-500/30' : 'bg-gray-50 group-hover:bg-emerald-50'}`}>
+                  <FaTable className={`w-3 h-3 ${isOccupied ? 'text-indigo-200' : 'text-gray-400 group-hover:text-emerald-500'}`} />
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 ${isOccupied ? 'text-indigo-200/80' : 'text-gray-400'}`}>
+                    Table
+                  </span>
+                  <span className="text-3xl font-black tracking-tighter leading-none">
+                    {table.tableNumber}
+                  </span>
+                </div>
+
+                <div className={`mt-2 flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
+                  ${isOccupied ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-400 group-hover:bg-emerald-100 group-hover:text-emerald-700'}`}>
+                  <FaUserFriends className="w-2.5 h-2.5 opacity-60" />
+                  {table.seats || 4} Seats
+                </div>
+
+                {isOccupied && (
+                  <>
+                    <div className="absolute -top-2 -right-2 bg-emerald-400 text-white w-7 h-7 rounded-full shadow-lg flex items-center justify-center border-4 border-indigo-600">
+                      <FaUtensils className="w-2.5 h-2.5 animate-bounce" />
+                    </div>
+                    <div className="absolute top-2 left-2 flex gap-0.5">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`w-1 h-1 rounded-full bg-indigo-300/50 animate-pulse`} style={{ animationDelay: `${i * 200}ms` }}></div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            );
+          })}
+          
+          {tables.length === 0 && !isLoading && (
+            <div className="col-span-full py-20 border-3 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-gray-300 bg-gray-50/50">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                <FaTable className="w-8 h-8 opacity-20" />
+              </div>
+              <h4 className="text-lg font-black text-gray-400 uppercase tracking-widest">No Tables Found</h4>
+              <p className="text-xs font-bold text-gray-300 uppercase tracking-tighter">Please create tables to see live status</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Table QR Codes</h2>
+        <div className="h-px bg-gray-200 flex-1"></div>
       </div>
 
       {/* Tables Grid */}

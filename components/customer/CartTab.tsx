@@ -44,8 +44,7 @@ export default function CartTab({
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => {
-      const price = item.offerPrice || item.price;
-      return total + (price * item.quantity);
+      return total + (item.price * item.quantity);
     }, 0);
   };
 
@@ -108,7 +107,7 @@ export default function CartTab({
                     <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-0.5">{item.foodType}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-base font-black text-slate-900">₹{(item.offerPrice || item.price).toFixed(0)}</span>
+                    <span className="text-base font-black text-slate-900">₹{item.price.toFixed(0)}</span>
                   </div>
                 </div>
 

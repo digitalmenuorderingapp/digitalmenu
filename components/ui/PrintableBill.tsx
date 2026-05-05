@@ -267,23 +267,18 @@ const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
           <div className="flex justify-between text-xs font-bold mb-1 border-b border-gray-300 pb-1">
             <span className="flex-1">Description</span>
             <span className="w-8 text-center">Qty</span>
-            <span className="w-14 text-right">Actual</span>
-            <span className="w-14 text-right">Offer</span>
+            <span className="w-14 text-right">Price</span>
             <span className="w-14 text-right">Total</span>
           </div>
 
           {order.items.map((item: any, idx: number) => {
-            const originalPrice = item.originalPrice || item.price;
             const finalPrice = item.price;
-            const offerPrice = item.offerPrice;
             const total = finalPrice * item.quantity;
-
             return (
-              <div key={idx} className="flex justify-between text-xs mb-1">
-                <span className="flex-1 whitespace-normal" title={item.name}>{item.name}</span>
+              <div key={idx} className="flex justify-between text-sm mb-1">
+                <span className="flex-1 pr-2 truncate">{item.name}</span>
                 <span className="w-8 text-center flex-shrink-0">{item.quantity}</span>
-                <span className="w-14 text-right flex-shrink-0">₹{originalPrice.toFixed(0)}</span>
-                <span className="w-14 text-right flex-shrink-0">{offerPrice ? `₹${offerPrice.toFixed(0)}` : '-'}</span>
+                <span className="w-14 text-right flex-shrink-0">₹{finalPrice.toFixed(0)}</span>
                 <span className="w-14 text-right font-semibold flex-shrink-0">₹{total.toFixed(0)}</span>
               </div>
             );
@@ -302,11 +297,49 @@ const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
           <BillTotals order={order} subtotal={subtotal} gstEnabled={gstEnabled} />
         </div>
 
-        {/* PAID Stamp */}
+        {/* PAID Stamp & Payment Details */}
         {isPaid && (
-          <div className="mt-3 border-2 border-black rounded-md p-2 text-center">
-            <div className="border border-black rounded-sm p-1">
-              <span className="text-xl font-black tracking-[0.3em]">PAID</span>
+          <div className="mt-3 space-y-2">
+            <div className="border-2 border-black rounded-md p-2 text-center">
+              <div className="border border-black rounded-sm p-1">
+                <span className="text-xl font-black tracking-[0.3em]">PAID</span>
+              </div>
+            </div>
+            
+            <div className="text-[10px] uppercase font-bold space-y-0.5">
+              <div className="flex justify-between">
+                <span>Method:</span>
+                <span>{order.collectedVia || 'ONLINE'}</span>
+              </div>
+              
+              {order.collectedVia === 'SPLIT' && order.splitPayment ? (
+                <div className="border-t border-gray-300 mt-1 pt-1 space-y-0.5">
+                  <div className="flex justify-between">
+                    <span>Cash:</span>
+                    <span>₹{order.splitPayment.cashAmount?.toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Online:</span>
+                    <span>₹{order.splitPayment.onlineAmount?.toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-200 mt-0.5 pt-0.5 font-black">
+                    <span>Total Collected:</span>
+                    <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-between">
+                  <span>Amount Collected:</span>
+                  <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
+                </div>
+              )}
+
+              {order.utr && (
+                <div className="flex justify-between">
+                  <span>UTR:</span>
+                  <span>{order.utr}</span>
+                </div>
+              )}
             </div>
           </div>
         )}

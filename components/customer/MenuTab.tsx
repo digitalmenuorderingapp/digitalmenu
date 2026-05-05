@@ -234,17 +234,7 @@ export default function MenuTab({
                           </div>
                        </div>
                        <div className="flex flex-col items-end flex-shrink-0">
-                            {item.offerPrice ? (
-                              <div className="flex flex-col items-end">
-                                <span className="text-xl font-black text-indigo-600 leading-none">₹{item.offerPrice.toFixed(0)}</span>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                  <span className="text-[10px] text-slate-400 line-through">₹{item.price.toFixed(0)}</span>
-                                  <span className="text-[9px] font-black text-rose-500">-{Math.round(((item.price - item.offerPrice) / item.price) * 100)}%</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-xl font-black text-indigo-600 leading-none">₹{item.price.toFixed(0)}</span>
-                            )}
+                            <span className="text-xl font-black text-indigo-600 leading-none">₹{item.price.toFixed(0)}</span>
                        </div>
                     </div>
 
@@ -406,23 +396,15 @@ export default function MenuTab({
                   )}
                 </AnimatePresence>
               </div>
-
-              <div className="flex justify-between items-start mb-6">
+              <div className="px-5 sm:px-8">
+                <div className="flex justify-between items-start mb-6">
                   <div className="flex-1 pr-6">
                     <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight">
                       {selectedItem.name}
                     </h2>
                   </div>
                   <div className="flex flex-col items-end bg-gray-900 text-white p-3 sm:p-4 rounded-xl sm:rounded-[2rem] shadow-xl">
-                    {selectedItem.offerPrice ? (
-                      <div className="flex items-baseline gap-1.5 sm:gap-3 flex-wrap justify-end">
-                        <span className="text-xl sm:text-2xl md:text-3xl font-black leading-none">₹{selectedItem.offerPrice}</span>
-                        <span className="text-sm sm:text-base text-gray-400 line-through">₹{selectedItem.price}</span>
-                        <span className="text-xs sm:text-sm font-bold text-emerald-400">{Math.round(((selectedItem.price - selectedItem.offerPrice) / selectedItem.price) * 100)}% off</span>
-                      </div>
-                    ) : (
                       <span className="text-xl sm:text-2xl md:text-3xl font-black leading-none">₹{selectedItem.price}</span>
-                    )}
                   </div>
                 </div>
 
@@ -437,6 +419,7 @@ export default function MenuTab({
                     </p>
                   </div>
                 </div>
+              </div>
               </div>
                  <div className="absolute bottom-0 left-0 right-0 p-5 pb-8 glass-card border-t border-white/50 backdrop-blur-3xl z-20">
                   <div className="flex items-center gap-4">

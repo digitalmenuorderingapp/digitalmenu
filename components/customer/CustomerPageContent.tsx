@@ -430,16 +430,13 @@ export default function CustomerPageContent() {
         items: cart.map(item => ({
           itemId: item._id,
           name: item.name,
-          price: item.offerPrice || item.price,
-          originalPrice: item.price,
-          offerPrice: item.offerPrice || null,
+          price: item.price,
           quantity: item.quantity
         })),
 
 
         totalAmount: cart.reduce((total, item) => {
-          const price = item.offerPrice || item.price;
-          return total + (price * item.quantity);
+          return total + (item.price * item.quantity);
         }, 0),
         paymentMethod,
         utr: utr || undefined,

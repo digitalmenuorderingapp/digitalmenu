@@ -336,7 +336,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
   // Helper to calculate subtotal for selected order
   const calculateBillSubtotal = (order: any) => {
-    return order.subtotal || order.items.reduce((sum: number, item: any) => sum + ((item.offerPrice || item.price) * item.quantity), 0);
+    return order.subtotal || order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
   };
 
   // Scenario 1: Neither service charge nor GST enabled
@@ -975,8 +975,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                           <tr className="border-b border-gray-200">
                             <th className="text-left py-2 font-semibold text-gray-700">Description</th>
                             <th className="text-center py-2 font-semibold text-gray-700">Qty</th>
-                            <th className="text-right py-2 font-semibold text-gray-700">Actual</th>
-                            <th className="text-right py-2 font-semibold text-gray-700">Offer</th>
+                            <th className="text-right py-2 font-semibold text-gray-700">Price</th>
                             <th className="text-right py-2 font-semibold text-gray-700">Total</th>
                           </tr>
                         </thead>
@@ -986,8 +985,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                               <td className="py-2 text-gray-900">{item.name}</td>
                               <td className="py-2 text-center text-gray-600">{item.quantity}</td>
                               <td className="py-2 text-right text-gray-600">₹{item.price.toFixed(0)}</td>
-                              <td className="py-2 text-right text-gray-600">₹{(item.offerPrice || item.price).toFixed(0)}</td>
-                              <td className="py-2 text-right font-semibold text-gray-900">₹{((item.offerPrice || item.price) * item.quantity).toFixed(0)}</td>
+                              <td className="py-2 text-right font-semibold text-gray-900">₹{(item.price * item.quantity).toFixed(0)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -999,7 +997,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                     {/* Common: Subtotal always shown first */}
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Subtotal</span>
-                      <span className="text-sm font-semibold text-gray-900">₹{selectedOrderForBill.items.reduce((sum, item) => sum + ((item.offerPrice || item.price) * item.quantity), 0).toFixed(0)}</span>
+                      <span className="text-sm font-semibold text-gray-900">₹{selectedOrderForBill.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(0)}</span>
                     </div>
 
                     {/* Bill Details - 4 Scenarios */}

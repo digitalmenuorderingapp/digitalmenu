@@ -10,7 +10,8 @@ import {
   FaMoneyBillWave, 
   FaCreditCard,
   FaBan,
-  FaRedo
+  FaRedo,
+  FaDivide
 } from 'react-icons/fa';
 import Button from './Button';
 
@@ -47,7 +48,29 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
   const [utr, setUtr] = useState('');
   const [reason, setReason] = useState('');
   const [customReason, setCustomReason] = useState('');
-  const [method, setMethod] = useState<'CASH' | 'ONLINE'>('CASH');
+  const [method, setMethod] = useState<'CASH' | 'ONLINE' | 'SPLIT'>('CASH');
+  const [splitCash, setSplitCash] = useState<number | ''>('');
+  const [splitOnline, setSplitOnline] = useState<number | ''>('');
+
+  const handleSplitCashChange = (val: string) => {
+    const cash = Number(val);
+    setSplitCash(val === '' ? '' : cash);
+    if (amount && val !== '') {
+      setSplitOnline(Math.max(0, amount - cash));
+    } else if (val === '') {
+      setSplitOnline('');
+    }
+  };
+
+  const handleSplitOnlineChange = (val: string) => {
+    const online = Number(val);
+    setSplitOnline(val === '' ? '' : online);
+    if (amount && val !== '') {
+      setSplitCash(Math.max(0, amount - online));
+    } else if (val === '') {
+      setSplitCash('');
+    }
+  };
 
   // Set initial UTR if available from customer submission
   React.useEffect(() => {
@@ -91,7 +114,11 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
         payload.utr = utr;
       } else if (type === 'COLLECT_PAYMENT') {
         payload.method = method;
-        if (method === 'ONLINE') payload.utr = utr;
+        if (method === 'ONLINE' || method === 'SPLIT') payload.utr = utr;
+        if (method === 'SPLIT') {
+          payload.splitCashAmount = splitCash;
+          payload.splitOnlineAmount = splitOnline;
+        }
       } else if (type === 'REJECT_ORDER' || type === 'MARK_UNPAID') {
         payload.reason = reason === 'Other (Specify below)' ? customReason : reason;
       }
@@ -176,28 +203,39 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Select Payment Method</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <button
                         onClick={() => setMethod('CASH')}
-                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
+                        className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
                           method === 'CASH' 
                             ? 'bg-indigo-50 border-indigo-600 text-indigo-600' 
                             : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
                         }`}
                       >
-                        <FaMoneyBillWave className="text-2xl" />
-                        <span className="font-black text-sm uppercase">Cash</span>
+                        <FaMoneyBillWave className="text-xl sm:text-2xl" />
+                        <span className="font-black text-xs sm:text-sm uppercase">Cash</span>
                       </button>
                       <button
                         onClick={() => setMethod('ONLINE')}
-                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
+                        className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
                           method === 'ONLINE' 
                             ? 'bg-blue-50 border-blue-600 text-blue-600' 
                             : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
                         }`}
                       >
-                        <FaCreditCard className="text-2xl" />
-                        <span className="font-black text-sm uppercase">Online</span>
+                        <FaCreditCard className="text-xl sm:text-2xl" />
+                        <span className="font-black text-xs sm:text-sm uppercase">Online</span>
+                      </button>
+                      <button
+                        onClick={() => setMethod('SPLIT')}
+                        className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
+                          method === 'SPLIT' 
+                            ? 'bg-purple-50 border-purple-600 text-purple-600' 
+                            : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                        }`}
+                      >
+                        <FaDivide className="text-xl sm:text-2xl" />
+                        <span className="font-black text-xs sm:text-sm uppercase">Split</span>
                       </button>
                     </div>
                   </div>
@@ -217,6 +255,57 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
                         value={utr}
                         onChange={(e) => setUtr(e.target.value)}
                       />
+                    </motion.div>
+                  )}
+
+                  {method === 'SPLIT' && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      className="space-y-4 overflow-hidden pt-2"
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Cash Amount</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-black">₹</span>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                              value={splitCash}
+                              onChange={(e) => handleSplitCashChange(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Online Amount</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-black">₹</span>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                              value={splitOnline}
+                              onChange={(e) => handleSplitOnlineChange(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Optional UTR (Last 6 Digits)</label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="e.g. 123456"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                          value={utr}
+                          onChange={(e) => setUtr(e.target.value)}
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </div>
@@ -311,7 +400,8 @@ const ActionModal = ({ isOpen, onClose, onConfirm, type, orderNumber, amount, su
                 disabled={
                   loading ||
                   ((type === 'REJECT_ORDER' || type === 'MARK_UNPAID') && !reason) ||
-                  ((type === 'REJECT_ORDER' || type === 'MARK_UNPAID') && reason === 'Other (Specify below)' && !customReason)
+                  ((type === 'REJECT_ORDER' || type === 'MARK_UNPAID') && reason === 'Other (Specify below)' && !customReason) ||
+                  (type === 'COLLECT_PAYMENT' && method === 'SPLIT' && (Number(splitCash) + Number(splitOnline)) !== amount)
                 }
               >
                 {type === 'VERIFY_PAYMENT' ? 'Approve Payment' : 

@@ -34,11 +34,21 @@ function AuthPageContent() {
 
 
     const {
-        login, googleSignIn
+        login, googleSignIn, isAuthenticated, isLoading: authLoading
     } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
 
+    const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+    useEffect(() => {
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+        if (storedUser || isAuthenticated) {
+            router.push('/admin/dashboard');
+        } else if (!authLoading) {
+            setIsCheckingSession(false);
+        }
+    }, [isAuthenticated, authLoading, router]);
 
     // GIS Client state
     const [googleAuthClient, setGoogleAuthClient] = useState<any>(null);
@@ -98,6 +108,14 @@ function AuthPageContent() {
             setIsLoading(false);
         }
     };
+
+    if (isCheckingSession) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <FaSpinner className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 relative overflow-hidden flex items-center justify-center p-4">

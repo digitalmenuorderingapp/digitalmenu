@@ -26,7 +26,8 @@ import {
   FaExclamationCircle,
   FaEnvelope,
   FaPlus,
-  FaPrint
+  FaPrint,
+  FaTable
 } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import useSWR, { mutate } from 'swr';
@@ -146,6 +147,19 @@ export default function OrdersPage() {
 
   const orders = data?.data || [];
   const stats = data?.stats || null;
+
+  // Table data for occupancy
+  const { data: tableRes } = useSWR(user ? '/table' : null, fetcher);
+  const tablesList = tableRes?.data || [];
+
+  const isTableOccupied = useCallback((tableNumber: number) => {
+    // Check if table has any pending dine-in orders
+    return orders.some((o: Order) => 
+       o.orderType === 'dine-in' && 
+       o.tableNumber === tableNumber &&
+       (o.status === 'PLACED' || o.status === 'ACCEPTED' || (o.status === 'COMPLETED' && o.paymentStatus !== 'VERIFIED'))
+    );
+  }, [orders]);
 
   // Function to refresh orders data (used by socket handlers)
   const refreshOrders = useCallback(() => {
@@ -534,30 +548,68 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto pr-2 no-scrollbar">
-        <AnimatePresence mode="wait">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {Array(6).fill(0).map((_, i) => <OrderCardSkeleton key={i} />)}
+      <div className="flex flex-col lg:flex-row gap-6 items-start h-full min-h-0">
+        {/* Left Side: Orders Grid */}
+        <div className="flex-1 min-h-0 w-full overflow-y-auto pr-2 no-scrollbar">
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array(6).fill(0).map((_, i) => <OrderCardSkeleton key={i} />)}
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="py-20 text-center">
+                <FaClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                <p className="text-gray-400 font-medium">No orders found</p>
+              </div>
+            ) : (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
+                {filteredOrders.map((order: Order) => (
+                  <OrderCard
+                     key={`${order._id}-${order.status}-${order.paymentStatus}-${order.updatedAt || Date.now()}`}
+                     order={order as any}
+                     onAction={handleAction}
+                     onPrint={(o: any) => handlePrintBill(order)}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Right Side: Table Occupancy */}
+        <div className="w-full lg:w-[220px] shrink-0 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sticky top-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+              <FaTable className="text-indigo-500" /> Occupancy
+            </h3>
+            <div className="flex gap-2">
+               <span className="flex items-center gap-1 text-[9px] font-bold text-gray-500"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Free</span>
+               <span className="flex items-center gap-1 text-[9px] font-bold text-gray-500"><div className="w-2 h-2 rounded-full bg-rose-500"></div> Busy</span>
             </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="py-20 text-center">
-              <FaClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-              <p className="text-gray-400 font-medium">No orders found</p>
-            </div>
-          ) : (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
-              {filteredOrders.map((order: Order) => (
-                <OrderCard
-                   key={`${order._id}-${order.status}-${order.paymentStatus}-${order.updatedAt || Date.now()}`}
-                   order={order as any}
-                   onAction={handleAction}
-                   onPrint={(o: any) => handlePrintBill(order)}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {tablesList.map((t: any) => {
+              const isOccupied = isTableOccupied(t.tableNumber);
+              return (
+                <div 
+                  key={t._id} 
+                  className={`w-[45px] h-[45px] rounded-xl flex flex-col items-center justify-center border transition-all ${
+                    isOccupied 
+                      ? 'bg-rose-50 border-rose-200 text-rose-700 shadow-sm' 
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 cursor-pointer'
+                  }`}
+                  title={isOccupied ? `Table ${t.tableNumber} is Occupied` : `Table ${t.tableNumber} is Free`}
+                >
+                  <span className="text-[9px] font-bold uppercase opacity-60 leading-none mb-0.5">Tbl</span>
+                  <span className="text-sm font-black leading-none">{t.tableNumber}</span>
+                </div>
+              );
+            })}
+            {tablesList.length === 0 && (
+              <div className="w-full text-center py-4 text-xs text-gray-400 font-bold">No tables configured</div>
+            )}
+          </div>
+        </div>
       </div>
 
       <CreateOrderModal

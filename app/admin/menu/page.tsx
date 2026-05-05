@@ -33,8 +33,6 @@ interface MenuItem {
   images?: string[];
   image?: string; // Keep for backward compatibility if needed in UI
   price: number;
-  offerPrice?: number;
-  discountPercentage: number;
   isActive: boolean;
   category?: string;
   foodType?: string;
@@ -99,7 +97,6 @@ export default function MenuManagementPage() {
       name: '',
       description: '',
       price: 0,
-      offerPrice: undefined,
       isActive: true,
       foodType: 'Main Course',
       isVeg: true,
@@ -111,7 +108,6 @@ export default function MenuManagementPage() {
   const isVegWatcher = watch('isVeg');
   const isBestSellerWatcher = watch('isBestSeller');
   const priceWatcher = watch('price');
-  const offerPriceWatcher = watch('offerPrice');
   const foodTypeWatcher = watch('foodType');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -124,7 +120,6 @@ export default function MenuManagementPage() {
       name: '',
       description: '',
       price: 0,
-      offerPrice: undefined,
       isActive: true,
       foodType: 'Main Course',
       isVeg: true,
@@ -144,7 +139,6 @@ export default function MenuManagementPage() {
         name: item.name,
         description: item.description || '',
         price: item.price,
-        offerPrice: item.offerPrice,
         isActive: item.isActive,
         foodType: item.foodType || 'Main Course',
         isVeg: item.isVeg ?? true,
@@ -237,7 +231,6 @@ export default function MenuManagementPage() {
     formData.append('name', data.name);
     formData.append('description', data.description || '');
     formData.append('price', data.price.toString());
-    if (data.offerPrice) formData.append('offerPrice', data.offerPrice.toString());
     formData.append('isActive', data.isActive.toString());
     formData.append('foodType', data.foodType);
     formData.append('isVeg', data.isVeg.toString());
@@ -301,10 +294,6 @@ export default function MenuManagementPage() {
     }
   };
 
-  const calculateDiscount = (price: number, offerPrice: number) => {
-    if (!offerPrice || price <= 0) return 0;
-    return Math.round(((price - offerPrice) / price) * 100);
-  };
 
   // Remove full-page blocking loader
 
@@ -361,11 +350,7 @@ export default function MenuManagementPage() {
                   Inactive
                 </div>
               )}
-              {item.offerPrice && item.discountPercentage > 0 && (
-                <div className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg shadow-lg">
-                  -{item.discountPercentage}%
-                </div>
-              )}
+
               {item.isBestSeller && (
                 <div className="absolute bottom-2 left-2 px-3 py-1 bg-amber-500 text-white text-[10px] font-black rounded-full shadow-lg flex items-center gap-1 border border-amber-400">
                   <span className="animate-pulse">⭐</span> BEST SELLER
@@ -389,20 +374,9 @@ export default function MenuManagementPage() {
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  {item.offerPrice ? (
-                    <>
-                      <span className="text-lg font-bold text-indigo-600">
-                        ₹{item.offerPrice.toFixed(2)}
-                      </span>
-                      <span className="text-sm text-gray-400 line-through">
-                        ₹{item.price.toFixed(2)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-lg font-bold text-indigo-600">
-                      ₹{item.price.toFixed(2)}
-                    </span>
-                  )}
+                  <span className="text-lg font-bold text-indigo-600">
+                    ₹{item.price.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -605,7 +579,7 @@ export default function MenuManagementPage() {
                   </div>
 
                   {/* Price Row */}
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Price (₹) <span className="text-red-500">*</span>
                     </label>
@@ -621,29 +595,6 @@ export default function MenuManagementPage() {
                       />
                     </div>
                     {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Offer Price
-                      {priceWatcher && offerPriceWatcher && Number(offerPriceWatcher) < Number(priceWatcher) && (
-                        <span className="ml-2 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
-                          {Math.round((1 - Number(offerPriceWatcher) / Number(priceWatcher)) * 100)}% OFF
-                        </span>
-                      )}
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        {...register('offerPrice', { valueAsNumber: true })}
-                        placeholder="0.00"
-                        className={`w-full pl-8 pr-4 py-2.5 bg-gray-50 border ${errors.offerPrice ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all`}
-                      />
-                    </div>
-                    {errors.offerPrice && <p className="text-red-500 text-xs mt-1">{errors.offerPrice.message}</p>}
                   </div>
 
                   {/* Food Type & Status Row */}

@@ -52,7 +52,6 @@ export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 export const menuItemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   price: z.number({ message: 'Price must be a number' }).min(0, 'Price cannot be negative'),
-  offerPrice: z.number().min(0, 'Offer price cannot be negative').optional(),
   foodType: z.string().min(1, 'Category is required'),
   description: z.string().optional(),
   isActive: z.boolean().default(true),
@@ -68,7 +67,6 @@ export const orderItemSchema = z.object({
   name: z.string(),
   price: z.number(),
   quantity: z.number().min(1),
-  offerPrice: z.number().optional(),
 });
 
 // Customer Info
