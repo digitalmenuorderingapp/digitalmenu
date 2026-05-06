@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import {
   FaClock,
   FaUsers,
+  FaBan,
   FaHashtag,
   FaCreditCard,
   FaMoneyBillWave,
@@ -24,7 +25,7 @@ import {
 } from 'react-icons/fa';
 import Button from './Button';
 
-import ActionModal, { ActionType } from './ActionModal';
+import { ActionType } from './ActionModal';
 
 // Helper function to check if order is paid
 export const isOrderPaid = (order: Order) => {
@@ -49,7 +50,8 @@ export const getPaymentStatusDisplay = (order: Order) => {
 
   if (paid) {
     return {
-      text: order.collectedVia?.toUpperCase() === 'CASH' ? 'Cash Collected' : 'Online Verified',
+      text: order.collectedVia?.toUpperCase() === 'CASH' ? 'Cash Collected' :
+        order.collectedVia?.toUpperCase() === 'SPLIT' ? 'Split Verified' : 'Online Verified',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     };
@@ -83,9 +85,9 @@ export const getPaymentStatusDisplay = (order: Order) => {
   }
 
   return {
-    text: (order.paymentMethod?.toUpperCase() === 'ONLINE' || order.collectedVia?.toUpperCase() === 'ONLINE') ? 'Online Pending' : 'Pay at Counter',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50'
+    text: 'Pending',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50'
   };
 };
 
@@ -105,9 +107,9 @@ interface Order {
   specialInstructions?: string;
   items: OrderItem[];
   totalAmount: number;
-  status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+  status: 'PLACED' | 'ACCEPTED' | 'PREPARED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
   paymentMethod?: 'ONLINE' | 'CASH';
-  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
+  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED' | 'SPLIT';
   paymentStatus: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
   paymentDueStatus?: 'CLEAR' | 'DUE';
   utr?: string;
@@ -135,16 +137,17 @@ interface OrderCardProps {
   variant?: 'today' | 'compact';
   onAction?: (orderId: string, action: string, payload?: any) => void;
   onPrint?: (order: Order) => void;
+  onRequestAction?: (order: Order, type: ActionType) => void;
 }
 
 const OrderCard = ({
   order,
   variant = 'today',
   onAction,
-  onPrint
+  onPrint,
+  onRequestAction
 }: OrderCardProps) => {
   const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({});
-  const [modalType, setModalType] = useState<ActionType | null>(null);
 
   const paid = isOrderPaid(order);
   const paymentStatusDisplay = getPaymentStatusDisplay(order);
@@ -240,11 +243,12 @@ const OrderCard = ({
 
           <div className="flex flex-col items-end gap-1">
             <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${order.status === 'PLACED' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                order.status === 'ACCEPTED' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+              order.status === 'ACCEPTED' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
+                order.status === 'PREPARED' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                   order.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                     'bg-slate-50 text-slate-500 border-slate-200'
               }`}>
-              {order.status}
+              {order.status === 'ACCEPTED' ? 'Cooking' : order.status === 'PREPARED' ? 'Ready' : order.status}
             </span>
             <div className="flex items-center gap-2">
               <span className="text-[9px] font-black text-slate-300 uppercase font-mono">ID: #{order.orderNumber || order._id.slice(-6)}</span>
@@ -314,7 +318,7 @@ const OrderCard = ({
         {/* Actions Section */}
         <div className="mt-5 flex flex-wrap gap-2">
           <div className="flex-1 flex gap-2">
-            {(order.status?.toUpperCase() === 'ACCEPTED' || order.status?.toUpperCase() === 'COMPLETED') && (
+            {['ACCEPTED', 'PREPARED', 'COMPLETED'].includes(order.status?.toUpperCase() || '') && (
               <button
                 onClick={() => onPrint?.(order)}
                 className="h-10 px-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-200 hover:text-indigo-600 transition-all text-slate-400 flex items-center justify-center gap-2"
@@ -327,22 +331,39 @@ const OrderCard = ({
               const orderKeys = Object.keys(order);
               const targetKey = orderKeys.find(k => k.toLowerCase() === 'paymentverificationrequestbycustomer');
               const paymentObj = targetKey ? (order as any)[targetKey] : null;
-              const showVerify = (paymentObj?.applied || order.utr || order.submittedUtr) && (order.status === 'ACCEPTED' || order.status === 'COMPLETED') && !paid;
+              const showVerify = (paymentObj?.applied || order.utr || order.submittedUtr) && 
+                                ['ACCEPTED', 'PREPARED', 'COMPLETED'].includes(order.status?.toUpperCase() || '') && 
+                                !paid;
 
-              if (paid || order.status === 'REJECTED' || order.status === 'CANCELLED') return null;
+              if (paid || order.status === 'REJECTED' || order.status === 'CANCELLED' || order.status === 'PLACED') return null;
 
               return (
-                <Button
-                  size="sm"
-                  variant="success"
-                  onClick={() => setModalType(showVerify ? 'VERIFY_PAYMENT' : 'COLLECT_PAYMENT')}
-                  isLoading={isLoading(showVerify ? 'VERIFY_PAYMENT' : 'COLLECT_PAYMENT')}
-                  disabled={isAnyLoading}
-                  className="flex-1 !h-10 rounded-xl font-black uppercase tracking-widest text-[10px]"
-                  leftIcon={showVerify ? <FaCheckCircle /> : <FaMoneyBillWave />}
-                >
-                  {showVerify ? 'Verify' : 'Collect'}
-                </Button>
+                <div className="flex-1 flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="success"
+                    onClick={() => onRequestAction?.(order, showVerify ? 'VERIFY_PAYMENT' : 'COLLECT_PAYMENT')}
+                    isLoading={isLoading(showVerify ? 'VERIFY_PAYMENT' : 'COLLECT_PAYMENT')}
+                    disabled={isAnyLoading}
+                    className="flex-1 !h-10 rounded-xl font-black uppercase tracking-widest text-[10px]"
+                    leftIcon={showVerify ? <FaCheckCircle /> : <FaMoneyBillWave />}
+                  >
+                    {showVerify ? 'Verify' : 'Collect'}
+                  </Button>
+                  {order.status === 'COMPLETED' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onRequestAction?.(order, 'MARK_UNPAID')}
+                      isLoading={isLoading('MARK_UNPAID')}
+                      disabled={isAnyLoading}
+                      className="!h-10 px-3 rounded-xl border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200"
+                      title="Mark Unpaid/Due"
+                    >
+                      <FaBan />
+                    </Button>
+                  )}
+                </div>
               );
             })()}
           </div>
@@ -362,7 +383,7 @@ const OrderCard = ({
                 <Button
                   size="sm"
                   variant="danger"
-                  onClick={() => setModalType('REJECT_ORDER')}
+                  onClick={() => onRequestAction?.(order, 'REJECT_ORDER')}
                   isLoading={isLoading('REJECT_ORDER')}
                   disabled={isAnyLoading}
                   className="!h-10 px-4 rounded-xl font-black uppercase tracking-widest text-[10px]"
@@ -373,6 +394,19 @@ const OrderCard = ({
             )}
 
             {order.status === 'ACCEPTED' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => handleAction('MARK_PREPARED')}
+                isLoading={isLoading('MARK_PREPARED')}
+                disabled={isAnyLoading}
+                className="!h-10 px-4 rounded-xl font-black uppercase tracking-widest text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                Prepared
+              </Button>
+            )}
+
+            {order.status === 'PREPARED' && (
               <Button
                 size="sm"
                 variant="primary"
@@ -389,15 +423,6 @@ const OrderCard = ({
         </div>
       </div>
 
-      <ActionModal
-        isOpen={modalType !== null}
-        onClose={() => setModalType(null)}
-        onConfirm={(payload) => handleAction(modalType!, payload)}
-        type={modalType!}
-        orderNumber={order.orderNumber || order._id.slice(-6)}
-        amount={order.totalAmount}
-        submittedUtr={order.utr || order.submittedUtr || order.paymentVerificationRequestbycustomer?.appliedUTR}
-      />
     </motion.div>
   );
 };

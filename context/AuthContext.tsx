@@ -74,12 +74,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Skip SWR for superadmin routes to avoid noise
-  const isSuperadminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/superadmin');
+  // Skip SWR for public routes and superadmin to avoid noise and redirects
+  const isPublicRoute = typeof window !== 'undefined' && (
+    window.location.pathname === '/' ||
+    window.location.pathname.startsWith('/home') ||
+    window.location.pathname.startsWith('/customer') ||
+    window.location.pathname.startsWith('/affordable') ||
+    window.location.pathname.startsWith('/privacy-policy') ||
+    window.location.pathname.startsWith('/terms-of-service') ||
+    window.location.pathname.startsWith('/guide') ||
+    window.location.pathname.startsWith('/auth') ||
+    window.location.pathname.startsWith('/superadmin')
+  );
 
   // Use SWR for user data fetching
   const { data, error, isLoading, mutate: mutateUser } = useSWR<AuthMeResponse>(
-    isSuperadminRoute ? null : '/auth/me',
+    isPublicRoute ? null : '/auth/me',
     fetcher,
     {
       revalidateOnFocus: false,

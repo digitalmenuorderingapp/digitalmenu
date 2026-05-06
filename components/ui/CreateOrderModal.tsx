@@ -10,10 +10,11 @@ import { useAuth } from '@/context/AuthContext';
 import { getTodayISTDateString } from '@/utils/date';
 import {
     FaTimes, FaPlus, FaMinus, FaTrash, FaUtensils, FaUser, FaPhone,
-    FaHashtag, FaChair, FaShoppingBag, FaUsers, FaSearch, FaChevronRight,
-    FaRegClipboard, FaCheckCircle, FaSpinner, FaArrowLeft, FaTable, FaUserFriends
+    FaShoppingBag, FaUsers, FaSearch, FaChevronRight, FaHashtag,
+    FaCheckCircle, FaSpinner, FaArrowLeft, FaTable, FaUserFriends,
+    FaStore, FaConciergeBell, FaChevronLeft, FaSearchPlus
 } from 'react-icons/fa';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createOrderSchema, CreateOrderInput } from '@/lib/validations';
 
@@ -56,7 +57,6 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Form state
     const {
         register,
         handleSubmit: handleFormSubmit,
@@ -124,7 +124,6 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         }).filter(Boolean) as CartItem[]);
     };
 
-    // GST Data
     const { data: gstConfigRes } = useSWR(isOpen && user ? '/gst-config' : null, fetcher);
     const gstConfig = gstConfigRes?.data || null;
 
@@ -163,7 +162,6 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
 
     const totals = getOrderTotals();
 
-    // Table Data
     const { data: tableRes } = useSWR(isOpen && user ? '/table' : null, fetcher);
     const tablesList = tableRes?.data || [];
     const occupancySwrKey = isOpen && user ? `/order?status=PLACED,ACCEPTED,COMPLETED&date=${getTodayISTDateString()}` : null;
@@ -220,7 +218,6 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                 if (data.numberOfPersons) orderData.numberOfPersons = Number(data.numberOfPersons);
             }
 
-            console.log('[CreateOrder] Payload:', orderData);
             await api.post('/order/create-admin', orderData);
             toast.success('Order created successfully!');
             setCart([]);
@@ -231,15 +228,12 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         } catch (error: any) {
             const serverMsg = error.response?.data?.message || error.response?.data?.errors?.[0]?.message;
             toast.error(serverMsg || 'Failed to create order');
-            console.error('[CreateOrder] API Error:', error.response?.data);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Add this to debug validation blocking
     const onInternalFormError = (errs: any) => {
-        console.warn('[CreateOrder] Validation Bloacker:', errs);
         const firstErrorKey = Object.keys(errs)[0];
         if (firstErrorKey) {
             toast.error(`Validation failed: ${errs[firstErrorKey].message || firstErrorKey}`);
@@ -254,65 +248,118 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm lg:p-4 lg:items-center lg:justify-center">
-                    {/* Background Overlay for Tablet/Desktop */}
+                <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900/40 backdrop-blur-md lg:p-4 lg:items-center lg:justify-center">
                     <div className="hidden lg:block absolute inset-0 -z-10" onClick={handleClose} />
 
                     <motion.div
-                        initial={{ opacity: 0, y: '100dvh' }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: '100dvh' }}
-                        className="flex-1 w-full lg:max-w-[1200px] lg:h-[90vh] lg:flex-none lg:rounded-[2.5rem] bg-white shadow-2xl flex flex-col overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                        className="flex-1 w-full lg:max-w-[1400px] lg:h-[94vh] lg:flex-none lg:rounded-[3rem] bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden border border-white/40 relative"
                     >
-                        {/* Header Section */}
-                        <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-indigo-800 p-4 lg:p-6 flex items-center justify-between text-white shrink-0 shadow-lg z-20">
-                            <div className="flex items-center gap-3 lg:gap-4">
-                                {step === 2 ? (
-                                    <button onClick={() => setStep(1)} className="p-2 bg-white/10 rounded-xl lg:rounded-2xl backdrop-blur-xl border border-white/10 hover:bg-white/20 transition-all">
-                                        <FaArrowLeft className="text-xl lg:text-2xl text-indigo-300" />
-                                    </button>
-                                ) : (
-                                    <div className="p-2 lg:p-3 bg-white/10 rounded-xl lg:rounded-2xl backdrop-blur-xl border border-white/10">
-                                        <FaShoppingBag className="text-xl lg:text-2xl text-indigo-300" />
-                                    </div>
-                                )}
+                        {/* Hyper-Premium Mesh Gradient Background (Subtle) */}
+                        <div className="absolute inset-0 -z-10 pointer-events-none opacity-40">
+                            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/50 rounded-full blur-[120px] animate-pulse"></div>
+                            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-50/50 rounded-full blur-[120px]"></div>
+                        </div>
+
+                        {/* Executive Header (Brand & Action) */}
+                        <div className="bg-white/60 backdrop-blur-xl border-b border-slate-100 px-6 py-4 lg:px-10 lg:py-6 flex items-center justify-between z-30">
+                            <div className="flex items-center gap-4 lg:gap-6">
+                                <div className="h-10 w-10 lg:h-12 lg:w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-xl rotate-3 flex shrink-0">
+                                    <FaConciergeBell className="text-xl" />
+                                </div>
                                 <div>
-                                    <h2 className="text-lg lg:text-2xl font-black tracking-tight uppercase italic">Digital Counter</h2>
-                                    <p className="text-indigo-200/60 text-[9px] lg:text-xs font-bold uppercase tracking-widest px-1">
-                                        {step === 1 ? 'Step 1: Item Selection' : 'Step 2: Customer & Table Details'}
-                                    </p>
+                                    <h2 className="text-xl lg:text-2xl font-black text-slate-900 tracking-tighter leading-none mb-1">
+                                        New Order
+                                    </h2>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live POS Terminal</span>
+                                    </div>
                                 </div>
                             </div>
-                            <button onClick={handleClose} className="p-2 hover:bg-white/10 rounded-full transition-all hover:scale-110 active:scale-90">
-                                <FaTimes className="text-xl lg:text-2xl" />
+
+                            <button
+                                onClick={handleClose}
+                                className="group relative flex h-10 w-10 lg:h-11 lg:w-11 items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all duration-300 border border-slate-100 hover:border-rose-100"
+                                title="Close POS"
+                            >
+                                <FaTimes className="text-lg group-hover:rotate-90 transition-transform duration-500" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleFormSubmit(onSubmit, onInternalFormError)} className="flex-1 flex overflow-hidden lg:flex-row relative">
+                        {/* Progress Navigation (Dedicated Stepper Section) */}
+                        <div className="bg-slate-50/50 backdrop-blur-md border-b border-slate-100 px-6 py-3 lg:px-10 flex items-center justify-center lg:justify-start z-20">
+                            <div className="flex items-center gap-4 lg:gap-8">
+                                {/* Step 1: Selection */}
+                                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => step > 1 && setStep(1)}>
+                                    <div className={`relative w-7 h-7 rounded-lg flex items-center justify-center font-black text-[9px] transition-all duration-500 border-2
+                                        ${step === 1 
+                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]' 
+                                            : step > 1 
+                                                ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                : 'bg-white border-slate-200 text-slate-400'}`}>
+                                        {step > 1 ? <FaCheckCircle className="text-xs" /> : '01'}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`text-[7px] font-black uppercase tracking-[0.2em] leading-none mb-0.5 ${step >= 1 ? 'text-indigo-600' : 'text-slate-300'}`}>Step 01</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-tight leading-none ${step >= 1 ? 'text-slate-900' : 'text-slate-300'}`}>Selection</span>
+                                    </div>
+                                </div>
+
+                                <div className="w-8 lg:w-12 h-0.5 bg-slate-200 rounded-full overflow-hidden relative">
+                                    <motion.div 
+                                        initial={{ width: '0%' }}
+                                        animate={{ width: step === 2 ? '100%' : '0%' }}
+                                        className="absolute inset-0 bg-indigo-600"
+                                    />
+                                </div>
+
+                                {/* Step 2: Logistics */}
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-[9px] transition-all duration-500 border-2
+                                        ${step === 2 
+                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]' 
+                                            : 'bg-white border-slate-200 text-slate-400'}`}>
+                                        02
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`text-[7px] font-black uppercase tracking-[0.2em] leading-none mb-0.5 ${step === 2 ? 'text-indigo-600' : 'text-slate-300'}`}>Step 02</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-tight leading-none ${step === 2 ? 'text-slate-900' : 'text-slate-300'}`}>Logistics</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleFormSubmit(onSubmit, onInternalFormError)} className="flex-1 flex flex-col overflow-hidden relative">
                             {step === 1 ? (
-                                <>
-                                    {/* Desktop: Show Both | Mobile: Show Active Only */}
-                                    {(!isMobile || mobileView === 'menu') && (
-                                        <div className="flex-[1.8] flex flex-col bg-slate-50 border-r border-slate-200/60 min-w-0 h-full">
-                                            {/* Filters & Search */}
-                                            <div className="p-3 lg:p-5 space-y-3 lg:space-y-4 border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0">
-                                                <div className="relative group">
-                                                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+                                    {/* Menu Browser (Top Content Area) */}
+                                    <div className="flex-1 flex flex-col min-w-0 h-full relative">
+                                        {/* Floating Glass Search & Category Bar */}
+                                        <div className="sticky top-6 inset-x-6 z-20 px-6 pointer-events-none">
+                                            <div className="bg-white/70 backdrop-blur-2xl border border-white/60 p-3 lg:p-4 rounded-[2rem] shadow-[0_20px_40px_rgba(0,0,0,0.05)] pointer-events-auto flex flex-col md:flex-row gap-4 items-center">
+                                                <div className="relative flex-1 w-full group">
+                                                    <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
                                                     <input
                                                         type="text"
-                                                        placeholder="Search menu..."
+                                                        placeholder="Search menu items..."
                                                         value={searchQuery}
                                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                                        className="w-full pl-10 lg:pl-12 pr-4 py-2 lg:py-3 bg-slate-100/50 border-2 border-transparent focus:border-indigo-500/30 rounded-xl lg:rounded-2xl outline-none text-xs lg:text-sm font-medium"
+                                                        className="w-full pl-14 pr-6 py-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 focus:bg-white transition-all text-sm font-bold"
                                                     />
                                                 </div>
-                                                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar max-w-full md:max-w-[400px]">
                                                     {categories.map(cat => (
                                                         <button
                                                             key={cat}
                                                             type="button"
                                                             onClick={() => setSelectedCategory(cat)}
-                                                            className={`px-4 py-1.5 rounded-lg text-[10px] lg:text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'
+                                                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black whitespace-nowrap transition-all border-2 ${selectedCategory === cat
+                                                                ? 'bg-slate-900 border-slate-900 text-white shadow-xl scale-105'
+                                                                : 'bg-white border-slate-50 text-slate-500 hover:border-slate-200'
                                                                 }`}
                                                         >
                                                             {cat}
@@ -320,370 +367,393 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                                                     ))}
                                                 </div>
                                             </div>
-
-                                            {/* Items List */}
-                                            <div className="flex-1 overflow-y-auto p-3 lg:p-4 pb-20 lg:pb-4">
-                                                {isMenuLoading ? (
-                                                    <div className="h-full flex items-center justify-center"><FaSpinner className="animate-spin text-2xl" /></div>
-                                                ) : (
-                                                    <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-4 font-inter">
-                                                        {filteredItems.map(item => (
-                                                            <div key={item._id} onClick={() => addToCart(item)} className="bg-white p-2 lg:p-4 rounded-xl lg:rounded-2xl border border-slate-100 hover:border-indigo-200 shadow-sm cursor-pointer flex flex-col gap-2 transition-all active:scale-95">
-                                                                <div className="w-full aspect-square bg-slate-50 rounded-lg overflow-hidden border border-slate-50">
-                                                                    {(item.image || (item.images && item.images[0])) ? <img src={item.image || item.images![0]} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><FaUtensils className="text-slate-200" /></div>}
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="font-bold text-slate-800 text-[11px] lg:text-sm truncate">{item.name}</h4>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <p className="text-indigo-600 font-extrabold text-[12px] lg:text-base">₹{item.price}</p>
-                                                                    </div>
-                                                                </div>
-                                                                <button type="button" className="w-full py-1.5 bg-slate-50 text-indigo-600 rounded-lg text-[9px] font-bold uppercase tracking-wider">Add +</button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
                                         </div>
-                                    )}
 
-                                    {/* Cart Section for Step 1 */}
-                                    {(!isMobile || mobileView === 'cart') && (
-                                        <div className="flex-1 lg:max-w-[400px] flex flex-col bg-white h-full relative z-10">
-                                            {/* Header */}
-                                            <div className="p-4 lg:p-5 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-20">
-                                                <h3 className="font-black text-slate-800 text-base lg:text-lg tracking-tight">Cart Items</h3>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[10px] font-black">{cart.length} ITEMS</span>
-                                                    {cart.length > 0 && <button type="button" onClick={() => setCart([])} className="text-rose-500 p-1"><FaTrash size={12} /></button>}
+                                        {/* Items Grid with soft spacing */}
+                                        <div className="flex-1 overflow-y-auto p-6 lg:px-10 lg:pt-36 lg:pb-12 custom-scrollbar pt-32">
+                                            {isMenuLoading ? (
+                                                <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-4">
+                                                    <FaSpinner className="animate-spin text-5xl" />
+                                                    <p className="text-[11px] font-black uppercase tracking-[0.4em]">Optimizing Menu</p>
                                                 </div>
-                                            </div>
-
-                                            {/* Content (Scrolls) */}
-                                            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-100 flex flex-col">
-                                                {/* Cart Items */}
-                                                <div className="p-4 lg:p-6 space-y-4 pb-24">
-                                                    {cart.length > 0 ? (
-                                                        cart.map(item => (
-                                                            <div key={item._id} className="flex items-center gap-3">
-                                                                <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex-shrink-0">
-                                                                    {(item.image || (item.images && item.images[0])) ? <img src={item.image || item.images![0]} alt="" className="w-full h-full object-cover rounded-lg" /> : <FaUtensils className="p-3 text-slate-200" />}
+                                            ) : (
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3 lg:gap-4">
+                                                    {filteredItems.map((item, idx) =>                                                        <motion.div
+                                                            key={item._id}
+                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            transition={{ delay: idx * 0.01 }}
+                                                            onClick={() => addToCart(item)}
+                                                            className="group bg-white rounded-xl border border-slate-100 hover:border-indigo-500 hover:shadow-xl cursor-pointer transition-all duration-200 active:scale-[0.96] flex flex-col overflow-hidden"
+                                                        >
+                                                            {/* Hyper-Compact Image */}
+                                                            <div className="relative aspect-square w-full overflow-hidden bg-slate-50">
+                                                                {(item.image || (item.images && item.images[0])) ? (
+                                                                    <img src={item.image || item.images![0]} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50">
+                                                                        <FaUtensils className="text-slate-200 text-xl" />
+                                                                    </div>
+                                                                )}
+                                                                {/* Discrete Price Tag */}
+                                                                <div className="absolute bottom-1.5 right-1.5 bg-slate-900/80 backdrop-blur-md px-2 py-1 rounded-lg shadow-lg z-20">
+                                                                    <span className="text-[9px] font-black text-white italic">₹{item.price}</span>
                                                                 </div>
-                                                                <div className="flex-1">
-                                                                    <p className="text-xs font-bold text-slate-800 truncate">{item.name}</p>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <p className="text-indigo-600 font-bold text-[10px]">₹{item.price}</p>
-                                                                        <p className="text-gray-500 text-[9px]">× {item.quantity}</p>
-                                                                        <p className="text-slate-800 font-bold text-[10px] ml-auto">₹{item.price * item.quantity}</p>
+                                                            </div>
+
+                                                            {/* Minimalist Metadata */}
+                                                            <div className="p-2 lg:p-2.5 flex flex-col gap-0.5">
+                                                                <h4 className="text-[11px] font-black text-slate-800 tracking-tight leading-tight truncate group-hover:text-indigo-600 transition-colors">
+                                                                    {item.name}
+                                                                </h4>
+                                                                <div className="flex items-center justify-between mt-1">
+                                                                    <span className="text-[7px] font-black text-emerald-500 uppercase tracking-widest">Available</span>
+                                                                    <div className="w-5 h-5 rounded-md bg-slate-50 group-hover:bg-indigo-600 text-slate-400 group-hover:text-white flex items-center justify-center transition-all">
+                                                                        <FaPlus className="text-[7px]" />
                                                                     </div>
                                                                 </div>
-                                                                <div className="flex items-center bg-slate-50 rounded-lg p-1 border">
-                                                                    <button type="button" onClick={() => updateQuantity(item._id, -1)} className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-xs"><FaMinus size={8} /></button>
-                                                                    <span className="w-6 text-center text-xs font-black">{item.quantity}</span>
-                                                                    <button type="button" onClick={() => updateQuantity(item._id, 1)} className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-xs"><FaPlus size={8} /></button>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Stationary Bottom Cart Section */}
+                                    <div className="bg-white/95 backdrop-blur-2xl border-t border-slate-100 shrink-0 z-40 shadow-[0_-20px_50px_rgba(0,0,0,0.1)]">
+                                        <div className="max-w-[1400px] mx-auto px-4 lg:px-10 py-3 lg:py-6 flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6">
+                                            {/* Left: Horizontal Cart Items (Full width on mobile) */}
+                                            <div className="flex-1 w-full flex items-center gap-4 lg:gap-6 overflow-hidden">
+                                                <div className="shrink-0">
+                                                    <div className="flex items-center gap-2 lg:gap-3 mb-0.5 lg:mb-1">
+                                                        <h3 className="text-sm lg:text-xl font-black text-slate-900 tracking-tighter italic">My Cart</h3>
+                                                        <div className="bg-indigo-600 text-white px-1.5 py-0.5 rounded-md text-[8px] lg:text-[10px] font-black shadow-lg shadow-indigo-600/20">{cart.length}</div>
+                                                    </div>
+                                                    <p className="text-[7px] lg:text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] hidden sm:block">Verified Items</p>
+                                                </div>
+
+                                                <div className="w-px h-8 lg:h-10 bg-slate-100"></div>
+
+                                                <div className="flex-1 flex items-center gap-2 lg:gap-3 overflow-x-auto no-scrollbar py-1 lg:py-2">
+                                                    {cart.length > 0 ? (
+                                                        cart.map((item) => (
+                                                            <div key={item._id} className="shrink-0 bg-slate-50 px-3 py-2 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-slate-100 flex items-center gap-3 lg:gap-4 shadow-sm">
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[9px] lg:text-[11px] font-black text-slate-800 tracking-tight truncate max-w-[80px] lg:max-w-[120px]">{item.name}</span>
+                                                                    <span className="text-[8px] lg:text-[10px] font-black text-indigo-600">₹{item.price * item.quantity}</span>
+                                                                </div>
+                                                                <div className="flex items-center bg-white rounded-lg lg:rounded-xl shadow-sm border border-slate-100 p-0.5">
+                                                                    <button onClick={() => updateQuantity(item._id, -1)} className="p-1 hover:text-rose-500"><FaMinus size={6} /></button>
+                                                                    <span className="w-4 lg:w-5 text-center text-[9px] lg:text-[10px] font-black text-slate-900">{item.quantity}</span>
+                                                                    <button onClick={() => updateQuantity(item._id, 1)} className="p-1 hover:text-indigo-600"><FaPlus size={6} /></button>
                                                                 </div>
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <div className="flex flex-col items-center justify-center py-10 opacity-40">
-                                                            <FaShoppingBag className="text-3xl mb-2" />
-                                                            <p className="text-[10px] font-bold uppercase tracking-widest">No items selected</p>
-                                                        </div>
+                                                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Empty...</span>
                                                     )}
                                                 </div>
+                                            </div>
 
-                                                {/* Proceed Button */}
-                                                <div className="mt-auto p-4 lg:p-6 border-t border-slate-100 bg-slate-50/50 space-y-4">
-                                                    <div className="flex flex-col gap-1.5 pt-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Subtotal</span>
-                                                            <span className="text-sm font-bold text-slate-700">₹{totals.subtotal.toFixed(2)}</span>
+                                            {/* Right: Summary & Action (Full width on mobile) */}
+                                            <div className="shrink-0 flex flex-col sm:flex-row items-center gap-4 lg:gap-8 w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-8">
+                                                <div className="flex items-center justify-between sm:justify-start gap-4 lg:gap-6 w-full sm:w-auto">
+                                                    <div className="flex items-center gap-4 lg:gap-6">
+                                                        <div>
+                                                            <span className="text-[7px] lg:text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">Subtotal</span>
+                                                            <h4 className="text-[11px] lg:text-[13px] font-black text-slate-700 tracking-tighter">₹{totals.subtotal.toFixed(2)}</h4>
                                                         </div>
                                                         {totals.serviceCharge > 0 && (
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[10px] font-bold text-slate-500 uppercase">Service Charge ({gstConfig?.serviceChargePercentage}%)</span>
-                                                                <span className="text-sm font-bold text-slate-700">₹{totals.serviceCharge.toFixed(2)}</span>
+                                                            <div>
+                                                                <span className="text-[7px] lg:text-[8px] font-black text-emerald-600 uppercase tracking-widest block leading-none mb-1">Service</span>
+                                                                <h4 className="text-[11px] lg:text-[13px] font-black text-emerald-700 tracking-tighter">₹{totals.serviceCharge.toFixed(2)}</h4>
                                                             </div>
                                                         )}
-                                                        {totals.cgst > 0 && (
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[10px] font-bold text-slate-500 uppercase">CGST ({gstConfig?.cgstPercentage}%)</span>
-                                                                <span className="text-sm font-bold text-slate-700">₹{totals.cgst.toFixed(2)}</span>
+                                                        {(totals.total - totals.subtotal - totals.serviceCharge) > 0 && (
+                                                            <div className="hidden sm:block">
+                                                                <span className="text-[7px] lg:text-[8px] font-black text-rose-400 uppercase tracking-widest block leading-none mb-1">Taxes</span>
+                                                                <h4 className="text-[11px] lg:text-[13px] font-black text-rose-700 tracking-tighter">₹{(totals.total - totals.subtotal - totals.serviceCharge).toFixed(2)}</h4>
                                                             </div>
                                                         )}
-                                                        {totals.sgst > 0 && (
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[10px] font-bold text-slate-500 uppercase">SGST ({gstConfig?.sgstPercentage}%)</span>
-                                                                <span className="text-sm font-bold text-slate-700">₹{totals.sgst.toFixed(2)}</span>
-                                                            </div>
-                                                        )}
-                                                        {totals.igst > 0 && (
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[10px] font-bold text-slate-500 uppercase">IGST ({gstConfig?.igstPercentage}%)</span>
-                                                                <span className="text-sm font-bold text-slate-700">₹{totals.igst.toFixed(2)}</span>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200">
-                                                            <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Cart Total</span>
-                                                            <span className="text-xl font-black text-slate-900 tracking-tighter">₹{totals.total}</span>
-                                                        </div>
                                                     </div>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setStep(2)}
-                                                        disabled={cart.length === 0}
-                                                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        Proceed to Details <FaChevronRight className="text-xs" />
-                                                    </button>
+                                                    <div className="bg-slate-900 text-white px-3 py-1.5 lg:px-5 lg:py-2.5 rounded-lg lg:rounded-2xl shadow-xl">
+                                                        <span className="text-[7px] lg:text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-0.5">Payable</span>
+                                                        <h4 className="text-[13px] lg:text-[15px] font-black tracking-tighter">₹{totals.total}</h4>
+                                                    </div>
                                                 </div>
+
+                                                <button 
+                                                    type="button" 
+                                                    disabled={cart.length === 0}
+                                                    onClick={() => setStep(2)} 
+                                                    className="w-full sm:w-auto px-6 lg:px-8 py-3 lg:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl lg:rounded-2xl font-black text-[9px] lg:text-[10px] uppercase tracking-[0.2em] shadow-xl lg:shadow-2xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 lg:gap-3 disabled:opacity-50 group"
+                                                >
+                                                    Proceed <FaChevronRight className="text-[8px] lg:text-[10px] group-hover:translate-x-1 transition-transform" />
+                                                </button>
                                             </div>
-                                        </div>
-                                    )}
-
-                                    {/* Mobile NavBar (Bottom) - Step 1 */}
-                                    {isMobile && (
-                                        <div className="absolute bottom-0 inset-x-0 bg-white border-t border-slate-100 p-2.5 flex gap-2.5 z-50">
-                                            <button
-                                                type="button"
-                                                onClick={() => setMobileView('menu')}
-                                                className={`flex-1 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${mobileView === 'menu' ? 'bg-slate-900 text-white shadow-xl' : 'bg-slate-100 text-slate-500'}`}
-                                            >
-                                                <FaUtensils /> Select Items
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setMobileView('cart')}
-                                                className={`flex-1 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all relative ${mobileView === 'cart' ? 'bg-slate-900 text-white shadow-xl' : 'bg-slate-100 text-slate-500'}`}
-                                            >
-                                                <FaShoppingBag /> {cart.length > 0 ? `Cart (₹${totals.total})` : 'Cart'}
-                                                {cart.length > 0 && <span className="absolute -top-1 -right-1 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] border-2 border-white">{cart.length}</span>}
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                /* STEP 2: Customer Details & Table Selection */
-                                <div className="flex-1 w-full flex flex-col lg:flex-row overflow-hidden bg-slate-50 relative">
-                                    {/* Left Side: Form Details */}
-                                    <div className="flex-1 lg:max-w-[450px] flex flex-col bg-white border-r border-slate-200/60 overflow-y-auto">
-                                        <div className="p-4 lg:p-6 space-y-5">
-                                            <h3 className="font-black text-slate-800 text-base lg:text-lg tracking-tight border-b pb-2">Customer Details</h3>
-                                            
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase">Customer Name *</label>
-                                                    <div className="relative">
-                                                        <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                        <input type="text" {...register('customerName')} placeholder="Full Name" className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 outline-none" />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase">Phone Number</label>
-                                                    <div className="relative">
-                                                        <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                        <input
-                                                            type="text"
-                                                            {...register('customerPhone')}
-                                                            placeholder="10-digit number"
-                                                            maxLength={10}
-                                                            className={`w-full pl-9 pr-3 py-2.5 text-sm border ${errors.customerPhone ? 'border-rose-500 bg-rose-50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-indigo-100 outline-none transition-all`}
-                                                        />
-                                                    </div>
-                                                    {errors.customerPhone && <p className="text-[9px] font-bold text-rose-500 pl-1">Exactly 10 digits required</p>}
-                                                </div>
-                                            </div>
-
-                                            <h3 className="font-black text-slate-800 text-base lg:text-lg tracking-tight border-b pb-2 pt-4">Order Type</h3>
-                                            <div className="flex gap-2">
-                                                {(['dine-in', 'takeaway'] as const).map(type => (
-                                                    <button
-                                                        key={type}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setValue('orderType', type);
-                                                            if (type !== 'dine-in') {
-                                                                setValue('tableNumber', undefined);
-                                                                setValue('numberOfPersons', 1);
-                                                            }
-                                                        }}
-                                                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${orderType === type ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
-                                                    >
-                                                        {type === 'dine-in' ? <FaChair /> : <FaShoppingBag />} {type}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            {orderType === 'dine-in' && (
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase">Selected Table *</label>
-                                                        <div className="relative">
-                                                            <FaTable className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                            <input 
-                                                                type="number" 
-                                                                {...register('tableNumber', { valueAsNumber: true })} 
-                                                                placeholder="e.g. 1" 
-                                                                readOnly
-                                                                className={`w-full pl-9 pr-3 py-2.5 text-sm border rounded-xl outline-none bg-slate-50 ${errors.tableNumber ? 'border-rose-500 bg-rose-50' : 'border-slate-200'}`} 
-                                                            />
-                                                        </div>
-                                                        {errors.tableNumber && <p className="text-[9px] font-bold text-rose-500 pl-1">Required for dine-in</p>}
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase">Persons *</label>
-                                                        <div className="relative">
-                                                            <FaUsers className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                            <input type="number" {...register('numberOfPersons', { valueAsNumber: true })} min="1" className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-100" />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="space-y-1.5 pt-4">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase">Special Instructions</label>
-                                                <textarea {...register('specialInstructions')} rows={2} placeholder="Any specific request..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 outline-none resize-none"></textarea>
-                                            </div>
-                                        </div>
-
-                                        {/* Submit Area */}
-                                        <div className="mt-auto p-4 lg:p-6 border-t border-slate-100 bg-slate-50">
-                                            <div className="flex flex-col gap-1.5 mb-4">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Subtotal</span>
-                                                    <span className="text-sm font-bold text-slate-700">₹{totals.subtotal.toFixed(2)}</span>
-                                                </div>
-                                                {totals.serviceCharge > 0 && (
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Service Charge ({gstConfig?.serviceChargePercentage}%)</span>
-                                                        <span className="text-sm font-bold text-slate-700">₹{totals.serviceCharge.toFixed(2)}</span>
-                                                    </div>
-                                                )}
-                                                {totals.cgst > 0 && (
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-bold text-slate-500 uppercase">CGST ({gstConfig?.cgstPercentage}%)</span>
-                                                        <span className="text-sm font-bold text-slate-700">₹{totals.cgst.toFixed(2)}</span>
-                                                    </div>
-                                                )}
-                                                {totals.sgst > 0 && (
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-bold text-slate-500 uppercase">SGST ({gstConfig?.sgstPercentage}%)</span>
-                                                        <span className="text-sm font-bold text-slate-700">₹{totals.sgst.toFixed(2)}</span>
-                                                    </div>
-                                                )}
-                                                {totals.igst > 0 && (
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-bold text-slate-500 uppercase">IGST ({gstConfig?.igstPercentage}%)</span>
-                                                        <span className="text-sm font-bold text-slate-700">₹{totals.igst.toFixed(2)}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200">
-                                                    <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Total Amount</span>
-                                                    <span className="text-2xl font-black text-slate-900 tracking-tighter">₹{totals.total}</span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                                            >
-                                                {isSubmitting ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
-                                                {isSubmitting ? 'Processing...' : 'Place Order'}
-                                            </button>
                                         </div>
                                     </div>
-
-                                    {/* Right Side: Table Occupancy (Only shown if dine-in is selected) */}
-                                    <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 lg:p-6">
-                                        {orderType === 'dine-in' ? (
-                                            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
-                                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
-                                                            <FaTable className="w-5 h-5" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-base font-black text-slate-800 tracking-tight">Select Table</h3>
-                                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Live Occupancy Status</p>
-                                                        </div>
+                                </div>
+                            ) : (
+                                <div className="flex-1 h-full w-full flex flex-col bg-slate-50 relative animate-in fade-in slide-in-from-right-10 duration-500 overflow-hidden">
+                                    {/* Main Scrollable Content Area - With Padding for Absolute Footer */}
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-8 space-y-6 pb-40 lg:pb-32">
+                                            {/* SECTION 1: TABLE SELECTION (TOP - COMPACT) */}
+                                            <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-4 lg:p-6 shadow-sm border border-white/60">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                                    <div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setStep(1)}
+                                                            className="flex items-center gap-2 text-indigo-600 font-black text-[9px] uppercase tracking-widest mb-2 hover:translate-x-[-4px] transition-transform"
+                                                        >
+                                                            <FaChevronLeft /> Back to Menu
+                                                        </button>
+                                                        <h3 className="text-lg lg:text-xl font-black text-slate-900 tracking-tight">1. Select Table</h3>
+                                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Choose table for dine-in</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2 p-1.5 bg-slate-50 rounded-xl border border-slate-100">
-                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-600 rounded-lg shadow-sm border border-slate-100 text-[9px] font-black uppercase tracking-widest">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Available
+
+                                                    <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+                                                        <div className="flex items-center gap-3 px-4 py-2 bg-slate-100/50 rounded-xl border border-slate-200/50">
+                                                            <div className="flex items-center gap-1.5 text-[8px] font-black uppercase text-emerald-600 tracking-widest">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Free
+                                                            </div>
+                                                            <div className="w-px h-3 bg-slate-200"></div>
+                                                            <div className="flex items-center gap-1.5 text-[8px] font-black uppercase text-rose-500 tracking-widest">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Busy
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-rose-500 rounded-lg shadow-sm border border-slate-100 text-[9px] font-black uppercase tracking-widest opacity-60">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Occupied
+
+                                                        <div className="flex items-center gap-2">
+                                                            {(['dine-in', 'takeaway'] as const).map(type => (
+                                                                <button
+                                                                    key={type}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setValue('orderType', type);
+                                                                        if (type !== 'dine-in') {
+                                                                            setValue('tableNumber', undefined);
+                                                                            setValue('numberOfPersons', 1);
+                                                                        }
+                                                                    }}
+                                                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${orderType === type
+                                                                        ? 'bg-slate-900 border-slate-900 text-white shadow-lg'
+                                                                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
+                                                                        }`}
+                                                                >
+                                                                    {type === 'dine-in' ? <FaTable className="text-[10px]" /> : <FaShoppingBag className="text-[10px]" />}
+                                                                    {type}
+                                                                </button>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                    {tablesList.map((table: any) => {
-                                                        const isOccupied = isTableOccupied(table.tableNumber);
-                                                        const isSelected = tableNumber === table.tableNumber;
-                                                        
-                                                        return (
-                                                            <div
-                                                                key={table._id}
-                                                                onClick={() => {
-                                                                    if (!isOccupied) {
-                                                                        setValue('tableNumber', table.tableNumber, { shouldValidate: true });
-                                                                    }
-                                                                }}
-                                                                className={`relative p-4 rounded-[1.5rem] border-2 transition-all duration-300 flex flex-col items-center justify-center gap-1
-                                                                    ${isOccupied 
-                                                                        ? 'bg-rose-50 border-rose-100 opacity-60 cursor-not-allowed' 
-                                                                        : isSelected 
-                                                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 cursor-pointer transform scale-[1.02]' 
-                                                                            : 'bg-white border-slate-100 text-slate-700 hover:border-indigo-300 hover:shadow-md cursor-pointer'
-                                                                    }`}
-                                                            >
-                                                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-indigo-500/30' : isOccupied ? 'bg-rose-100' : 'bg-slate-50'}`}>
-                                                                    <FaTable className={`w-4 h-4 ${isSelected ? 'text-indigo-100' : isOccupied ? 'text-rose-400' : 'text-slate-400'}`} />
-                                                                </div>
-                                                                
-                                                                <div className="flex flex-col items-center">
-                                                                    <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>Table</span>
-                                                                    <span className={`text-2xl font-black tracking-tighter leading-none ${isOccupied ? 'text-rose-700' : isSelected ? 'text-white' : 'text-slate-800'}`}>
+                                                {orderType === 'dine-in' ? (
+                                                    <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-2 lg:gap-3">
+                                                        {tablesList.map((table: any, idx: number) => {
+                                                            const isOccupied = isTableOccupied(table.tableNumber);
+                                                            const isSelected = tableNumber === table.tableNumber;
+
+                                                            return (
+                                                                <motion.div
+                                                                    key={table._id}
+                                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                    transition={{ delay: idx * 0.005 }}
+                                                                    onClick={() => {
+                                                                        if (!isOccupied) {
+                                                                            setValue('tableNumber', table.tableNumber, { shouldValidate: true });
+                                                                        }
+                                                                    }}
+                                                                    className={`relative p-3 rounded-xl border-2 transition-all duration-300 flex flex-col items-center justify-center gap-1
+                                                                        ${isOccupied
+                                                                            ? 'bg-rose-50 border-rose-100 opacity-60 cursor-not-allowed grayscale-[0.5]'
+                                                                            : isSelected
+                                                                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl z-10 scale-105'
+                                                                                : 'bg-white border-slate-100 text-slate-700 hover:border-indigo-200 cursor-pointer shadow-sm'
+                                                                        }`}
+                                                                >
+                                                                    <span className={`text-[7px] font-black uppercase tracking-widest block ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>T-</span>
+                                                                    <span className={`text-base font-black tracking-tighter leading-none ${isOccupied ? 'text-rose-700' : isSelected ? 'text-white' : 'text-slate-900'}`}>
                                                                         {table.tableNumber}
                                                                     </span>
-                                                                </div>
+                                                                    {isSelected && (
+                                                                        <div className="absolute -top-1 -right-1 bg-emerald-500 text-white w-4 h-4 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                                                                            <FaCheckCircle className="text-[8px]" />
+                                                                        </div>
+                                                                    )}
+                                                                </motion.div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="py-8 lg:py-12 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                                                        <div className="w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-4">
+                                                            <FaShoppingBag className="text-xl text-indigo-500" />
+                                                        </div>
+                                                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Takeaway Order</h4>
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                                                <div className={`mt-1 flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider
-                                                                    ${isSelected ? 'bg-white/10 text-white' : isOccupied ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
-                                                                    <FaUserFriends className="w-2 h-2 opacity-60" /> {table.seats || 4}
-                                                                </div>
+                                            {/* SECTION 2: CUSTOMER DETAILS (MIDDLE - COMPACT) */}
+                                            <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-4 lg:p-6 shadow-sm border border-white/60">
+                                                <div className="mb-6">
+                                                    <h3 className="text-lg lg:text-xl font-black text-slate-900 tracking-tight">2. Customer Details</h3>
+                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Billing information</p>
+                                                </div>
 
-                                                                {isSelected && (
-                                                                    <div className="absolute -top-2 -right-2 bg-emerald-500 text-white w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                                                        <FaCheckCircle className="w-3 h-3" />
-                                                                    </div>
-                                                                )}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-end">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Name *</label>
+                                                        <div className="relative group">
+                                                            <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                                                            <input
+                                                                type="text"
+                                                                {...register('customerName')}
+                                                                placeholder="e.g. John Doe"
+                                                                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white transition-all text-xs font-bold"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Phone Number</label>
+                                                        <div className="relative group">
+                                                            <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                                                            <input
+                                                                type="text"
+                                                                {...register('customerPhone')}
+                                                                placeholder="10-digit mobile"
+                                                                maxLength={10}
+                                                                className={`w-full pl-11 pr-4 py-2.5 bg-slate-50 border ${errors.customerPhone ? 'border-rose-500' : 'border-slate-200'} rounded-xl outline-none focus:border-indigo-500 focus:bg-white transition-all text-xs font-bold`}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {orderType === 'dine-in' && (
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Persons *</label>
+                                                            <div className="relative group">
+                                                                <FaUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                                                                <input
+                                                                    type="number"
+                                                                    {...register('numberOfPersons', { valueAsNumber: true })}
+                                                                    min="1"
+                                                                    className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white transition-all text-xs font-bold"
+                                                                />
                                                             </div>
-                                                        );
-                                                    })}
-
-                                                    {tablesList.length === 0 && (
-                                                        <div className="col-span-full py-10 flex flex-col items-center justify-center text-slate-400">
-                                                            <FaTable className="text-3xl mb-2 opacity-20" />
-                                                            <p className="text-xs font-bold uppercase tracking-widest">No tables available</p>
                                                         </div>
                                                     )}
+
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Order Notes</label>
+                                                        <div className="relative group">
+                                                            <FaConciergeBell className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                                                            <input
+                                                                {...register('specialInstructions')}
+                                                                placeholder="Special requests"
+                                                                className="w-full pl-14 pr-6 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white transition-all text-xs font-bold"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60 p-10 text-center bg-white border border-slate-200 border-dashed rounded-3xl">
-                                                <FaShoppingBag className="text-6xl mb-4 opacity-20" />
-                                                <h3 className="text-lg font-black text-slate-600 uppercase tracking-widest mb-1">Takeaway Order</h3>
-                                                <p className="text-xs font-bold text-slate-500">Table selection is not required for takeaway orders.</p>
+                                    </div>
+
+                                    {/* SECTION 3: ORDER TOTALS & SUBMIT (ABSOLUTE BOTTOM) */}
+                                    <div className="absolute bottom-0 inset-x-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 p-4 lg:px-10 lg:py-5 shrink-0 shadow-[0_-20px_50px_rgba(0,0,0,0.1)] z-50">
+                                        <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-10">
+                                            {/* Ultra-Compact Info Grid / Desktop Row */}
+                                            <div className="flex flex-wrap items-center gap-3 lg:gap-10 w-full lg:w-auto">
+                                                <div className="shrink-0 flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                                                        {orderType === 'dine-in' ? <FaTable className="text-xs" /> : <FaShoppingBag className="text-xs" />}
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-0.5">Order Info</span>
+                                                        <div className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">
+                                                            {orderType} {tableNumber && <span className="text-indigo-600">/ T{tableNumber}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="w-px h-6 bg-slate-100 hidden sm:block"></div>
+
+                                                <div className="shrink-0">
+                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-0.5">Subtotal</span>
+                                                    <h4 className="text-[14px] font-black text-slate-700 tracking-tighter">₹{totals.subtotal.toFixed(2)}</h4>
+                                                </div>
+
+                                                {totals.serviceCharge > 0 && (
+                                                    <div className="shrink-0">
+                                                        <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest block leading-none mb-0.5">Service ({gstConfig?.serviceChargePercentage}%)</span>
+                                                        <h4 className="text-[14px] font-black text-slate-700 tracking-tighter">₹{totals.serviceCharge.toFixed(2)}</h4>
+                                                    </div>
+                                                )}
+
+                                                {(totals.cgst > 0 || totals.igst > 0) && (
+                                                    <div className="shrink-0 flex items-center gap-4">
+                                                        <div className="w-px h-6 bg-slate-100 hidden sm:block"></div>
+                                                        <div>
+                                                            <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest block leading-none mb-0.5">Taxes (GST)</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="text-[14px] font-black text-slate-700 tracking-tighter">₹{(totals.cgst + totals.sgst + totals.igst).toFixed(2)}</h4>
+                                                                <div className="flex flex-col text-[7px] font-black text-slate-400 leading-none uppercase tracking-tighter">
+                                                                    {totals.cgst > 0 && <span>C:{totals.cgst.toFixed(1)} S:{totals.sgst.toFixed(1)}</span>}
+                                                                    {totals.igst > 0 && <span>IGST:{totals.igst.toFixed(1)}</span>}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+
+                                            <button
+                                                type="submit"
+                                                disabled={isSubmitting || (orderType === 'dine-in' && !tableNumber)}
+                                                className="w-full lg:w-auto overflow-hidden bg-indigo-600 text-white rounded-xl lg:rounded-2xl font-black shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50 disabled:grayscale transition-all flex items-center group"
+                                            >
+                                                <div className="px-6 lg:px-10 py-3 lg:py-4 flex items-center gap-3 border-r border-white/20">
+                                                    <span className="text-[10px] lg:text-[11px] uppercase tracking-[0.2em]">{isSubmitting ? 'Processing' : 'Confirm Order'}</span>
+                                                    <FaChevronRight className="text-[10px] group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                                <div className="px-5 lg:px-8 py-3 lg:py-4 bg-white/10 backdrop-blur-sm">
+                                                    <span className="text-[13px] lg:text-[15px] tracking-tighter">₹{totals.total}</span>
+                                                </div>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
-                        </form>
-                    </motion.div>
+                            </form>
+                        </motion.div>
+
+                    {/* Custom Scrollbar Styles */}
+                    <style jsx global>{`
+                        .custom-scrollbar::-webkit-scrollbar {
+                            width: 5px;
+                        }
+                        .custom-scrollbar::-webkit-scrollbar-track {
+                            background: transparent;
+                        }
+                        .custom-scrollbar::-webkit-scrollbar-thumb {
+                            background: #e2e8f0;
+                            border-radius: 10px;
+                        }
+                        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                            background: #cbd5e1;
+                        }
+                        .no-scrollbar::-webkit-scrollbar {
+                            display: none;
+                        }
+                        .no-scrollbar {
+                            -ms-overflow-style: none;
+                            scrollbar-width: none;
+                        }
+                    `}</style>
                 </div>
             )}
         </AnimatePresence>

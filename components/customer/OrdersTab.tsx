@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes, FaUtensils, FaExclamationTriangle, FaPrint, FaDownload } from 'react-icons/fa';
+import { useState, useRef, useEffect } from 'react';
+import { FaClipboardList, FaClock, FaCheckCircle, FaTimesCircle, FaSpinner, FaMoneyBillWave, FaCreditCard, FaStar, FaComment, FaTimes, FaUtensils, FaExclamationTriangle, FaPrint, FaDownload, FaExclamationCircle } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/services/api';
 import toast from 'react-hot-toast';
@@ -94,7 +94,8 @@ function FeedbackForm({ orderId, onSubmit }: FeedbackFormProps) {
 
 function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session: any; onRefresh?: () => void }) {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const [isPending, setIsPending] = useState(order.paymentVerificationRequestbycustomer?.applied || false);
+  // Single source of truth from props
+  const isPending = (order.paymentVerificationRequestbycustomer?.applied || !!order.paymentVerificationRequestbycustomer?.appliedUTR) && !order.paymentVerificationRequestbycustomer?.adminAskedretry;
 
   const {
     register,
@@ -119,7 +120,6 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
         deviceId: session.deviceId
       });
       toast.success('UTR submitted! Verification pending.');
-      setIsPending(true);
       if (onRefresh) await onRefresh();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Verification failed');
@@ -127,7 +127,7 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
   };
 
   // If already submitted and waiting for admin
-  if (isPending || order.paymentVerificationRequestbycustomer?.applied) {
+  if (isPending) {
     return (
       <div className="space-y-3">
         <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 text-center">
@@ -152,11 +152,11 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
             }
           }}
           disabled={isCheckingStatus}
-          className="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
+          className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 shadow-xl shadow-indigo-100"
         >
           <div className="flex items-center justify-center gap-2">
             {(isCheckingStatus || isSubmitting) && <FaSpinner className="animate-spin" />}
-            {isCheckingStatus ? 'Updating...' : 'Check Status'}
+            {isCheckingStatus ? 'Syncing...' : 'Check Status'}
           </div>
         </button>
       </div>
@@ -166,34 +166,43 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
   return (
     <div className="space-y-3">
       {/* Instructions */}
-      <div className="bg-white/50 rounded-lg p-2 border border-amber-200/50">
-        <p className="text-[10px] text-amber-800 leading-relaxed font-medium">
-          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 1:</span>
-          Pay via Cash/UPI at the restaurant counter.
-        </p>
-        <div className="h-px bg-amber-200/30 my-1" />
-        <p className="text-[10px] text-amber-800 leading-relaxed font-medium">
-          <span className="font-black text-amber-900 border-b border-amber-300 mr-1">OPTION 2:</span>
-          Pay online via any UPI app and enter the last 6 digits of your UTR below.
-        </p>
+      <div className="bg-slate-50/80 rounded-3xl p-6 border border-indigo-50 shadow-inner space-y-4">
+        <div className="flex gap-4">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-indigo-50">
+            <span className="text-xs font-black text-indigo-500">01</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-1">Option 1: In-Person</p>
+            <p className="text-[10px] text-slate-500 font-medium leading-relaxed">Pay via Cash or UPI at the restaurant counter.</p>
+          </div>
+        </div>
+        <div className="h-px bg-indigo-100/50" />
+        <div className="flex gap-4">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-indigo-50">
+            <span className="text-xs font-black text-indigo-500">02</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-1">Option 2: Online UPI</p>
+            <p className="text-[10px] text-slate-500 font-medium leading-relaxed">Pay via any UPI app and enter the last 6 digits of your UTR below.</p>
+          </div>
+        </div>
       </div>
 
       {/* Retry Count Display */}
       {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && (
-        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-2 text-center">
-          <p className="text-[10px] font-bold text-indigo-800">
-            Retry Attempts: <span className="text-indigo-900">{order.paymentVerificationRequestbycustomer?.retrycount || 0}</span>
+        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
+          <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">
+            Attempt {order.paymentVerificationRequestbycustomer?.retrycount}/3
           </p>
-          <p className="text-[9px] text-indigo-600 mt-0.5">
-            {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3
-              ? 'Maximum retries reached. Please visit counter.'
-              : 'Please ensure correct UTR before submitting.'}
+          <p className="text-[9px] text-amber-600 font-medium mt-1">
+            Please double-check your UTR to avoid being locked out.
           </p>
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <div className="relative flex-1">
+      <div className="space-y-3">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Enter Last 6 Digits</label>
+        <div className="relative">
           <input
             type="text"
             {...register('utr')}
@@ -201,32 +210,43 @@ function PaymentEntryForm({ order, session, onRefresh }: { order: Order; session
               const val = e.target.value.replace(/\D/g, '').slice(0, 6);
               setValue('utr', val);
             }}
-            placeholder="000000"
+            placeholder="••••••"
             disabled={isSubmitting}
-            className="w-full px-3 py-2 bg-white border-2 border-indigo-50 rounded-lg text-center text-lg font-black font-mono tracking-widest focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
+            className="w-full px-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-center text-2xl font-black font-mono tracking-[0.5em] focus:ring-4 focus:ring-indigo-50 focus:border-indigo-400 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-300 shadow-inner placeholder:text-slate-200"
           />
         </div>
-        {errors.utr && <p className="text-rose-500 text-[10px] font-bold text-center">{errors.utr.message}</p>}
+        {errors.utr && <p className="text-rose-500 text-[10px] font-black text-center uppercase tracking-tight">{errors.utr.message}</p>}
       </div>
 
       <button
         onClick={handleSubmit(onFormSubmit)}
-        disabled={isSubmitting || (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
-        className="w-full py-2 bg-gray-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-black active:scale-95 transition-all disabled:opacity-50 shadow-lg touch-manipulation"
+        disabled={isSubmitting || (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 || utr?.length !== 6}
+        className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black active:scale-[0.98] transition-all disabled:opacity-30 shadow-2xl shadow-slate-200 flex items-center justify-center gap-3"
       >
         {isSubmitting ? (
-          <div className="flex items-center justify-center gap-2">
-            <FaSpinner className="animate-spin" />
-            Submitting...
-          </div>
-        ) : `Submit UTR for Verification ${(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 ? `(${order.paymentVerificationRequestbycustomer?.retrycount}/3)` : ''}`}
+          <>
+            <FaSpinner className="animate-spin w-4 h-4" />
+            Securing...
+          </>
+        ) : (
+          <>
+            Verify My Payment
+            {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && (
+              <span className="bg-white/20 px-2 py-0.5 rounded-md text-[8px]">
+                {order.paymentVerificationRequestbycustomer?.retrycount}/3
+              </span>
+            )}
+          </>
+        )}
       </button>
     </div>
   );
 }
 
 export default function OrdersTab({ orders, session, onRefresh, menuItems, isRefreshing }: OrdersTabProps) {
-  const [orderToVerify, setOrderToVerify] = useState<Order | null>(null);
+  const [orderToVerifyId, setOrderToVerifyId] = useState<string | null>(null);
+  const orderToVerify = orders.find(o => o._id === orderToVerifyId);
+
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedOrderIdForCancel, setSelectedOrderIdForCancel] = useState<string | null>(null);
   const [billModalOpen, setBillModalOpen] = useState(false);
@@ -591,8 +611,9 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                         <div 
                           className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-[1.5s] ease-out"
                           style={{ 
-                            width: order.status === 'PLACED' ? '10%' : 
-                                   order.status === 'ACCEPTED' ? '50%' : 
+                            width: order.status === 'PLACED' ? '12.5%' : 
+                                   order.status === 'ACCEPTED' ? '37.5%' : 
+                                   order.status === 'PREPARED' ? '62.5%' :
                                    order.status === 'COMPLETED' ? '100%' : '0%' 
                           }}
                         />
@@ -602,12 +623,13 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                       {[
                         { key: 'PLACED', label: 'Placed', icon: <FaClock /> },
                         { key: 'ACCEPTED', label: 'Cooking', icon: <FaUtensils /> },
+                        { key: 'PREPARED', label: 'Ready', icon: <FaCheckCircle /> },
                         { key: 'COMPLETED', label: 'Delivered', icon: <FaCheckCircle /> }
                       ].map((step, idx) => {
-                        const isDone = (order.status === 'ACCEPTED' && idx === 0) || 
-                                       (order.status === 'COMPLETED' && (idx === 0 || idx === 1));
+                        const statusOrder = ['PLACED', 'ACCEPTED', 'PREPARED', 'COMPLETED'];
+                        const currentIdx = statusOrder.indexOf(order.status || 'PLACED');
+                        const isPast = currentIdx > idx;
                         const isCurrent = order.status === step.key;
-                        const isPast = isDone;
 
                         return (
                           <div key={step.key} className="relative z-10 flex flex-col items-center">
@@ -653,7 +675,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                                 {item.quantity}
                               </span>
                               {(() => {
-                                const itemImg = getItemImage(item.itemId);
+                                const itemImg = item.itemId ? getItemImage(item.itemId) : null;
                                 return itemImg ? (
                                   <img 
                                     src={itemImg} 
@@ -693,28 +715,40 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                   {/* Payment Block */}
                   <div className={`p-3 rounded-xl border-2 transition-all duration-500 ${isOrderPaid(order)
                     ? 'bg-emerald-50/50 border-emerald-100/50'
+                    : order.paymentStatus === 'UNPAID'
+                    ? 'bg-rose-50/50 border-rose-100/50'
                     : 'bg-amber-50/50 border-amber-100/50'
                     }`}>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center space-x-2 min-w-0">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 ${isOrderPaid(order) ? 'bg-white text-emerald-600 border border-emerald-100' : 'bg-white text-amber-600 border border-amber-100'}`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 ${
+                          isOrderPaid(order) ? 'bg-white text-emerald-600 border border-emerald-100' : 
+                          order.paymentStatus === 'UNPAID' ? 'bg-white text-rose-600 border border-rose-100' :
+                          'bg-white text-amber-600 border border-amber-100'
+                        }`}>
                           {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-4 h-4" /> : <FaMoneyBillWave className="w-4 h-4" />}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Status</p>
-                          <h4 className={`text-sm font-black flex items-center tracking-tight ${isOrderPaid(order) ? 'text-emerald-700' : 'text-amber-800'}`}>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Payment Status</p>
+                          <h4 className={`text-sm font-black flex items-center tracking-tight ${
+                            isOrderPaid(order) ? 'text-emerald-700' : 
+                            order.paymentStatus === 'UNPAID' ? 'text-rose-700' :
+                            'text-amber-800'
+                          }`}>
                             {isOrderPaid(order) ? (
                               <><FaCheckCircle className="mr-2 w-4 h-4" /> Fully Paid</>
-                            ) : order.paymentVerificationRequestbycustomer?.applied ? (
+            ) : (order.paymentVerificationRequestbycustomer?.applied || !!order.paymentVerificationRequestbycustomer?.appliedUTR) && !order.paymentVerificationRequestbycustomer?.adminAskedretry ? (
                               <div className="flex flex-col">
                                 <span className="flex items-center"><FaClock className="mr-2 w-4 h-4 animate-pulse" /> Verification Pending</span>
-                                <span className="text-[10px] font-mono text-slate-400 mt-1 ml-6 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-lg w-fit border border-slate-200/50">UTR: •••{order.paymentVerificationRequestbycustomer.appliedUTR?.slice(-3) || order.utr?.slice(-3)}</span>
+                                <span className="text-[10px] font-mono text-slate-400 mt-1 ml-6 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-lg w-fit border border-slate-200/50">UTR: •••{order.paymentVerificationRequestbycustomer.appliedUTR?.slice(-3) || order.utr?.slice(-3) || '???' }</span>
                               </div>
-                            ) : order.paymentVerificationRequestbycustomer?.adminAskedretry ? (
+                            ) : (order.paymentVerificationRequestbycustomer?.adminAskedretry || order.paymentStatus === 'RETRY') ? (
                               <div className="flex flex-col">
-                                <span className="flex items-center text-rose-600"><FaExclamationTriangle className="mr-2 w-4 h-4 text-rose-500" /> Payment Rejected</span>
-                                <span className="text-[10px] font-mono text-rose-400 mt-1 ml-6 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-lg w-fit border border-rose-100/50">Last Failed: •••{order.paymentVerificationRequestbycustomer.appliedUTR?.slice(-3) || order.utr?.slice(-3)}</span>
+                                <span className="flex items-center text-rose-600"><FaExclamationTriangle className="mr-2 w-4 h-4 text-rose-500" /> Verification Failed</span>
+                                <span className="text-[10px] font-mono text-rose-400 mt-1 ml-6 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-lg w-fit border border-rose-100/50">Last Failed: •••{order.paymentVerificationRequestbycustomer?.appliedUTR?.slice(-3) || order.utr?.slice(-3) || '???' }</span>
                               </div>
+                            ) : order.paymentStatus === 'UNPAID' ? (
+                              <><FaExclamationCircle className="mr-2 w-4 h-4 text-rose-500" /> Payment Due / Unpaid</>
                             ) : (
                               <><FaClock className="mr-1 w-3 h-3 animate-pulse" /> Awaiting Payment</>
                             )}
@@ -722,32 +756,30 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                         </div>
                       </div>
                       
-                      {!isOrderPaid(order) && order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status === 'ACCEPTED' && (
+                      {!isOrderPaid(order) && 
+                        order.status !== 'CANCELLED' && 
+                        order.status !== 'REJECTED' && 
+                        ['ACCEPTED', 'PREPARED', 'COMPLETED'].includes(order.status) && 
+                        (!order.paymentVerificationRequestbycustomer?.applied && !order.paymentVerificationRequestbycustomer?.appliedUTR || order.paymentVerificationRequestbycustomer?.adminAskedretry) && (
                         <div className="flex-shrink-0">
-                          {order.paymentVerificationRequestbycustomer?.applied ? (
-                            <button disabled className="w-full sm:w-auto px-4 py-2 bg-indigo-400 text-white rounded-lg text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2">
-                              <FaSpinner className="animate-spin" /> Verifying... {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer.retrycount}/3)`}
+                          <div className="flex flex-col items-center gap-1">
+                            <button 
+                              onClick={() => setOrderToVerifyId(order._id)}
+                              disabled={(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
+                              className={`w-full sm:w-auto px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${
+                                (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
+                                  : 'bg-slate-900 text-white hover:bg-black shadow-slate-200'
+                              }`}
+                            >
+                              Verify UPI Now {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer?.retrycount}/3)`}
                             </button>
-                          ) : (
-                            <div className="flex flex-col items-center gap-1">
-                              <button 
-                                onClick={() => setOrderToVerify(order)}
-                                disabled={(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3}
-                                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${
-                                  (order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
-                                    : 'bg-slate-900 text-white hover:bg-black shadow-slate-200'
-                                }`}
-                              >
-                                Verify UPI Now {(order.paymentVerificationRequestbycustomer?.retrycount || 0) > 0 && `(${order.paymentVerificationRequestbycustomer?.retrycount}/3)`}
-                              </button>
-                              {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 && (
-                                <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
-                                  Visit Counter to Pay
-                                </span>
-                              )}
-                            </div>
-                          )}
+                            {(order.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 && (
+                              <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                                Visit Counter to Pay
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
                       
@@ -851,53 +883,66 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
       {/* Payment Verification Modal */}
       <AnimatePresence>
-        {orderToVerify && (
+        {orderToVerifyId && orderToVerify && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-            onClick={() => setOrderToVerify(null)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[150] flex items-center justify-center p-6"
+            onClick={() => {
+              setOrderToVerifyId(null);
+            }}
           >
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="glass-card rounded-2xl border-white/60 p-6 sm:p-8 hover:shadow-2xl transition-all duration-300 relative overflow-hidden group shadow-xl shadow-slate-100"
+              initial={{ scale: 0.9, y: 40, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 40, opacity: 0 }}
+              className="glass-card rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden border-white/50"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-br from-indigo-600 to-indigo-900 p-8 text-white">
-                <div className="flex items-center justify-between mb-4">
+              {/* Header */}
+              <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 text-white relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16" />
+                <div className="flex items-center justify-between relative z-10 mb-6">
                   <div>
-                    <h2 className="text-2xl font-black tracking-tight">Verify Payment</h2>
-                    <p className="text-xs text-indigo-200 font-bold uppercase tracking-widest mt-1">Order #{orderToVerify.orderNumber || orderToVerify._id.slice(-6)}</p>
+                    <h2 className="text-2xl font-black uppercase tracking-tight">Verify Payment</h2>
+                    <p className="text-xs font-bold text-indigo-100 uppercase tracking-widest mt-1">Order #{orderToVerify.orderNumber || orderToVerify._id.slice(-6)}</p>
                   </div>
-                  <button onClick={() => setOrderToVerify(null)} className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10">
-                    <FaTimes />
+                  <button 
+                    onClick={() => {
+                      setOrderToVerifyId(null);
+                    }}                    className="w-10 h-10 glass rounded-xl flex items-center justify-center hover:bg-white/20 transition-all"
+                  >
+                    <FaTimes className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black">₹{orderToVerify.totalAmount.toFixed(0)}</span>
-                  <span className="text-xs text-indigo-300 font-bold uppercase tracking-widest">Total Amount</span>
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20">
+                    <FaMoneyBillWave className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-4xl font-black tabular-nums">₹{orderToVerify.totalAmount.toFixed(0)}</span>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mt-1">Total Amount Payable</p>
+                  </div>
                 </div>
               </div>
 
+              {/* Body */}
               <div className="p-8">
-                {/* Check if max retries reached */}
                 {(orderToVerify.paymentVerificationRequestbycustomer?.retrycount || 0) >= 3 ? (
                   <div className="space-y-6">
-                    <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
-                      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FaExclamationTriangle className="w-8 h-8 text-red-500" />
+                    <div className="bg-rose-50 border-2 border-rose-200 rounded-3xl p-8 text-center">
+                      <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg">
+                        <FaExclamationTriangle className="w-8 h-8 text-rose-500" />
                       </div>
-                      <h3 className="text-lg font-black text-red-800 mb-2">Max Attempts Reached</h3>
-                      <p className="text-sm text-red-600 mb-4">
-                        You have exceeded the maximum number of UTR verification attempts (3/3).
+                      <h3 className="text-xl font-black text-rose-900 mb-2 uppercase tracking-tight">Security Lock</h3>
+                      <p className="text-xs font-bold text-rose-600 leading-relaxed mb-6">
+                        Maximum verification attempts exceeded (3/3). Please visit the counter for manual settlement.
                       </p>
-                      <div className="bg-white rounded-xl p-4 border border-red-100">
-                        <p className="text-sm font-bold text-gray-800 mb-2">Please pay at the counter</p>
-                        <p className="text-xs text-gray-500">
-                          Visit the restaurant counter and pay via Cash or UPI directly. The staff will mark your payment as collected.
+                      <div className="bg-white/80 rounded-2xl p-5 border border-rose-100 shadow-inner">
+                        <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest mb-2">Visit Counter</p>
+                        <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
+                          Our staff will assist you with Cash or UPI payments directly at the counter to clear your dues.
                         </p>
                       </div>
                     </div>
@@ -908,7 +953,7 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
                     session={session} 
                     onRefresh={async () => {
                       await onRefresh();
-                      setOrderToVerify(null);
+                      // Don't close modal here, let it sync state
                     }} 
                   />
                 )}
@@ -916,10 +961,12 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
               
               <div className="px-8 pb-8">
                 <button 
-                  onClick={() => setOrderToVerify(null)}
-                  className="w-full py-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all"
+                  onClick={() => {
+                    setOrderToVerifyId(null);
+                  }}
+                  className="w-full py-4 glass text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-50 active:scale-95 transition-all"
                 >
-                  Close & Pay Later
+                  Close & Pay on Counter
                 </button>
               </div>
             </motion.div>

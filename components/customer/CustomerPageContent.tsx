@@ -76,6 +76,7 @@ export default function CustomerPageContent() {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     shouldRetryOnError: false,
+    keepPreviousData: true,
   });
 
   const orders = ordersData?.data || [];
@@ -91,7 +92,8 @@ export default function CustomerPageContent() {
     name: restaurantData.data.restaurantName,
     id: session.restaurantId || '',
     logo: restaurantData.data.logo,
-    motto: restaurantData.data.motto
+    motto: restaurantData.data.motto,
+    gstConfig: restaurantData.data.gstConfig
   } : null;
 
   // Handle tab from URL query param
@@ -201,9 +203,12 @@ export default function CustomerPageContent() {
     mutateMenu();
   }, [mutateMenu]);
 
-  const refreshOrders = useCallback(() => {
+  const refreshOrders = useCallback(async () => {
+    if (ordersSwrKey) {
+      return await mutate(ordersSwrKey);
+    }
     return mutateOrders();
-  }, [mutateOrders]);
+  }, [mutateOrders, ordersSwrKey]);
 
 
   const decryptQrData = (encryptedData: string) => {
@@ -291,6 +296,7 @@ export default function CustomerPageContent() {
         const statusMessages: Record<string, string> = {
           'ORDER_NEW': 'Order placed successfully! 📝',
           'ORDER_ACCEPTED': 'Your order is being prepared! 🍳',
+          'ORDER_PREPARED': 'Your order is ready to serve! 😋',
           'ORDER_COMPLETED': 'Your order has been served! 🍽️',
           'ORDER_REJECTED': 'Sorry, your order was rejected. ❌',
           'ORDER_CANCELLED': 'Your order has been cancelled. 🚫',
@@ -317,7 +323,30 @@ export default function CustomerPageContent() {
         // SYNC STATE: Refetch orders on any order-related notification
         if (notification.type?.startsWith('ORDER_') || notification.type === 'PAYMENT_VERIFIED' || notification.type === 'PAYMENT_RETRY') {
           // Trigger server refetch to ensure order card is updated
-          mutateOrders();
+          if (ordersSwrKey) {
+            // Optimistically update if we have the order data
+            const orderData = notification.metadata?.orderData;
+            if (orderData) {
+              mutate(ordersSwrKey, (currentData: any) => {
+                const existingOrders = currentData?.data || [];
+                const index = existingOrders.findIndex((o: any) => o._id === orderData._id);
+                
+                if (index !== -1) {
+                  const newOrders = [...existingOrders];
+                  newOrders[index] = orderData;
+                  return { ...currentData, data: newOrders };
+                }
+                return { ...currentData, data: [orderData, ...existingOrders] };
+              }, false);
+            }
+            
+            // Full refresh after a short delay
+            setTimeout(() => {
+              mutate(ordersSwrKey);
+            }, 500);
+          } else {
+            mutateOrders();
+          }
         }
       };
 
@@ -568,6 +597,7 @@ export default function CustomerPageContent() {
             removeFromCart={removeFromCart}
             getItemQuantity={getItemQuantity}
             session={session}
+            restaurantInfo={restaurantInfo}
             onPlaceOrder={placeOrder}
           />
         </div>

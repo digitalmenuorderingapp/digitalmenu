@@ -104,8 +104,20 @@ api.interceptors.response.use(
       // Clear auth state and redirect to login
       if (typeof window !== 'undefined') {
         localStorage.removeItem('user');
-        // Only redirect if not already on auth page
-        if (!window.location.pathname.includes('/auth')) {
+        
+        // Define public routes that shouldn't trigger a redirect to /auth
+        const isPublicRoute = 
+          window.location.pathname === '/' ||
+          window.location.pathname.startsWith('/home') ||
+          window.location.pathname.startsWith('/customer') ||
+          window.location.pathname.startsWith('/affordable') ||
+          window.location.pathname.startsWith('/privacy-policy') ||
+          window.location.pathname.startsWith('/terms-of-service') ||
+          window.location.pathname.startsWith('/guide') ||
+          window.location.pathname.startsWith('/auth');
+
+        // Only redirect to /auth if not on a public route and not already on auth page
+        if (!isPublicRoute && !window.location.pathname.includes('/auth')) {
           window.location.href = '/auth';
         }
       }

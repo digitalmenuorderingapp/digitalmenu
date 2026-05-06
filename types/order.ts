@@ -16,7 +16,7 @@ export interface CartItem extends MenuItem {
 }
 
 export interface OrderItem {
-    itemId: string;
+    itemId?: string;
     name: string;
     price: number;
     quantity: number;
@@ -32,11 +32,11 @@ export interface Order {
     numberOfPersons?: number;
     items: OrderItem[];
     totalAmount: number;
-    status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+    status: 'PLACED' | 'ACCEPTED' | 'PREPARED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
     paymentMethod?: 'ONLINE' | 'CASH';
     paymentStatus?: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
     paymentDueStatus?: 'CLEAR' | 'DUE';
-    collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
+    collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED' | 'SPLIT';
     utr?: string;
     retryCount?: number;
     collectedAt?: string;
@@ -46,8 +46,12 @@ export interface Order {
     cancellationReason?: string;
     createdAt: string;
     updatedAt?: string;
-    sessionId: string;
-    deviceId: string;
+    sessionId?: string;
+    deviceId?: string;
+    createdBy?: string;
+    source?: 'admin' | 'customer';
+    restaurant?: string;
+    adminId?: string;
     specialInstructions?: string;
     feedback?: {
         comment?: string;
@@ -69,4 +73,9 @@ export interface Order {
     roundOff?: number;
     grandTotal?: number;
     subtotal?: number;
+    isCollected?: boolean;
+    isDue?: boolean;
+    isPending?: boolean;
+    submittedUtr?: string;
+    orderType?: string;
 }

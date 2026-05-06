@@ -29,7 +29,7 @@ class SocketService {
         if (!this.socket) {
             this.socket = io(SOCKET_URL, {
                 withCredentials: true,
-                transports: ['polling', 'websocket'],
+                transports: ['websocket', 'polling'],
                 path: '/socket.io/',
                 reconnection: true,
                 reconnectionAttempts: 10,

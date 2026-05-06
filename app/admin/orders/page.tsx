@@ -41,55 +41,10 @@ import StatsCard from '@/components/ui/StatsCard';
 import CreateOrderModal from '@/components/ui/CreateOrderModal';
 import { Skeleton, StatsCardSkeleton, OrderCardSkeleton } from '@/components/ui/Skeleton';
 import PrintableBill from '@/components/ui/PrintableBill';
+import ActionModal, { ActionType } from '@/components/ui/ActionModal';
 import { useReactToPrint } from 'react-to-print';
 
-interface Order {
-  _id: string;
-  orderNumber?: string;
-  tableNumber: number;
-  customerName: string;
-  customerPhone?: string;
-  numberOfPersons?: number;
-  specialInstructions?: string;
-  orderType?: 'dine-in' | 'takeaway' | 'delivery';
-  deviceId: string;
-  restaurant?: string;
-  adminId?: string;
-  items: Array<{ name: string; quantity: number; price: number }>;
-  totalAmount: number;
-  status: 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
-  paymentMethod?: 'ONLINE' | 'CASH';
-  paymentStatus: 'PENDING' | 'VERIFIED' | 'RETRY' | 'UNPAID';
-  paymentDueStatus?: 'CLEAR' | 'DUE';
-  collectedVia?: 'CASH' | 'ONLINE' | 'NOT_COLLECTED';
-  utr?: string;
-  rejectionReason?: string;
-  cancellationReason?: string;
-  paymentVerificationRequestbycustomer?: {
-    applied?: boolean;
-    appliedUTR?: string;
-    retrycount?: number;
-    adminAskedretry?: boolean;
-  };
-  createdAt: string;
-  updatedAt?: string;
-  gstEnabled?: boolean;
-  sgstAmount?: number;
-  cgstAmount?: number;
-  igstAmount?: number;
-  serviceChargeAmount?: number;
-  taxableAmount?: number;
-  roundOff?: number;
-  subtotal?: number;
-  feedback?: {
-    rating?: number;
-    comment?: string;
-    submittedAt?: string;
-  };
-  transactions?: any[];
-  createdBy?: string;
-  source?: 'admin' | 'customer';
-}
+import { Order } from '@/types/order';
 
 type OrderStatus = 'all' | 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'DUES';
 
@@ -104,6 +59,12 @@ export default function OrdersPage() {
   const [selectedOrderForBill, setSelectedOrderForBill] = useState<Order | null>(null);
   const [isThermalPrint, setIsThermalPrint] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
+  
+  const [actionModal, setActionModal] = useState<{ isOpen: boolean; order: Order | null; type: ActionType | null }>({
+    isOpen: false,
+    order: null,
+    type: null
+  });
 
   useEffect(() => {
     const stored = localStorage.getItem('isThermalPrint');
@@ -372,6 +333,14 @@ export default function OrdersPage() {
     }
   };
 
+  const onRequestAction = (order: Order, type: ActionType) => {
+    setActionModal({
+      isOpen: true,
+      order,
+      type
+    });
+  };
+
 
   const filteredOrders = orderFilter === 'all'
     ? orders
@@ -569,6 +538,7 @@ export default function OrdersPage() {
                      order={order as any}
                      onAction={handleAction}
                      onPrint={(o: any) => handlePrintBill(order)}
+                     onRequestAction={onRequestAction}
                   />
                 ))}
               </motion.div>
@@ -577,21 +547,10 @@ export default function OrdersPage() {
         </div>
 
         {/* Right Side: Table Occupancy - Compact Sidebar */}
-        <div className="w-full sm:w-[80px] shrink-0 bg-white border border-gray-100 rounded-2xl p-2 sm:p-1.5 shadow-sm flex flex-row sm:flex-col items-center z-40 h-auto sm:h-full overflow-hidden">
+        <div className="w-full sm:w-[80px] shrink-0 bg-white border border-gray-100 rounded-xl p-2 sm:p-1.5 shadow-sm flex flex-row sm:flex-col items-center z-40 h-auto sm:h-full overflow-hidden">
           <div className="flex flex-row sm:flex-col items-center w-auto sm:w-full mb-0 sm:mb-3 shrink-0">
             
-            {/* Status Indicators (Free/Busy) */}
-            <div className="flex flex-row sm:flex-col gap-3 sm:gap-3 mr-4 sm:mr-0 sm:mb-4 mt-1 items-center bg-gray-100/50 px-2.5 py-2 rounded-2xl border border-gray-200/50">
-               <div className="flex items-center gap-1.5" title="Free Tables">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></div>
-                 <span className="hidden lg:block text-[9px] font-black text-emerald-600 uppercase tracking-widest">Free</span>
-               </div>
-               <div className="flex items-center gap-1.5" title="Occupied Tables">
-                 <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"></div>
-                 <span className="hidden lg:block text-[9px] font-black text-rose-600 uppercase tracking-widest">Busy</span>
-               </div>
-            </div>
-
+           
             {/* Occupancy Icon */}
             <div className="py-2 sm:border-y border-gray-100 w-auto sm:w-full flex justify-center mr-4 sm:mr-0 sm:mb-2" title="Occupancy Tracker">
               <FaTasks className="text-indigo-500 text-[10px] sm:text-sm opacity-50" />
@@ -696,6 +655,22 @@ export default function OrdersPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Action Modal */}
+      {actionModal.isOpen && actionModal.order && actionModal.type && (
+        <ActionModal
+          isOpen={actionModal.isOpen}
+          onClose={() => setActionModal({ isOpen: false, order: null, type: null })}
+          onConfirm={async (payload) => {
+            await handleAction(actionModal.order!._id, actionModal.type!, payload);
+            setActionModal({ isOpen: false, order: null, type: null });
+          }}
+          type={actionModal.type}
+          orderNumber={actionModal.order.orderNumber || actionModal.order._id.slice(-6)}
+          amount={actionModal.order.totalAmount}
+          submittedUtr={actionModal.order.utr || actionModal.order.paymentVerificationRequestbycustomer?.appliedUTR}
+        />
+      )}
     </div>
   );
 }
