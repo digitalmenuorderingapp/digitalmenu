@@ -1006,9 +1006,18 @@ export default function OrdersTab({ orders, session, onRefresh, menuItems, isRef
 
                   {/* PAID Stamp - Show if payment is verified */}
                   {selectedOrderForBill.paymentStatus?.toUpperCase() === 'VERIFIED' && (
-                    <div className="mt-4 border-2 border-emerald-600 rounded-lg p-3 text-center bg-emerald-50">
-                      <div className="border border-emerald-600 rounded-md p-2">
-                        <span className="text-xl font-black tracking-[0.3em] text-emerald-700">PAID</span>
+                    <div className="mt-4 flex justify-center">
+                      <div className="border-2 border-emerald-500/20 rounded-full py-2 px-6 flex items-center gap-4 bg-emerald-50/50 shadow-lg shadow-emerald-100/20 transform rotate-[-0.5deg]">
+                        <div className="flex items-center gap-2">
+                          <FaCheckCircle className="text-emerald-600" />
+                          <span className="text-sm font-black tracking-widest text-emerald-700 uppercase">PAID</span>
+                        </div>
+                        <div className="w-px h-4 bg-emerald-200"></div>
+                        <span className="text-sm font-black text-slate-800 tabular-nums">₹{Math.round(selectedOrderForBill.totalAmount).toFixed(0)}</span>
+                        <div className="w-px h-4 bg-emerald-200"></div>
+                        <span className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest">
+                           {selectedOrderForBill.collectedVia === 'SPLIT' ? 'Split' : (selectedOrderForBill.collectedVia || 'Online')}
+                        </span>
                       </div>
                     </div>
                   )}

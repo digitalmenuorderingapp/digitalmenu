@@ -299,42 +299,15 @@ const PrintableBill = forwardRef<HTMLDivElement, PrintableBillProps>(
 
         {/* PAID Stamp & Payment Details */}
         {isPaid && (
-          <div className="mt-4 px-2">
-            <div className="border-4 border-double border-black rounded-xl p-3 text-center transform rotate-[-2deg] bg-gray-50/20 shadow-sm">
-              <div className="border-b-2 border-black pb-2 mb-2">
-                <span className="text-2xl font-black tracking-[0.4em] text-black">PAID</span>
-              </div>
-              
-              <div className="text-[11px] uppercase font-bold space-y-1.5 px-1">
-                <div className="flex justify-between items-center border-b border-black/10 pb-1">
-                  <span className="opacity-60 text-[9px]">COLLECTED VIA:</span>
-                  <span className="font-black text-[10px]">
-                    {order.collectedVia === 'SPLIT' ? 'BOTH (CASH + ONLINE)' : (order.collectedVia || 'ONLINE')}
-                  </span>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span>CASH:</span>
-                    <span>₹{order.collectedVia === 'SPLIT' ? (order.splitPayment?.cashAmount || 0).toFixed(0) : (order.collectedVia === 'CASH' ? Math.round(order.totalAmount).toFixed(0) : '0')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>ONLINE:</span>
-                    <span>₹{order.collectedVia === 'SPLIT' ? (order.splitPayment?.onlineAmount || 0).toFixed(0) : (order.collectedVia === 'ONLINE' || !order.collectedVia ? Math.round(order.totalAmount).toFixed(0) : '0')}</span>
-                  </div>
-                </div>
-                
-                <div className="flex justify-between border-t-2 border-black mt-2 pt-1.5 text-sm font-black">
-                  <span>TOTAL PAID:</span>
-                  <span>₹{Math.round(order.totalAmount).toFixed(0)}</span>
-                </div>
-
-                {order.utr && (
-                  <div className="text-[8px] opacity-60 font-medium text-right mt-1">
-                    UTR: {order.utr}
-                  </div>
-                )}
-              </div>
+          <div className="mt-2 px-2">
+            <div className="border-2 border-black rounded-md py-1 px-3 text-center transform rotate-[-1deg] bg-gray-50/5 flex items-center justify-center gap-3">
+              <span className="text-sm font-black tracking-[0.2em] text-black">PAID</span>
+              <span className="w-px h-4 bg-black/20"></span>
+              <span className="text-sm font-black text-black">₹{Math.round(order.totalAmount).toFixed(0)}</span>
+              <span className="w-px h-4 bg-black/20"></span>
+              <span className="text-[10px] font-black uppercase text-black/70">
+                VIA {order.collectedVia === 'SPLIT' ? 'SPLIT' : (order.collectedVia || 'ONLINE')}
+              </span>
             </div>
           </div>
         )}
