@@ -122,6 +122,11 @@ export default function MarketingHomeClient() {
   // Wheel snap (desktop only)
   useEffect(() => {
     if (!isDesktop) return;
+    
+    // Disable snapping for touch-primary devices even if they are large (e.g. iPad Pro)
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouch) return;
+
     const handleWheel = (e: WheelEvent) => {
       if (isScrolling.current) return;
       const delta = e.deltaY;
@@ -139,6 +144,11 @@ export default function MarketingHomeClient() {
   // Keyboard arrow snap (desktop only)
   useEffect(() => {
     if (!isDesktop) return;
+
+    // Disable snapping for touch-primary devices
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouch) return;
+
     const handleKey = (e: KeyboardEvent) => {
       if (isScrolling.current) return;
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
@@ -153,9 +163,15 @@ export default function MarketingHomeClient() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [isDesktop, activeSection, scrollToSection]);
 
-  // Touch swipe snap (desktop only)
+  // Touch swipe snap (DISABLED ON MOBILE/TOUCH FOR NATURAL SCROLL)
   useEffect(() => {
+    // We completely disable touch-based snapping to allow natural scrolling on mobile/tablets
     if (!isDesktop) return;
+    
+    // Even on desktop, we check if it's a touch-primary device
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouch) return;
+
     const handleTouchStart = (e: TouchEvent) => { touchStartY.current = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
       if (isScrolling.current) return;

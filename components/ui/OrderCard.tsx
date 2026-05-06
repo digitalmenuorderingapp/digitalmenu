@@ -2,18 +2,18 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  FaClock, 
-  FaUsers, 
-  FaHashtag, 
-  FaCreditCard, 
-  FaMoneyBillWave, 
-  FaCheckCircle, 
-  FaComment, 
-  FaStar, 
-  FaExclamationCircle, 
-  FaSpinner, 
-  FaUtensils, 
+import {
+  FaClock,
+  FaUsers,
+  FaHashtag,
+  FaCreditCard,
+  FaMoneyBillWave,
+  FaCheckCircle,
+  FaComment,
+  FaStar,
+  FaExclamationCircle,
+  FaSpinner,
+  FaUtensils,
   FaCheck,
   FaTimes,
   FaArrowRight,
@@ -63,10 +63,10 @@ export const getPaymentStatusDisplay = (order: Order) => {
     };
   }
 
-  if (order.paymentStatus?.toUpperCase() === 'PENDING' && 
-      (order.paymentMethod?.toUpperCase() === 'ONLINE' || 
-       order.collectedVia?.toUpperCase() === 'ONLINE' ||
-       order.paymentVerificationRequestbycustomer?.applied)) {
+  if (order.paymentStatus?.toUpperCase() === 'PENDING' &&
+    (order.paymentMethod?.toUpperCase() === 'ONLINE' ||
+      order.collectedVia?.toUpperCase() === 'ONLINE' ||
+      order.paymentVerificationRequestbycustomer?.applied)) {
     return {
       text: 'Pending',
       color: 'text-blue-600',
@@ -76,14 +76,14 @@ export const getPaymentStatusDisplay = (order: Order) => {
 
   if (order.paymentStatus?.toUpperCase() === 'UNPAID' || order.paymentDueStatus?.toUpperCase() === 'DUE') {
     return {
-       text: 'Unpaid / Due',
-       color: 'text-red-700 font-black',
-       bgColor: 'bg-red-100'
+      text: 'Unpaid / Due',
+      color: 'text-red-700 font-black',
+      bgColor: 'bg-red-100'
     };
   }
 
-  return { 
-    text: (order.paymentMethod?.toUpperCase() === 'ONLINE' || order.collectedVia?.toUpperCase() === 'ONLINE') ? 'Online Pending' : 'Pay at Counter', 
+  return {
+    text: (order.paymentMethod?.toUpperCase() === 'ONLINE' || order.collectedVia?.toUpperCase() === 'ONLINE') ? 'Online Pending' : 'Pay at Counter',
     color: 'text-blue-600',
     bgColor: 'bg-blue-50'
   };
@@ -143,14 +143,27 @@ const OrderCard = ({
   onAction,
   onPrint
 }: OrderCardProps) => {
-  // TEMP: Debug log for retry count
-  console.log('Order:', order._id, 'retryCount:', order.paymentVerificationRequestbycustomer?.retrycount, 'paymentStatus:', order.paymentStatus);
-  
   const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({});
   const [modalType, setModalType] = useState<ActionType | null>(null);
 
   const paid = isOrderPaid(order);
   const paymentStatusDisplay = getPaymentStatusDisplay(order);
+
+  const statusColors = {
+    PLACED: 'from-amber-500 to-orange-500',
+    ACCEPTED: 'from-blue-500 to-indigo-500',
+    COMPLETED: 'from-emerald-500 to-teal-500',
+    REJECTED: 'from-rose-500 to-red-500',
+    CANCELLED: 'from-gray-500 to-slate-500'
+  };
+
+  const statusBg = {
+    PLACED: 'bg-amber-50/50 border-amber-100',
+    ACCEPTED: 'bg-blue-50/50 border-blue-100',
+    COMPLETED: 'bg-emerald-50/50 border-emerald-100',
+    REJECTED: 'bg-rose-50/30 border-rose-100',
+    CANCELLED: 'bg-gray-50/30 border-gray-100'
+  };
 
   const handleAction = async (action: string, payload?: any) => {
     setLoadingActions(prev => ({ ...prev, [action]: true }));
@@ -166,389 +179,216 @@ const OrderCard = ({
   const isLoading = (action: string) => loadingActions[action] || false;
   const isAnyLoading = Object.values(loadingActions).some(val => val);
 
-  if (variant === 'compact') {
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all"
-      >
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm ${
-               order.status?.toUpperCase() === 'PLACED' ? 'bg-amber-50 text-amber-600' :
-               order.status?.toUpperCase() === 'ACCEPTED' ? 'bg-blue-50 text-blue-600' :
-               order.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-50 text-green-600' :
-               'bg-gray-50 text-gray-500'
-            }`}>
-              {order.tableNumber}
-            </div>
-            <div>
-              <h4 className="font-bold text-gray-900 text-sm truncate max-w-[100px]">{order.customerName}</h4>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
-                {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="font-black text-indigo-600 text-sm">₹{order.totalAmount}</p>
-            {/* Only show NEW badge for PLACED orders */}
-            {order.status?.toUpperCase() === 'PLACED' && (
-              <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600">
-                NEW
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-          <div className="flex items-center space-x-1">
-            {order.paymentMethod?.toUpperCase() === 'ONLINE' ? <FaCreditCard className="w-3 h-3 text-blue-500" /> : <FaMoneyBillWave className="w-3 h-3 text-amber-500" />}
-            <span className={`text-[10px] font-bold ${paymentStatusDisplay.color}`}>
-              {paymentStatusDisplay.text}
-              {order.paymentStatus?.toUpperCase() === 'RETRY' && ` (${order.retryCount || 0})`}
-            </span>
-          </div>
-          <FaArrowRight className="w-3 h-3 text-gray-300 transition-colors" />
-        </div>
-      </motion.div>
-    );
-  }
+  const currentStatus = order.status?.toUpperCase() || 'PLACED';
+  const colorGradient = (statusColors as any)[currentStatus] || statusColors.PLACED;
+  const bgClass = (statusBg as any)[currentStatus] || statusBg.PLACED;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-3xl border transition-all duration-300 overflow-hidden group/card shadow-sm hover:shadow-xl
-        ${paid ? 'border-green-200' : ''}
-      ${
-        order.status?.toUpperCase() === 'PLACED' ? 'bg-amber-50/50 border-amber-100/50 hover:border-amber-200' :
-        order.status?.toUpperCase() === 'ACCEPTED' ? 'bg-blue-50/50 border-blue-100/50 hover:border-blue-200' :
-        order.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-50/50 border-green-100/50 hover:border-green-200' :
-        order.status?.toUpperCase() === 'REJECTED' ? 'bg-red-50/30 border-red-100/50' :
-        'bg-white border-gray-100'
-      } ${order.paymentDueStatus?.toUpperCase() === 'DUE' ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}
+      className={`relative group/card flex flex-col min-h-[300px] rounded-3xl border border-white/40 shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden backdrop-blur-xl bg-white/70 ${paid ? 'ring-1 ring-emerald-500/20' : ''}`}
     >
+      {/* Top Status Gradient Bar */}
+      <div className={`h-1.5 w-full bg-gradient-to-r ${colorGradient}`} />
 
-      {/* Header */}
-      <div className={`p-4 sm:p-5 border-b border-gray-100/50 flex flex-wrap items-center justify-between gap-3 transition-colors duration-300 ${
-        order.status?.toUpperCase() === 'PLACED' ? 'bg-gradient-to-br from-amber-50/80 to-white/40' :
-        order.status?.toUpperCase() === 'ACCEPTED' ? 'bg-gradient-to-br from-blue-50/80 to-white/40' :
-        order.status?.toUpperCase() === 'COMPLETED' ? 'bg-gradient-to-br from-green-50/80 to-white/40' :
-        'bg-gradient-to-br from-gray-50/80 to-white/40'
-      }`}>
-        <div className="flex items-center space-x-3 sm:space-x-4">
-          <div className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl shadow-sm transition-transform duration-300 group-hover/card:scale-105 ${
-            order.status?.toUpperCase() === 'PLACED' ? 'bg-white text-amber-600 border border-amber-100' :
-            order.status?.toUpperCase() === 'ACCEPTED' ? 'bg-white text-blue-600 border border-blue-100' :
-            order.status?.toUpperCase() === 'COMPLETED' ? 'bg-white text-green-600 border border-green-100' :
-            'bg-white text-gray-600 border border-gray-100'
-          }`}>
-            {order.tableNumber}
-            {order.status?.toUpperCase() === 'PLACED' && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-              </span>
-            )}
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="font-bold text-gray-900 text-base sm:text-lg leading-tight uppercase tracking-tight transition-colors">
-                {order.customerName}
-              </h3>
-              {order.numberOfPersons && (
-                <span className="hidden sm:flex items-center space-x-1 px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-black text-gray-500">
-                  <FaUsers className="w-2.5 h-2.5" />
-                  <span>{order.numberOfPersons}</span>
-                </span>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center mt-1 gap-1.5 sm:gap-2">
-              {order.customerPhone && (
-                <span className="text-[11px] sm:text-sm font-bold text-gray-600 flex items-center bg-white/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm">
-                  <FaPhone className="mr-1.5 text-green-500 w-2.5 h-2.5" />
-                  {order.customerPhone}
-                </span>
-              )}
-              <span className="text-[11px] sm:text-sm font-black text-gray-600 flex items-center bg-white/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm">
-                <FaClock className="mr-1.5 text-indigo-500 w-3 h-3" />
-                {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="text-right flex flex-col items-end">
-          <div className="flex items-center gap-3">
-            {(order.status?.toUpperCase() === 'ACCEPTED' || order.status?.toUpperCase() === 'COMPLETED') && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onPrint?.(order); }}
-                className="p-1.5 sm:p-2 bg-white/80 rounded-lg border border-indigo-100 hover:bg-white hover:border-indigo-300 transition-all shadow-sm text-indigo-600"
-                title="Print Bill"
-              >
-                <FaPrint className="w-3 h-3 sm:w-4 sm:h-4" />
-              </button>
-            )}
-            <p className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter">₹{order.totalAmount}</p>
-          </div>
-          {/* Only show NEW badge for PLACED orders - other updates go to notifications */}
-          {order.status?.toUpperCase() === 'PLACED' && (
-            <span className="inline-flex items-center mt-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-amber-100/50 text-amber-700">
-              <FaSpinner className="animate-spin mr-1 w-2 h-2" />
-              NEW
-            </span>
-          )}
-        </div>
-      </div>
+      {/* Main Container */}
+      <div className="flex flex-col flex-1 p-4 sm:p-5">
 
-      {/* Content */}
-      <div className="p-4 sm:p-5 flex-1 flex flex-col min-h-0 bg-white/40">
-        <div className="flex-1 min-h-0 mb-3 sm:mb-4">
-          <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 sm:mb-3">
-            <span>ITEMS ({order.items.length})</span>
-            <span className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-lg border border-indigo-100/50 text-[9px] sm:text-[10px]">
-              {order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} Total
-            </span>
-          </div>
-          <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-            {order.items.map((item, i) => (
-              <div key={i} className="flex justify-between items-center bg-gray-50/50 hover:bg-indigo-50/30 p-2 rounded-xl transition-all border border-transparent hover:border-indigo-100/30">
-                <div className="flex items-center space-x-3">
-                  <span className="w-8 h-8 rounded-lg bg-white border border-gray-200/50 flex items-center justify-center text-xs font-black text-indigo-600">
-                    {item.quantity}x
-                  </span>
-                  <span className="text-sm font-bold text-gray-700">{item.name}</span>
+        {/* Header Section */}
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Table Diamond Badge */}
+            <div className="relative group/table">
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex flex-col items-center justify-center bg-gradient-to-br ${colorGradient} shadow-lg shadow-indigo-200/50 transition-all duration-300 group-hover/card:scale-105 border border-white/20`}>
+                <span className="text-[7px] sm:text-[8px] font-black text-white/70 uppercase leading-none mb-0.5">Tbl</span>
+                <span className="text-lg sm:text-xl font-black text-white leading-none">{order.tableNumber}</span>
+              </div>
+              {order.status === 'PLACED' && (
+                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-md z-10">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full animate-ping" />
                 </div>
-                <span className="text-xs font-black text-gray-400 font-mono">₹{item.price * item.quantity}</span>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base sm:text-lg font-black text-slate-800 uppercase tracking-tight truncate leading-none">
+                  {order.customerName}
+                </h3>
+                {order.numberOfPersons && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 text-[10px] font-black text-slate-500">
+                    <FaUsers className="w-2 h-2" />
+                    {order.numberOfPersons}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100/50 font-mono">
+                  <FaClock className="w-2.5 h-2.5 text-indigo-400" />
+                  {new Date(order.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short' })} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {order.customerPhone && (
+                  <span className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100/50">
+                    <FaPhone className="w-2.5 h-2.5 text-emerald-400" />
+                    {order.customerPhone}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-1">
+            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${order.status === 'PLACED' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                order.status === 'ACCEPTED' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                  order.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                    'bg-slate-50 text-slate-500 border-slate-200'
+              }`}>
+              {order.status}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-slate-300 uppercase font-mono">ID: #{order.orderNumber || order._id.slice(-6)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Receipt Divider */}
+        <div className="relative h-px w-full border-t-2 border-dashed border-slate-100 my-2">
+          <div className="absolute -left-6 -top-1.5 w-3 h-3 rounded-full bg-slate-100/50 shadow-inner" />
+          <div className="absolute -right-6 -top-1.5 w-3 h-3 rounded-full bg-slate-100/50 shadow-inner" />
+        </div>
+
+        {/* Items Section */}
+        <div className="flex-1 min-h-0 py-3">
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Order Summary</h4>
+            <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-lg">{order.items.length} Items</span>
+          </div>
+
+          <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+            {order.items.map((item, idx) => (
+              <div key={idx} className="flex justify-between items-start group/item">
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-slate-600">{item.quantity}</span>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-slate-700 leading-tight group-hover/item:text-indigo-600 transition-colors">{item.name}</p>
+                    <p className="text-[10px] text-slate-400 font-mono">₹{item.price} each</p>
+                  </div>
+                </div>
+                <span className="text-[12px] font-black text-slate-600 font-mono">₹{item.price * item.quantity}</span>
               </div>
             ))}
           </div>
         </div>
 
+        {/* Special Instructions */}
         {order.specialInstructions && (
-          <div className="mb-4 p-3 rounded-2xl bg-amber-50/50 border border-amber-100">
-            <div className="flex items-start space-x-2">
-              <FaComment className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Special Instructions</p>
-                <p className="text-sm font-medium text-amber-900">{order.specialInstructions}</p>
-              </div>
+          <div className="mt-3 p-3 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-100/50">
+            <div className="flex items-start gap-2">
+              <FaComment className="w-3 h-3 text-amber-500 mt-0.5" />
+              <p className="text-[11px] font-medium text-amber-900 leading-snug">{order.specialInstructions}</p>
             </div>
           </div>
         )}
 
-        {/* Feedback for completed orders */}
-        {order.status === 'COMPLETED' && order.feedback && (order.feedback.rating || order.feedback.comment) && (
-          <div className="mb-4 p-3 rounded-2xl bg-green-50/50 border border-green-100">
-            <div className="flex items-start space-x-2">
-              <FaStar className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Customer Feedback</p>
-                {order.feedback.rating && (
-                  <div className="flex items-center gap-1 mb-1">
-                    {[...Array(5)].map((_, i) => (
-                      <FaStar 
-                        key={i} 
-                        className={`w-4 h-4 ${i < order.feedback!.rating! ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
-                      />
-                    ))}
-                    <span className="text-sm font-bold text-gray-700 ml-1">{order.feedback.rating}/5</span>
-                  </div>
-                )}
-                {order.feedback.comment && (
-                  <p className="text-sm font-medium text-green-900">{order.feedback.comment}</p>
-                )}
-              </div>
+        {/* Total & Payment Section */}
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border ${paid ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400'
+              }`}>
+              {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-4 h-4" /> : <FaMoneyBillWave className="w-4 h-4" />}
+            </div>
+            <div>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Payment</p>
+              <p className={`text-[11px] font-black uppercase ${paymentStatusDisplay.color}`}>{paymentStatusDisplay.text}</p>
             </div>
           </div>
-        )}
-
-        {/* Rejection reason */}
-        {order.status === 'REJECTED' && order.rejectionReason && (
-          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
-            <div className="flex items-start space-x-2">
-              <FaExclamationCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Rejection Reason</p>
-                <p className="text-sm font-medium text-red-900">{order.rejectionReason}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Cancellation reason */}
-        {order.status === 'CANCELLED' && order.cancellationReason && (
-          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
-            <div className="flex items-start space-x-2">
-              <FaTimes className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Cancellation Reason</p>
-                <p className="text-sm font-medium text-red-900">{order.cancellationReason}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Unpaid reason for orders marked as unpaid */}
-        {order.paymentStatus === 'UNPAID' && (
-          <div className="mb-4 p-3 rounded-2xl bg-red-50/50 border border-red-100">
-            <div className="flex items-start space-x-2">
-              <FaExclamationTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">Payment Status</p>
-                <p className="text-sm font-medium text-red-900">Order marked as unpaid</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <div className={`p-2 sm:p-3 rounded-2xl border transition-all ${paymentStatusDisplay.bgColor} ${paid ? 'border-green-100' : 'border-gray-100'}`}>
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center bg-white shadow-sm font-bold ${paymentStatusDisplay.color}`}>
-                {order.paymentMethod === 'ONLINE' ? <FaCreditCard className="w-4 h-4" /> : <FaMoneyBillWave className="w-4 h-4" />}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">PAYMENT</p>
-                <p className={`text-xs sm:text-sm font-black truncate leading-tight ${paymentStatusDisplay.color}`}>
-                  {paymentStatusDisplay.text}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-indigo-50/30 border border-indigo-100/50 p-2 sm:p-3 rounded-2xl flex items-center space-x-2 sm:space-x-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white text-indigo-600 rounded-lg sm:rounded-xl shadow-sm flex items-center justify-center">
-              <FaHashtag className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">ORDER ID</p>
-              <p className="text-xs sm:text-sm font-black text-indigo-700 truncate leading-tight">#{order.orderNumber || order._id.slice(-6)}</p>
-            </div>
+          <div className="text-right">
+            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Total Amount</p>
+            <p className="text-2xl font-black text-slate-800 font-mono tracking-tighter">₹{order.totalAmount}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-100">
-          
-          {/* Unified Payment Actions - Only visible if not verified */}
-          {(() => {
-            // Robust field detection using case-insensitive search
-            const orderKeys = Object.keys(order);
-            const targetKey = orderKeys.find(k => k.toLowerCase() === 'paymentverificationrequestbycustomer');
-            const paymentObj = targetKey ? (order as any)[targetKey] : null;
+        {/* Actions Section */}
+        <div className="mt-5 flex flex-wrap gap-2">
+          <div className="flex-1 flex gap-2">
+            {(order.status?.toUpperCase() === 'ACCEPTED' || order.status?.toUpperCase() === 'COMPLETED') && (
+              <button
+                onClick={() => onPrint?.(order)}
+                className="h-10 px-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-indigo-200 hover:text-indigo-600 transition-all text-slate-400 flex items-center justify-center gap-2"
+              >
+                <FaPrint className="w-3.5 h-3.5" />
+              </button>
+            )}
 
-            const hasApplied = !!paymentObj?.applied || String(paymentObj?.applied) === 'true';
-            const hasUTR = !!order.utr || !!order.submittedUtr || !!paymentObj?.appliedUTR;
-            const isRetry = order.paymentStatus?.toUpperCase() === 'RETRY';
-            const showVerify = (hasApplied || hasUTR || isRetry) && (order.status?.toUpperCase() === 'ACCEPTED' || order.status?.toUpperCase() === 'COMPLETED');
-            
-            console.log(`[DEBUG:OrderCard:${order.orderNumber || order._id?.slice(-6)}]`, { 
-              showVerify,
-              detectedKey: targetKey,
-              paymentObj,
-              hasApplied,
-              hasUTR,
-              isRetry,
-              orderKeys,
-              fullOrderSample: JSON.stringify(order).slice(0, 300)
-            });
-            
-            if (paid || order.status?.toUpperCase() === 'REJECTED' || order.status?.toUpperCase() === 'CANCELLED' || (order.status?.toUpperCase() !== 'ACCEPTED' && order.status?.toUpperCase() !== 'COMPLETED')) {
-              return null;
-            }
+            {(() => {
+              const orderKeys = Object.keys(order);
+              const targetKey = orderKeys.find(k => k.toLowerCase() === 'paymentverificationrequestbycustomer');
+              const paymentObj = targetKey ? (order as any)[targetKey] : null;
+              const showVerify = (paymentObj?.applied || order.utr || order.submittedUtr) && (order.status === 'ACCEPTED' || order.status === 'COMPLETED') && !paid;
 
-            return (
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                {/* Case 1: Payment Verification Needed (Applied) */}
-                {showVerify ? (
-                  <>
-                    <Button 
-                      size="md" 
-                      variant="success"
-                      onClick={() => setModalType('VERIFY_PAYMENT')}
-                      isLoading={isLoading('VERIFY_PAYMENT')}
-                      disabled={isAnyLoading}
-                      leftIcon={<FaCheckCircle className="w-4 h-4" />}
-                      fullWidth
-                    >
-                      Verify Payment
-                    </Button>
-                  </>
-                ) : (
-                  /* Case 2: Regular Payment Collection */
-                  <Button 
-                    size="md" 
-                    variant="success" 
-                    onClick={() => setModalType('COLLECT_PAYMENT')}
-                    isLoading={isLoading('COLLECT_PAYMENT')}
-                    disabled={isAnyLoading}
-                    className="flex-1 sm:flex-none"
-                    leftIcon={<FaMoneyBillWave className="w-4 h-4" />}
-                  >
-                    {order.paymentDueStatus?.toUpperCase() === 'DUE' ? 'Clear Due' : 'Collect Payment'}
-                  </Button>
-                )}
-              </div>
-            );
-          })()}
+              if (paid || order.status === 'REJECTED' || order.status === 'CANCELLED') return null;
 
+              return (
+                <Button
+                  size="sm"
+                  variant="success"
+                  onClick={() => setModalType(showVerify ? 'VERIFY_PAYMENT' : 'COLLECT_PAYMENT')}
+                  isLoading={isLoading(showVerify ? 'VERIFY_PAYMENT' : 'COLLECT_PAYMENT')}
+                  disabled={isAnyLoading}
+                  className="flex-1 !h-10 rounded-xl font-black uppercase tracking-widest text-[10px]"
+                  leftIcon={showVerify ? <FaCheckCircle /> : <FaMoneyBillWave />}
+                >
+                  {showVerify ? 'Verify' : 'Collect'}
+                </Button>
+              );
+            })()}
+          </div>
 
-          {/* Status-based Actions (Accept, Reject, Serve, Mark Unpaid) */}
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            {order.status?.toUpperCase() === 'PLACED' && (
+          <div className="flex gap-2">
+            {order.status === 'PLACED' && (
               <>
-                <Button 
-                  size="md" 
-                  onClick={() => handleAction('ACCEPT_ORDER')} 
+                <Button
+                  size="sm"
+                  onClick={() => handleAction('ACCEPT_ORDER')}
                   isLoading={isLoading('ACCEPT_ORDER')}
                   disabled={isAnyLoading}
-                  leftIcon={<FaCheck className="w-4 h-4" />}
+                  className="!h-10 px-4 rounded-xl font-black uppercase tracking-widest text-[10px] bg-slate-800 hover:bg-slate-900 text-white"
                 >
                   Accept
                 </Button>
-                <Button 
-                  size="md" 
-                  variant="danger" 
+                <Button
+                  size="sm"
+                  variant="danger"
                   onClick={() => setModalType('REJECT_ORDER')}
                   isLoading={isLoading('REJECT_ORDER')}
                   disabled={isAnyLoading}
-                  leftIcon={<FaExclamationCircle className="w-4 h-4" />}
+                  className="!h-10 px-4 rounded-xl font-black uppercase tracking-widest text-[10px]"
                 >
                   Reject
                 </Button>
               </>
             )}
 
-            {order.status?.toUpperCase() === 'ACCEPTED' && (
-              <Button 
-                size="md" 
-                variant="primary" 
-                onClick={() => handleAction('COMPLETE_ORDER')} 
+            {order.status === 'ACCEPTED' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => handleAction('COMPLETE_ORDER')}
                 isLoading={isLoading('COMPLETE_ORDER')}
                 disabled={isAnyLoading}
-                leftIcon={<FaUtensils className="w-4 h-4" />}
+                className="!h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]"
+                leftIcon={<FaUtensils />}
               >
                 Serve
               </Button>
             )}
-
-            {order.status?.toUpperCase() === 'COMPLETED' && !paid && order.paymentStatus?.toUpperCase() !== 'UNPAID' && (
-              <Button 
-                size="md" 
-                variant="danger" 
-                onClick={() => setModalType('MARK_UNPAID')}
-                isLoading={isLoading('MARK_UNPAID')}
-                disabled={isAnyLoading}
-                leftIcon={<FaExclamationTriangle className="w-4 h-4" />}
-              >
-                Mark Unpaid
-              </Button>
-            )}
           </div>
-
         </div>
       </div>
 
-      {/* Action Modal */}
       <ActionModal
         isOpen={modalType !== null}
         onClose={() => setModalType(null)}

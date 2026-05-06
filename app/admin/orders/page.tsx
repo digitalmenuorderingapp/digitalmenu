@@ -446,14 +446,14 @@ export default function OrdersPage() {
 
   return (
     <div 
-      className="w-full px-4 sm:px-6 lg:px-8 py-4"
+      className="w-full min-h-screen sm:h-screen flex flex-col px-2 sm:px-6 lg:px-8 py-2 sm:py-4 overflow-visible sm:overflow-hidden"
       onClick={() => initAudioContext()}
     >
       <div className="mb-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Orders & Analytics</h1>
-            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Growth • Integrity • Operations</p>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">Orders & Analytics</h1>
+            <p className="hidden sm:block text-[11px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Growth • Integrity • Operations</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -493,7 +493,7 @@ export default function OrdersPage() {
             <h3 className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-3 flex items-center px-1">
               <FaExclamationCircle className="mr-2" /> Pending Actions
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
               <StatsCard isMini label="Serving" value={paymentStats.servingPending || 0} variant="indigo" icon={<FaUtensils />} />
               <StatsCard isMini label="Online" value={paymentStats.onlinePending || 0} variant="blue" icon={<FaCreditCard />} />
               <StatsCard isMini label="Cash" value={paymentStats.cashPending || 0} variant="amber" icon={<FaMoneyBillWave />} />
@@ -506,7 +506,7 @@ export default function OrdersPage() {
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center px-1">
               Business Overview
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-6 gap-1.5 sm:gap-2">
               <StatsCard isMini label="Revenue" value={`₹${paymentStats.totalRevenue.toFixed(0)}`} variant="green" icon={<FaCheckCircle />} />
               <StatsCard isMini label="Dues Amount" value={`₹${Math.round(paymentStats.unpaidDuesAmount || 0)}`} variant="red" icon={<FaExclamationCircle />} />
               <StatsCard isMini label="Total" value={orderCounts.totalOrders} variant="indigo" icon={<FaClipboardList />} />
@@ -526,7 +526,7 @@ export default function OrdersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search..."
-            className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-xl text-[11px] focus:ring-2 focus:ring-indigo-50"
+            className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-xl text-[10px] sm:text-[11px] focus:ring-2 focus:ring-indigo-50"
           />
         </div>
 
@@ -536,7 +536,7 @@ export default function OrdersPage() {
               <button
                 key={status}
                 onClick={() => setOrderFilter(status)}
-                className={`px-5 py-2.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-widest flex items-center space-x-2.5 ${orderFilter === status ? 'bg-white text-indigo-600 shadow-sm border border-indigo-50' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black transition-all uppercase tracking-widest flex items-center space-x-2.5 ${orderFilter === status ? 'bg-white text-indigo-600 shadow-sm border border-indigo-50' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <span>{status}</span>
                 <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${orderFilter === status ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-200/50 text-gray-400'}`}>
@@ -548,21 +548,21 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start h-full min-h-0">
+      <div className="flex flex-col-reverse sm:flex-row gap-4 sm:gap-6 items-start flex-1 min-h-0 relative mb-4">
         {/* Left Side: Orders Grid */}
-        <div className="flex-1 min-h-0 w-full overflow-y-auto pr-2 no-scrollbar">
+        <div className="flex-1 w-full h-auto sm:h-full overflow-visible sm:overflow-y-auto no-scrollbar">
           <AnimatePresence mode="wait">
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-4 sm:gap-5">
                 {Array(6).fill(0).map((_, i) => <OrderCardSkeleton key={i} />)}
               </div>
             ) : filteredOrders.length === 0 ? (
-              <div className="py-20 text-center">
+              <div className="h-full flex flex-col items-center justify-center text-center">
                 <FaClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-4" />
                 <p className="text-gray-400 font-medium">No orders found</p>
               </div>
             ) : (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`grid gap-4 pb-10 ${activeTab === 'today' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid gap-3 sm:gap-4 pb-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
                 {filteredOrders.map((order: Order) => (
                   <OrderCard
                      key={`${order._id}-${order.status}-${order.paymentStatus}-${order.updatedAt || Date.now()}`}
@@ -576,37 +576,56 @@ export default function OrdersPage() {
           </AnimatePresence>
         </div>
 
-        {/* Right Side: Table Occupancy */}
-        <div className="w-full lg:w-[220px] shrink-0 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sticky top-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-              <FaTable className="text-indigo-500" /> Occupancy
-            </h3>
-            <div className="flex gap-2">
-               <span className="flex items-center gap-1 text-[9px] font-bold text-gray-500"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Free</span>
-               <span className="flex items-center gap-1 text-[9px] font-bold text-gray-500"><div className="w-2 h-2 rounded-full bg-rose-500"></div> Busy</span>
+        {/* Right Side: Table Occupancy - Compact Sidebar */}
+        <div className="w-full sm:w-[80px] shrink-0 bg-white border border-gray-100 rounded-2xl p-2 sm:p-1.5 shadow-sm flex flex-row sm:flex-col items-center z-40 h-auto sm:h-full overflow-hidden">
+          <div className="flex flex-row sm:flex-col items-center w-auto sm:w-full mb-0 sm:mb-3 shrink-0">
+            
+            {/* Status Indicators (Free/Busy) */}
+            <div className="flex flex-row sm:flex-col gap-3 sm:gap-3 mr-4 sm:mr-0 sm:mb-4 mt-1 items-center bg-gray-100/50 px-2.5 py-2 rounded-2xl border border-gray-200/50">
+               <div className="flex items-center gap-1.5" title="Free Tables">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></div>
+                 <span className="hidden lg:block text-[9px] font-black text-emerald-600 uppercase tracking-widest">Free</span>
+               </div>
+               <div className="flex items-center gap-1.5" title="Occupied Tables">
+                 <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"></div>
+                 <span className="hidden lg:block text-[9px] font-black text-rose-600 uppercase tracking-widest">Busy</span>
+               </div>
+            </div>
+
+            {/* Occupancy Icon */}
+            <div className="py-2 sm:border-y border-gray-100 w-auto sm:w-full flex justify-center mr-4 sm:mr-0 sm:mb-2" title="Occupancy Tracker">
+              <FaTasks className="text-indigo-500 text-[10px] sm:text-sm opacity-50" />
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          
+          {/* Table List (Two-Column Grid) */}
+          <div className="flex flex-row sm:grid sm:grid-cols-2 gap-2.5 w-full overflow-x-auto sm:overflow-y-auto no-scrollbar flex-1 pb-1 sm:pb-3 content-start">
             {tablesList.map((t: any) => {
               const isOccupied = isTableOccupied(t.tableNumber);
               return (
                 <div 
                   key={t._id} 
-                  className={`w-[45px] h-[45px] rounded-xl flex flex-col items-center justify-center border transition-all ${
+                  className={`relative w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] shrink-0 rounded-xl flex flex-col items-center justify-center border-2 transition-all duration-300 ${
                     isOccupied 
-                      ? 'bg-rose-50 border-rose-200 text-rose-700 shadow-sm' 
-                      : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 cursor-pointer'
+                      ? 'bg-rose-50 border-rose-200 text-rose-700 shadow-[0_2px_10px_-3px_rgba(244,63,94,0.2)]' 
+                      : 'bg-white border-emerald-100 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 cursor-pointer'
                   }`}
                   title={isOccupied ? `Table ${t.tableNumber} is Occupied` : `Table ${t.tableNumber} is Free`}
                 >
-                  <span className="text-[9px] font-bold uppercase opacity-60 leading-none mb-0.5">Tbl</span>
-                  <span className="text-sm font-black leading-none">{t.tableNumber}</span>
+                  <span className={`text-[10px] sm:text-xs font-black leading-none ${isOccupied ? 'mb-0.5' : ''}`}>{t.tableNumber}</span>
+                  {isOccupied && (
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                       <FaUsers className="text-[6px] sm:text-[7px] opacity-60" />
+                    </div>
+                  )}
+                  {!isOccupied && (
+                    <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-emerald-400 opacity-40"></div>
+                  )}
                 </div>
               );
             })}
             {tablesList.length === 0 && (
-              <div className="w-full text-center py-4 text-xs text-gray-400 font-bold">No tables configured</div>
+              <div className="col-span-2 text-center py-2 text-[8px] text-gray-400 font-bold opacity-20">N/A</div>
             )}
           </div>
         </div>

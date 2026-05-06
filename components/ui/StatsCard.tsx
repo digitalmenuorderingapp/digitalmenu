@@ -93,9 +93,9 @@ const StatsCard = ({
     return (
       <motion.div
         whileHover={{ scale: 1.02 }}
-        className={`relative p-3 rounded-2xl border flex items-center space-x-3 ${theme.bg} ${theme.border} transition-all duration-300 group h-full`}
+        className={`relative p-2 sm:p-3 rounded-2xl border flex items-center space-x-2 sm:space-x-3 ${theme.bg} ${theme.border} transition-all duration-300 group h-full`}
       >
-        <div className={`w-9 h-9 rounded-xl ${theme.iconBg} flex items-center justify-center ${theme.iconColor} text-base group-hover:scale-110 transition-transform flex-shrink-0`}>
+        <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl ${theme.iconBg} flex items-center justify-center ${theme.iconColor} text-sm sm:text-base group-hover:scale-110 transition-transform flex-shrink-0`}>
           {icon}
         </div>
         <div className="min-w-0 flex-1">
